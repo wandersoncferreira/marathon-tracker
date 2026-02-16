@@ -34,6 +34,8 @@ function Dashboard() {
       const today = formatDateISO(new Date());
       const cacheKey = `readiness_${today}`;
 
+      console.log('🔄 Fetching wellness for', today);
+
       // Check cache first (if useCache is true)
       if (useCache) {
         const cachedReadiness = await db.getCached(cacheKey);
@@ -54,20 +56,30 @@ function Dashboard() {
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const startDate = formatDateISO(sevenDaysAgo);
 
+      console.log('📅 Fetching wellness from', startDate, 'to', today);
+
       // Fetch wellness data for last 7 days (for baseline) + today
       const wellnessData = await intervalsApi.getWellnessData(startDate, today, true);
+
+      console.log('📊 Wellness data received:', wellnessData?.length || 0, 'records');
 
       if (wellnessData && wellnessData.length > 0) {
         // Find today's data
         const todayData = wellnessData.find(w => w.id === today);
 
+        console.log('📊 Today\'s wellness data:', todayData ? 'found' : 'not found', todayData?.id);
+
         if (todayData) {
           // Calculate baseline from last 7 days (excluding today)
           const recentData = wellnessData.filter(w => w.id !== today);
+          console.log('📊 Baseline data:', recentData.length, 'records');
+
           const baseline = calculateWellnessBaseline(recentData);
 
           // Analyze readiness
           const readiness = analyzeWellnessReadiness(todayData, baseline);
+
+          console.log('✅ Readiness computed:', readiness.status, 'score:', readiness.score);
 
           // Cache the computed readiness for 24 hours
           await db.setCached(cacheKey, readiness, 24 * 60 * 60 * 1000);
@@ -75,32 +87,34 @@ function Dashboard() {
 
           setTodayReadiness(readiness);
         } else {
+          console.warn('⚠️ No wellness data found for', today);
           const noDataReadiness = {
             score: null,
             status: 'unknown',
-            message: 'No wellness data for today',
+            message: `No wellness data for ${today}`,
             insights: ['💡 Sync wellness data from Intervals.icu'],
             metrics: {},
           };
           setTodayReadiness(noDataReadiness);
         }
       } else {
+        console.warn('⚠️ No wellness data returned from API');
         const noDataReadiness = {
           score: null,
           status: 'unknown',
           message: 'No wellness data available',
-          insights: ['💡 Sync wellness data from Intervals.icu'],
+          insights: ['💡 Check database or sync from Intervals.icu'],
           metrics: {},
         };
         setTodayReadiness(noDataReadiness);
       }
     } catch (error) {
-      console.error('Error fetching wellness data:', error);
+      console.error('❌ Error fetching wellness data:', error);
       setTodayReadiness({
         score: null,
         status: 'error',
         message: 'Error loading wellness data',
-        insights: ['⚠️ Check API configuration'],
+        insights: [`⚠️ ${error.message}`],
         metrics: {},
       });
     }

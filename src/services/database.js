@@ -187,8 +187,10 @@ class MarathonTrackerDB extends Dexie {
    */
   async getWellness(startDate, endDate) {
     try {
+      // Note: wellness records use 'id' field for date (format: "YYYY-MM-DD")
+      // The schema indexes both 'id' (primary key) and 'date', but data only has 'id'
       return await this.wellness
-        .where('date')
+        .where('id')
         .between(startDate, endDate, true, true)
         .toArray();
     } catch (error) {
