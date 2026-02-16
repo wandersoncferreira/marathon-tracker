@@ -167,7 +167,7 @@ function ProgressTracker() {
       {/* Key Metrics */}
       <div className="grid grid-cols-2 gap-4">
         <div className="card bg-gradient-to-br from-primary-600 to-primary-700 text-white">
-          <p className="text-sm text-primary-100 mb-1">Total KM at MP</p>
+          <p className="text-sm text-primary-100 mb-1">Total KM at Marathon Pace</p>
           <p className="text-3xl font-bold">{totalStats?.totalKmAtMP.toFixed(1) || '0.0'}</p>
           <p className="text-xs text-primary-100 mt-2">
             Target: {totalStats?.expectedKmAtMP.toFixed(0) || 0} km (cycle so far)
@@ -380,7 +380,7 @@ function ProgressTracker() {
                 <div className="grid grid-cols-2 gap-1 mt-2 text-xs text-gray-500">
                   <span>🔴 Speed: {dist.speed?.toFixed(1) || 0}</span>
                   <span>🟠 Threshold: {dist.threshold?.toFixed(1) || 0}</span>
-                  <span>🔵 MP: {dist.marathonPace?.toFixed(1) || 0}</span>
+                  <span>🔵 Marathon Pace: {dist.marathonPace?.toFixed(1) || 0}</span>
                   <span>🟡 Tempo: {dist.tempo?.toFixed(1) || 0}</span>
                   <span className="col-span-2">🟢 Easy: {dist.easy?.toFixed(1) || 0}</span>
                 </div>

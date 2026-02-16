@@ -394,7 +394,7 @@ function Dashboard() {
             </p>
           </div>
           <div className="metric-card">
-            <p className="text-sm text-gray-600 mb-1">KM at MP</p>
+            <p className="text-sm text-gray-600 mb-1">KM at Marathon Pace</p>
             <p className="text-2xl font-bold text-primary-600">
               {weeklyStats?.kmAtMP.toFixed(1) || '0.0'} km
             </p>
