@@ -64,7 +64,7 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
     fetchActivities();
   };
 
-  const sync = async () => {
+  const sync = async (forceFullSync = false) => {
     setLoading(true);
     setError(null);
 
@@ -75,21 +75,36 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
         throw new Error('Intervals.icu API not configured - cannot sync from API');
       }
 
-      // Sync activities
-      const data = await intervalsApi.syncActivities(
+      const syncType = forceFullSync ? 'Full sync' : 'Incremental sync';
+      console.log(`🔄 ${syncType} started...`);
+
+      // Sync activities (incremental by default, full if forced)
+      await intervalsApi.syncActivities(
+        dateRange.startDate,
+        dateRange.endDate,
+        forceFullSync
+      );
+
+      // After sync, reload ALL activities from database for the date range
+      const allActivities = await intervalsApi.getActivities(
         dateRange.startDate,
         dateRange.endDate
       );
 
-      const runningActivities = data
+      const runningActivities = allActivities
         .filter(a => a.type === 'Run')
         .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
       setActivities(runningActivities);
 
-      // Sync messages for all activities (in background)
-      intervalsApi.syncActivityMessages(runningActivities).catch(err => {
-        console.error('Error syncing messages:', err);
-      });
+      console.log(`✅ ${syncType} completed: ${runningActivities.length} running activities in date range`);
+
+      // Only sync messages during Force Full Sync (not incremental)
+      if (forceFullSync) {
+        console.log('🔄 Syncing messages (force full sync mode)...');
+        intervalsApi.syncActivityMessages(runningActivities, false).catch(err => {
+          console.error('Error syncing messages:', err);
+        });
+      }
     } catch (err) {
       setError(err.message);
       console.error('Error syncing activities:', err);

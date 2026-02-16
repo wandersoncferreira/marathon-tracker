@@ -11,6 +11,7 @@ import {
 import { getCycleStats, getWeeklyMPTarget, TRAINING_CYCLE } from '../utils/trainingCycle';
 import { formatDateISO } from '../utils/dateHelpers';
 import { intervalsApi } from '../services/intervalsApi';
+import { db } from '../services/database';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function ProgressTracker() {
@@ -38,14 +39,8 @@ function ProgressTracker() {
         const startDate = '2025-01-01';
         const today = formatDateISO(new Date());
 
-        // Check if we have data in database first
-        let allActivities = await intervalsApi.getActivities(startDate, today);
-
-        // If database is empty or has very few activities, sync from API
-        if (allActivities.length < 10) {
-          console.log('Syncing historical activities from Intervals.icu API for HR by Pace chart...');
-          allActivities = await intervalsApi.syncActivities(startDate, today);
-        }
+        // Only read from database - never auto-sync
+        const allActivities = await intervalsApi.getActivities(startDate, today);
 
         const runningActivities = allActivities
           .filter(a => a.type === 'Run')
@@ -72,29 +67,21 @@ function ProgressTracker() {
         const withIntervals = activitiesWithIntervals.filter(a => a.intervals && a.intervals.length > 0).length;
         const withoutIntervals = activitiesWithIntervals.length - withIntervals;
 
-        // If some activities don't have intervals, fetch them in batches (only missing ones)
+        // If some activities don't have intervals, try to load them from database
         if (withoutIntervals > 0) {
           const missingIntervals = activitiesWithIntervals.filter(a => !a.intervals || a.intervals.length === 0);
-          const batchSize = 5;
 
-          for (let i = 0; i < missingIntervals.length; i += batchSize) {
-            const batch = missingIntervals.slice(i, i + batchSize);
-            await Promise.all(
-              batch.map(async (activity) => {
-                try {
-                  const intervalData = await intervalsApi.getActivityIntervals(activity.id);
-                  activity.intervals = intervalData?.icu_intervals || [];
-                } catch (error) {
-                  console.error(`Failed to fetch intervals for activity ${activity.id}:`, error);
-                }
-              })
-            );
-
-            // Small delay between batches to avoid rate limiting
-            if (i + batchSize < missingIntervals.length) {
-              await new Promise(resolve => setTimeout(resolve, 300));
-            }
-          }
+          // Try loading intervals from database for activities that don't have them
+          await Promise.all(
+            missingIntervals.map(async (activity) => {
+              try {
+                const intervalData = await intervalsApi.getActivityIntervals(activity.id, true); // DB only
+                activity.intervals = intervalData?.icu_intervals || [];
+              } catch (error) {
+                console.error(`Failed to load intervals for activity ${activity.id}:`, error);
+              }
+            })
+          );
         }
 
         // Calculate weekly volume with intervals
@@ -307,56 +294,82 @@ function ProgressTracker() {
     );
   };
 
-  // Sync historical data from API (complete sync)
-  const handleSyncHistorical = async () => {
+  // Sync historical data from API (incremental by default, full if forced)
+  const handleSyncHistorical = async (forceFullSync = false) => {
     setSyncingHistorical(true);
     try {
       const startDate = '2025-01-01';
       const today = formatDateISO(new Date());
 
-      console.log('🔄 Step 1/4: Syncing activities from 2025-01-01...');
-      const allActivities = await intervalsApi.syncActivities(startDate, today);
+      const syncType = forceFullSync ? 'Force full sync' : 'Incremental sync';
+      const totalSteps = forceFullSync ? 4 : 3;
+      console.log(`🔄 ${syncType}: Step 1/${totalSteps}: Syncing activities from 2025-01-01...`);
+      await intervalsApi.syncActivities(startDate, today, forceFullSync);
 
+      // Reload all activities from database
+      const allActivities = await intervalsApi.getActivities(startDate, today);
       const runningActivities = allActivities
         .filter(a => a.type === 'Run')
         .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
 
-      console.log(`✅ Synced ${runningActivities.length} running activities`);
+      console.log(`✅ Synced: ${runningActivities.length} running activities in database`);
 
-      // Sync intervals for all activities (in batches)
-      console.log('🔄 Step 2/4: Syncing activity intervals...');
-      const batchSize = 5;
-      for (let i = 0; i < runningActivities.length; i += batchSize) {
-        const batch = runningActivities.slice(i, i + batchSize);
-        await Promise.all(
-          batch.map(async (activity) => {
-            try {
-              await intervalsApi.getActivityIntervals(activity.id, false); // Force API fetch
-            } catch (error) {
-              console.error(`Failed to fetch intervals for activity ${activity.id}:`, error);
-            }
-          })
-        );
-        // Progress indicator
-        console.log(`  ... ${Math.min(i + batchSize, runningActivities.length)}/${runningActivities.length} activities`);
-        // Small delay between batches to avoid rate limiting
-        if (i + batchSize < runningActivities.length) {
-          await new Promise(resolve => setTimeout(resolve, 200));
+      // Sync intervals for activities that don't have them yet (in batches)
+      console.log(`🔄 Step 2/${totalSteps}: Syncing missing activity intervals...`);
+
+      // Check which activities need intervals
+      const activitiesNeedingIntervals = [];
+      for (const activity of runningActivities) {
+        const details = await db.getActivityDetails(activity.id);
+        if (!details || !details.intervals || !details.intervals.icu_intervals || details.intervals.icu_intervals.length === 0) {
+          activitiesNeedingIntervals.push(activity);
         }
       }
 
-      // Sync messages for all activities
-      console.log('🔄 Step 3/4: Syncing activity messages...');
-      await intervalsApi.syncActivityMessages(runningActivities);
+      console.log(`  ... ${activitiesNeedingIntervals.length} activities need intervals (${runningActivities.length - activitiesNeedingIntervals.length} already cached)`);
+
+      if (activitiesNeedingIntervals.length > 0) {
+        const batchSize = 5;
+        for (let i = 0; i < activitiesNeedingIntervals.length; i += batchSize) {
+          const batch = activitiesNeedingIntervals.slice(i, i + batchSize);
+          await Promise.all(
+            batch.map(async (activity) => {
+              try {
+                await intervalsApi.getActivityIntervals(activity.id, false); // Fetch from API
+              } catch (error) {
+                console.error(`Failed to fetch intervals for activity ${activity.id}:`, error);
+              }
+            })
+          );
+          // Progress indicator
+          console.log(`  ... ${Math.min(i + batchSize, activitiesNeedingIntervals.length)}/${activitiesNeedingIntervals.length} activities`);
+          // Small delay between batches to avoid rate limiting
+          if (i + batchSize < activitiesNeedingIntervals.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+      }
+
+      // Sync messages only for Force Full Sync (not incremental)
+      if (forceFullSync) {
+        console.log(`🔄 Step 3/${totalSteps}: Syncing activity messages...`);
+        await intervalsApi.syncActivityMessages(runningActivities, false);
+      } else {
+        console.log('⏭️  Skipping messages (use Force Full to sync messages)');
+      }
 
       // Sync wellness data
-      console.log('🔄 Step 4/4: Syncing wellness data...');
+      const wellnessStep = forceFullSync ? 4 : 3;
+      console.log(`🔄 Step ${wellnessStep}/${totalSteps}: Syncing wellness data...`);
       await intervalsApi.getWellnessData(startDate, today, false); // Force API fetch
 
       console.log('✅ Complete sync finished!');
 
       setHistoricalActivities(runningActivities);
-      alert(`Successfully synced ${runningActivities.length} activities with all details from 2025-01-01!`);
+      const syncMessage = forceFullSync
+        ? `Force full sync completed: ${runningActivities.length} activities with all details!`
+        : `Incremental sync completed: ${runningActivities.length} total activities in database!`;
+      alert(syncMessage);
     } catch (error) {
       console.error('Error syncing historical data:', error);
       alert('Error syncing historical data: ' + error.message);
@@ -580,14 +593,24 @@ function ProgressTracker() {
               Average heart rate at different training paces per 2-month period. Lower HR at same pace = improved fitness.
             </p>
           </div>
-          <button
-            onClick={handleSyncHistorical}
-            disabled={syncingHistorical}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 whitespace-nowrap ml-4"
-            title="Sync all activities, intervals, messages, and wellness data from 2025-01-01"
-          >
-            {syncingHistorical ? '⏳ Syncing...' : '🔄 Sync All Data'}
-          </button>
+          <div className="flex gap-2 ml-4">
+            <button
+              onClick={() => handleSyncHistorical(false)}
+              disabled={syncingHistorical}
+              className="text-xs text-green-600 hover:text-green-700 font-medium disabled:opacity-50 whitespace-nowrap"
+              title="Sync only new data since last sync"
+            >
+              {syncingHistorical ? '⏳ Syncing...' : '🔄 Sync New'}
+            </button>
+            <button
+              onClick={() => handleSyncHistorical(true)}
+              disabled={syncingHistorical}
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 whitespace-nowrap"
+              title="Force full sync from 2025-01-01 (all activities, intervals, messages, wellness)"
+            >
+              {syncingHistorical ? '⏳ Syncing...' : '🔄 Force Full'}
+            </button>
+          </div>
         </div>
 
         {/* Pace Group Selector */}
@@ -816,7 +839,7 @@ function ProgressTracker() {
           <div className="text-center py-12">
             <p className="text-gray-500 mb-4">No historical data yet</p>
             <p className="text-xs text-gray-400 mb-4">
-              Click "Sync All Data" above to download all activities, intervals, messages, and wellness data from 2025-01-01 onwards.
+              Click "Force Full" above to download all activities, intervals, messages, and wellness data from 2025-01-01 onwards.
               This may take a few minutes depending on how many activities you have.
             </p>
           </div>

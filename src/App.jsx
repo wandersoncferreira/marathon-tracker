@@ -4,6 +4,7 @@ import TrainingLog from './components/TrainingLog';
 import CoachAnalysis from './components/CoachAnalysis';
 import ProgressTracker from './components/ProgressTracker';
 import Settings from './components/Settings';
+import Help from './components/Help';
 import { loadInitialAnalyses } from './utils/loadInitialAnalyses';
 import { autoImportIfEmpty } from './services/databaseSync';
 
@@ -56,6 +57,8 @@ function App() {
         return <ProgressTracker />;
       case 'settings':
         return <Settings />;
+      case 'help':
+        return <Help />;
       default:
         return <Dashboard />;
     }
@@ -73,9 +76,17 @@ function App() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">
-            Marathon Tracker
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-gray-900">
+              Marathon Tracker
+            </h1>
+            <button
+              onClick={() => setActiveTab('help')}
+              className="text-xs text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap"
+            >
+              Learn how to use
+            </button>
+          </div>
           <button
             onClick={() => setActiveTab('settings')}
             className="text-gray-500 hover:text-gray-700"

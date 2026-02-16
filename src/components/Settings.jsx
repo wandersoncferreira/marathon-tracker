@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { intervalsApi } from '../services/intervalsApi';
-import { analysisLoader } from '../services/analysisLoader';
 import { db } from '../services/database';
-import { getCycleStats, TRAINING_CYCLE } from '../utils/trainingCycle';
-import { formatDateISO } from '../utils/dateHelpers';
+import { TRAINING_CYCLE } from '../utils/trainingCycle';
 import { downloadDatabaseExport, uploadDatabaseImport, getDatabaseExportStats } from '../services/databaseSync';
-import { syncAllActivityDetails } from '../utils/syncAllActivityDetails';
-import { cleanStravaStubs } from '../utils/cleanStravaStubs';
 
 function Settings() {
   const [apiKey, setApiKey] = useState('');
@@ -14,15 +10,25 @@ function Settings() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dbStats, setDbStats] = useState(null);
-  const [fileInputRef, setFileInputRef] = useState(null);
-  const [syncingWellness, setSyncingWellness] = useState(false);
   const [exportStats, setExportStats] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [dbImportInputRef, setDbImportInputRef] = useState(null);
-  const [syncingDetails, setSyncingDetails] = useState(false);
-  const [syncProgress, setSyncProgress] = useState(null);
-  const [cleaningStrava, setCleaningStrava] = useState(false);
+
+  // Training cycle configuration
+  const [marathonName, setMarathonName] = useState('');
+  const [cycleStartDate, setCycleStartDate] = useState('');
+  const [raceDate, setRaceDate] = useState('');
+  const [goalTimeHours, setGoalTimeHours] = useState('2');
+  const [goalTimeMinutes, setGoalTimeMinutes] = useState('50');
+  const [goalTimeSeconds, setGoalTimeSeconds] = useState('00');
+  const [trainingPhases, setTrainingPhases] = useState([
+    { name: 'Base Build', startWeek: 1, endWeek: 4 },
+    { name: 'Build', startWeek: 5, endWeek: 8 },
+    { name: 'Peak', startWeek: 9, endWeek: 16 },
+    { name: 'Taper', startWeek: 17, endWeek: 20 }
+  ]);
+  const [cycleSaved, setCycleSaved] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -34,6 +40,28 @@ function Settings() {
       const config = await intervalsApi.loadConfig();
       setApiKey(config.apiKey || '');
       setAthleteId(config.athleteId || '');
+
+      // Load training cycle config
+      const marathonNameConfig = await db.getConfig('marathon_name', 'Porto Alegre 2026');
+      const cycleStartConfig = await db.getConfig('cycle_start_date', '2026-01-19');
+      const raceDateConfig = await db.getConfig('race_date', '2026-05-31');
+      const goalTimeConfig = await db.getConfig('goal_time', '2:50:00');
+      const phasesConfig = await db.getConfig('training_phases', null);
+
+      setMarathonName(marathonNameConfig);
+      setCycleStartDate(cycleStartConfig);
+      setRaceDate(raceDateConfig);
+
+      // Parse goal time
+      const [hours, minutes, seconds] = goalTimeConfig.split(':');
+      setGoalTimeHours(hours || '2');
+      setGoalTimeMinutes(minutes || '50');
+      setGoalTimeSeconds(seconds || '00');
+
+      // Load phases
+      if (phasesConfig) {
+        setTrainingPhases(phasesConfig);
+      }
 
       // Load database stats
       const stats = await intervalsApi.getStats();
@@ -59,50 +87,101 @@ function Settings() {
     }
   };
 
-  const handleClearCache = async () => {
+  // Calculate total weeks between two dates
+  const calculateTotalWeeks = (start, end) => {
+    if (!start || !end) return 0;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const diffMs = endDate - startDate;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return Math.ceil(diffDays / 7);
+  };
+
+  // Calculate goal pace from goal time
+  const calculateGoalPace = (hours, minutes, seconds) => {
+    const totalSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+    const marathonDistanceKm = 42.195;
+    const paceSecondsPerKm = totalSeconds / marathonDistanceKm;
+    const paceMinutes = Math.floor(paceSecondsPerKm / 60);
+    const paceSeconds = Math.round(paceSecondsPerKm % 60);
+    return {
+      formatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}/km`,
+      seconds: Math.round(paceSecondsPerKm)
+    };
+  };
+
+  // Get current total weeks
+  const totalWeeks = calculateTotalWeeks(cycleStartDate, raceDate);
+  const goalPace = calculateGoalPace(goalTimeHours, goalTimeMinutes, goalTimeSeconds);
+  const goalTime = `${goalTimeHours}:${goalTimeMinutes}:${goalTimeSeconds}`;
+
+  const handleSaveCycle = async () => {
     try {
-      await intervalsApi.clearCache();
-      await loadSettings(); // Reload stats
-      alert('Cache cleared successfully!');
+      // Validate dates
+      if (!cycleStartDate || !raceDate) {
+        alert('Please enter both cycle start date and race date');
+        return;
+      }
+
+      const start = new Date(cycleStartDate);
+      const end = new Date(raceDate);
+      if (start >= end) {
+        alert('Race date must be after cycle start date');
+        return;
+      }
+
+      // Validate phases
+      const lastPhase = trainingPhases[trainingPhases.length - 1];
+      if (lastPhase.endWeek > totalWeeks) {
+        alert(`Last training phase ends at week ${lastPhase.endWeek}, but cycle is only ${totalWeeks} weeks long`);
+        return;
+      }
+
+      // Save to database
+      await db.setConfig('marathon_name', marathonName);
+      await db.setConfig('cycle_start_date', cycleStartDate);
+      await db.setConfig('race_date', raceDate);
+      await db.setConfig('goal_time', goalTime);
+      await db.setConfig('goal_pace', goalPace.formatted);
+      await db.setConfig('goal_pace_seconds', goalPace.seconds);
+      await db.setConfig('total_weeks', totalWeeks);
+      await db.setConfig('training_phases', trainingPhases);
+
+      setCycleSaved(true);
+      setTimeout(() => setCycleSaved(false), 3000);
+      alert('Training cycle configuration saved! Please reload the page to see changes across the app.');
     } catch (error) {
-      alert(`Error clearing cache: ${error.message}`);
+      alert(`Error saving cycle configuration: ${error.message}`);
     }
   };
 
-  const handleImportAnalysis = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    try {
-      await analysisLoader.importFromFile(file);
-      alert('Analysis imported successfully!');
-      event.target.value = ''; // Reset file input
-    } catch (error) {
-      alert(`Error importing analysis: ${error.message}`);
-    }
+  const handleAddPhase = () => {
+    const lastPhase = trainingPhases[trainingPhases.length - 1];
+    const newStartWeek = lastPhase ? lastPhase.endWeek + 1 : 1;
+    setTrainingPhases([
+      ...trainingPhases,
+      { name: 'New Phase', startWeek: newStartWeek, endWeek: Math.min(newStartWeek + 3, totalWeeks) }
+    ]);
   };
 
-  const handleClearAnalyses = () => {
-    if (confirm('Are you sure you want to clear all coach analyses? This cannot be undone.')) {
-      analysisLoader.clearAnalyses();
-      alert('All analyses cleared!');
+  const handleRemovePhase = (index) => {
+    if (trainingPhases.length <= 1) {
+      alert('Cannot remove the last phase');
+      return;
     }
+    setTrainingPhases(trainingPhases.filter((_, i) => i !== index));
   };
 
-  const handleSyncWellness = async () => {
-    setSyncingWellness(true);
-    try {
-      const today = formatDateISO(new Date());
-      // Fetch today's wellness data from API (force refresh)
-      await intervalsApi.getWellnessData(today, today, false);
-      await loadSettings(); // Refresh stats
-      alert('Today\'s wellness data synced successfully!');
-    } catch (error) {
-      alert(`Error syncing wellness data: ${error.message}`);
-    } finally {
-      setSyncingWellness(false);
+  const handlePhaseChange = (index, field, value) => {
+    const updated = [...trainingPhases];
+    if (field === 'name') {
+      updated[index].name = value;
+    } else {
+      updated[index][field] = parseInt(value) || 1;
     }
+    setTrainingPhases(updated);
   };
+
 
   const handleExportDatabase = async () => {
     if (!confirm('Export entire database to JSON file? This will download a large file (~400MB) that you can commit to git and sync across computers.')) {
@@ -143,52 +222,6 @@ function Settings() {
     }
   };
 
-  const handleCleanStravaStubs = async () => {
-    if (!confirm('Remove all STRAVA stub activities from database? STRAVA activities cannot be accessed via Intervals.icu API and only show as stubs without training data. This action cannot be undone.')) {
-      return;
-    }
-
-    setCleaningStrava(true);
-    try {
-      const result = await cleanStravaStubs();
-      await loadSettings(); // Refresh stats
-      alert(`STRAVA cleanup complete!\n\nRemoved: ${result.removed} STRAVA stub activities\nDeleted: ${result.detailsRemoved} associated details\n\nFuture STRAVA activities will be automatically filtered out.`);
-    } catch (error) {
-      alert(`Error cleaning STRAVA stubs: ${error.message}`);
-    } finally {
-      setCleaningStrava(false);
-    }
-  };
-
-  const handleSyncActivityDetails = async () => {
-    if (!confirm('Fetch all missing activity details from Intervals.icu? This will take several minutes and make ~100+ API calls. The app will remain responsive during sync.')) {
-      return;
-    }
-
-    setSyncingDetails(true);
-    setSyncProgress({ current: 0, total: 0, status: 'Starting...' });
-
-    try {
-      const result = await syncAllActivityDetails((progress) => {
-        setSyncProgress({
-          current: progress.current,
-          total: progress.total,
-          status: progress.success
-            ? `Fetching ${progress.activity}...`
-            : `Failed: ${progress.activity}`
-        });
-      });
-
-      await loadSettings(); // Refresh stats
-      setSyncProgress(null);
-      alert(`Sync complete!\n\nFetched: ${result.fetched} activities\nFailed: ${result.failed} activities\n\nNow you can export the database with full data.`);
-    } catch (error) {
-      setSyncProgress(null);
-      alert(`Error syncing activity details: ${error.message}`);
-    } finally {
-      setSyncingDetails(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -241,68 +274,169 @@ function Settings() {
         </div>
       </div>
 
-      {/* Training Cycle */}
+      {/* Training Cycle Configuration */}
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Training Cycle - Porto Alegre 2026</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-gray-700">Cycle Start</span>
-            <span className="font-semibold text-gray-900">{TRAINING_CYCLE.startDate}</span>
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-gray-700">Race Date</span>
-            <span className="font-semibold text-gray-900">{TRAINING_CYCLE.raceDate}</span>
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-gray-700">Total Weeks</span>
-            <span className="font-semibold text-gray-900">{TRAINING_CYCLE.totalWeeks} weeks</span>
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-gray-700">Goal Time</span>
-            <span className="font-semibold text-primary-600">2:50:00</span>
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-gray-700">Goal Pace</span>
-            <span className="font-semibold text-primary-600">4:02/km</span>
-          </div>
-        </div>
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-          <p className="font-medium mb-2">Training Phases:</p>
-          <ul className="space-y-1">
-            <li>• Weeks 1-4: Base Build</li>
-            <li>• Weeks 5-8: Build</li>
-            <li>• Weeks 9-16: Peak</li>
-            <li>• Weeks 17-20: Taper</li>
-          </ul>
-        </div>
-      </div>
-
-      {/* Coach Analysis Management */}
-      <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Coach Analysis</h3>
-        <div className="space-y-3">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Marathon Training Cycle</h3>
+        <div className="space-y-4">
+          {/* Marathon Name */}
           <div>
-            <label htmlFor="analysisFile" className="btn-secondary w-full block text-center cursor-pointer">
-              📁 Import Analysis JSON
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Marathon Name
             </label>
             <input
-              id="analysisFile"
-              type="file"
-              accept=".json"
-              onChange={handleImportAnalysis}
-              className="hidden"
-              ref={(ref) => setFileInputRef(ref)}
+              type="text"
+              value={marathonName}
+              onChange={(e) => setMarathonName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="e.g., Porto Alegre 2026"
             />
-            <p className="mt-2 text-xs text-gray-500">
-              Import coach analysis JSON files to track your progress
+          </div>
+
+          {/* Cycle Start Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Cycle Start Date
+            </label>
+            <input
+              type="date"
+              value={cycleStartDate}
+              onChange={(e) => setCycleStartDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Race Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Race Date
+            </label>
+            <input
+              type="date"
+              value={raceDate}
+              onChange={(e) => setRaceDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Total Weeks (computed) */}
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-gray-700">
+              <span className="font-medium">Total Training Weeks:</span> {totalWeeks} weeks
+            </p>
+          </div>
+
+          {/* Goal Time */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Goal Time (HH:MM:SS)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="0"
+                max="23"
+                value={goalTimeHours}
+                onChange={(e) => setGoalTimeHours(e.target.value)}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="HH"
+              />
+              <span className="text-2xl text-gray-400">:</span>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={goalTimeMinutes}
+                onChange={(e) => setGoalTimeMinutes(e.target.value)}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="MM"
+              />
+              <span className="text-2xl text-gray-400">:</span>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={goalTimeSeconds}
+                onChange={(e) => setGoalTimeSeconds(e.target.value)}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="SS"
+              />
+            </div>
+          </div>
+
+          {/* Goal Pace (computed) */}
+          <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-sm text-gray-700">
+              <span className="font-medium">Goal Pace:</span>{' '}
+              <span className="text-primary-600 font-bold text-lg">{goalPace.formatted}</span>
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Based on {goalTime} for 42.195km marathon
+            </p>
+          </div>
+
+          {/* Training Phases */}
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Training Phases
+              </label>
+              <button
+                onClick={handleAddPhase}
+                className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+              >
+                + Add Phase
+              </button>
+            </div>
+            <div className="space-y-3">
+              {trainingPhases.map((phase, index) => (
+                <div key={index} className="flex gap-2 items-center p-3 bg-gray-50 rounded-lg">
+                  <input
+                    type="text"
+                    value={phase.name}
+                    onChange={(e) => handlePhaseChange(index, 'name', e.target.value)}
+                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500"
+                    placeholder="Phase name"
+                  />
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-600">Week</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalWeeks}
+                      value={phase.startWeek}
+                      onChange={(e) => handlePhaseChange(index, 'startWeek', e.target.value)}
+                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500"
+                    />
+                    <span className="text-xs text-gray-600">to</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalWeeks}
+                      value={phase.endWeek}
+                      onChange={(e) => handlePhaseChange(index, 'endWeek', e.target.value)}
+                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleRemovePhase(index)}
+                    className="text-red-600 hover:text-red-700 text-sm"
+                    title="Remove phase"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Define your training phases by week number. Each phase should have a name and week range.
             </p>
           </div>
 
           <button
-            onClick={handleClearAnalyses}
-            className="w-full px-4 py-2 bg-red-50 text-red-700 font-medium rounded-lg hover:bg-red-100 transition-colors"
+            onClick={handleSaveCycle}
+            className="btn-primary w-full"
           >
-            Clear All Analyses
+            {cycleSaved ? '✓ Cycle Saved!' : 'Save Training Cycle'}
           </button>
         </div>
       </div>
@@ -417,65 +551,6 @@ function Settings() {
             <li>Continue training on Computer B</li>
             <li>Repeat as needed across computers</li>
           </ol>
-        </div>
-      </div>
-
-      {/* Data Management */}
-      <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Management</h3>
-        <div className="space-y-3">
-          <button
-            onClick={handleCleanStravaStubs}
-            disabled={cleaningStrava}
-            className="w-full px-4 py-2 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
-          >
-            {cleaningStrava ? '⏳ Cleaning...' : '🧹 Clean STRAVA Stubs'}
-          </button>
-          <p className="text-xs text-gray-500 mb-3">
-            Remove STRAVA stub activities (they cannot be accessed via Intervals.icu API). Future STRAVA activities will be automatically filtered.
-          </p>
-
-          <div className="border-t border-gray-200 pt-3">
-            <button
-              onClick={handleSyncActivityDetails}
-              disabled={syncingDetails}
-              className="btn-primary w-full disabled:opacity-50 bg-green-600 hover:bg-green-700"
-            >
-              {syncingDetails ? '⏳ Syncing Activity Details...' : '🔄 Sync All Activity Details'}
-            </button>
-            {syncProgress && (
-              <div className="text-xs text-gray-700 bg-blue-50 p-2 rounded mt-2">
-                <p className="font-semibold">Progress: {syncProgress.current}/{syncProgress.total}</p>
-                <p className="text-gray-600">{syncProgress.status}</p>
-              </div>
-            )}
-            <p className="text-xs text-gray-500 mt-2">
-              Fetch full activity data (intervals, power, HR, etc.) from Intervals.icu for non-STRAVA activities.
-            </p>
-          </div>
-
-          <div className="border-t border-gray-200 pt-3">
-            <button
-              onClick={handleSyncWellness}
-              disabled={syncingWellness}
-              className="btn-primary w-full disabled:opacity-50"
-            >
-              {syncingWellness ? '⏳ Syncing...' : '💪 Sync Today\'s Wellness'}
-            </button>
-            <p className="text-xs text-gray-500 mt-2">
-              Force refresh today's wellness data (sleep, HRV, resting HR) from Intervals.icu
-            </p>
-          </div>
-
-          <button
-            onClick={handleClearCache}
-            className="btn-secondary w-full"
-          >
-            Clear API Cache
-          </button>
-          <p className="text-xs text-gray-500">
-            Clear temporary cache to force refresh from API
-          </p>
         </div>
       </div>
 

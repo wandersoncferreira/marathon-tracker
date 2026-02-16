@@ -28,9 +28,9 @@ function TrainingLog() {
     }
   }, [activities]);
 
-  const handleSync = async () => {
+  const handleSync = async (forceFullSync = false) => {
     setSyncing(true);
-    await sync(); // sync() now also syncs messages
+    await sync(forceFullSync); // sync() now also syncs messages
     setSyncing(false);
   };
 
@@ -67,11 +67,20 @@ function TrainingLog() {
         <h2 className="text-2xl font-bold text-gray-900">Training Log</h2>
         <div className="flex gap-2">
           <button
-            onClick={handleSync}
+            onClick={() => handleSync(false)}
             disabled={syncing}
             className="text-green-600 hover:text-green-700 text-sm font-medium disabled:opacity-50"
+            title="Sync only new activities since last sync"
           >
-            {syncing ? '⏳ Syncing...' : '🔄 Sync from API'}
+            {syncing ? '⏳ Syncing...' : '🔄 Sync New'}
+          </button>
+          <button
+            onClick={() => handleSync(true)}
+            disabled={syncing}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
+            title="Force full sync of all activities in date range"
+          >
+            {syncing ? '⏳ Syncing...' : '🔄 Force Full Sync'}
           </button>
         </div>
       </div>

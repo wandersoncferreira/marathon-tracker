@@ -229,11 +229,12 @@ class IntervalsAPI {
   }
 
   /**
-   * Sync messages for multiple activities
+   * Sync messages for multiple activities (only fetch if not in database)
    * @param {Array} activities - Array of activity objects
+   * @param {boolean} forceRefresh - If true, fetch all messages even if cached
    * @returns {Promise<number>} Number of activities with messages synced
    */
-  async syncActivityMessages(activities) {
+  async syncActivityMessages(activities, forceRefresh = false) {
     if (!activities || activities.length === 0) {
       return 0;
     }
@@ -244,18 +245,36 @@ class IntervalsAPI {
     }
 
     let syncedCount = 0;
+    let skippedCount = 0;
 
     // Fetch messages for each activity (with rate limiting)
     for (const activity of activities) {
       try {
+        // Check if messages already exist in database
+        if (!forceRefresh) {
+          const cachedMessages = await db.getActivityMessages(activity.id);
+          if (cachedMessages && cachedMessages.length > 0) {
+            skippedCount++;
+            continue; // Skip, already have messages
+          }
+        }
+
+        // Only fetch if not cached or forcing refresh
         await this.getActivityMessages(activity.id, false); // Force fetch from API
         syncedCount++;
 
         // Rate limiting: wait 100ms between requests to avoid hitting API limits
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error('Error syncing messages:', error);
+        console.error(`Error syncing messages for activity ${activity.id}:`, error);
       }
+    }
+
+    if (skippedCount > 0) {
+      console.log(`Skipped ${skippedCount} activities with cached messages`);
+    }
+    if (syncedCount > 0) {
+      console.log(`Fetched messages for ${syncedCount} activities`);
     }
 
     return syncedCount;
@@ -383,17 +402,37 @@ class IntervalsAPI {
 
   /**
    * Sync activities - force refresh from API and update database
+   * @param {string} startDate - ISO date string (YYYY-MM-DD)
+   * @param {string} endDate - ISO date string (YYYY-MM-DD)
+   * @param {boolean} forceFullSync - If true, sync entire date range. If false, only sync from latest activity date.
+   * @returns {Promise<Array>}
    */
-  async syncActivities(startDate, endDate) {
+  async syncActivities(startDate, endDate, forceFullSync = false) {
     const configured = await this.isConfigured();
     if (!configured) {
       throw new Error('Intervals.icu not configured');
     }
 
+    let syncStartDate = startDate;
+
+    // If not forcing full sync, check for incremental sync
+    if (!forceFullSync) {
+      const latestDate = await db.getLatestActivityDate();
+      if (latestDate) {
+        // Start syncing from the day of the latest activity (to catch any updates)
+        syncStartDate = latestDate;
+        console.log(`Incremental sync: starting from ${syncStartDate} (latest activity in DB)`);
+      } else {
+        console.log('No activities in database, performing full sync');
+      }
+    } else {
+      console.log('Force full sync requested');
+    }
+
     await this.loadConfig();
     const endpoint = `/athlete/${this.config.athleteId}/activities`;
     const params = new URLSearchParams({
-      oldest: startDate,
+      oldest: syncStartDate,
       newest: endDate,
     });
 

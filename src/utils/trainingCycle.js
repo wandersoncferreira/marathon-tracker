@@ -1,29 +1,87 @@
 /**
  * Training Cycle Configuration
- * Porto Alegre Marathon 2026
+ * Loads from database config, falls back to Porto Alegre 2026 defaults
  */
 
-// Training cycle dates
-export const TRAINING_CYCLE = {
-  startDate: '2026-01-19',      // Cycle start
-  raceDate: '2026-05-31',       // Porto Alegre Marathon
-  totalWeeks: 20,               // Full training cycle
+import { db } from '../services/database';
 
-  // Phase definitions (weeks from start)
+// Default training cycle (Porto Alegre 2026)
+const DEFAULT_TRAINING_CYCLE = {
+  startDate: '2026-01-19',
+  raceDate: '2026-05-31',
+  totalWeeks: 20,
+  marathonName: 'Porto Alegre 2026',
   phases: {
     base: { start: 1, end: 4, name: 'Base Build' },
     build: { start: 5, end: 8, name: 'Build' },
     peak: { start: 9, end: 16, name: 'Peak' },
     taper: { start: 17, end: 20, name: 'Taper' },
   },
-
-  // Marathon goal
   goal: {
     time: '2:50:00',
     pace: '4:02/km',
     paceSeconds: 242,
   },
 };
+
+// Cached config
+let cachedConfig = null;
+
+/**
+ * Load training cycle from database config
+ */
+export async function loadTrainingCycle() {
+  try {
+    const marathonName = await db.getConfig('marathon_name', DEFAULT_TRAINING_CYCLE.marathonName);
+    const startDate = await db.getConfig('cycle_start_date', DEFAULT_TRAINING_CYCLE.startDate);
+    const raceDate = await db.getConfig('race_date', DEFAULT_TRAINING_CYCLE.raceDate);
+    const totalWeeks = await db.getConfig('total_weeks', DEFAULT_TRAINING_CYCLE.totalWeeks);
+    const goalTime = await db.getConfig('goal_time', DEFAULT_TRAINING_CYCLE.goal.time);
+    const goalPace = await db.getConfig('goal_pace', DEFAULT_TRAINING_CYCLE.goal.pace);
+    const goalPaceSeconds = await db.getConfig('goal_pace_seconds', DEFAULT_TRAINING_CYCLE.goal.paceSeconds);
+    const phasesArray = await db.getConfig('training_phases', null);
+
+    // Convert phases array to phases object
+    let phases = DEFAULT_TRAINING_CYCLE.phases;
+    if (phasesArray && Array.isArray(phasesArray)) {
+      phases = {};
+      phasesArray.forEach((phase, index) => {
+        const key = phase.name.toLowerCase().replace(/\s+/g, '_');
+        phases[key] = {
+          start: phase.startWeek,
+          end: phase.endWeek,
+          name: phase.name
+        };
+      });
+    }
+
+    cachedConfig = {
+      marathonName,
+      startDate,
+      raceDate,
+      totalWeeks,
+      phases,
+      goal: {
+        time: goalTime,
+        pace: goalPace,
+        paceSeconds: goalPaceSeconds,
+      },
+    };
+
+    return cachedConfig;
+  } catch (error) {
+    console.error('Error loading training cycle config:', error);
+    return DEFAULT_TRAINING_CYCLE;
+  }
+}
+
+// Training cycle - will be loaded from database
+export let TRAINING_CYCLE = DEFAULT_TRAINING_CYCLE;
+
+// Initialize on module load
+loadTrainingCycle().then(config => {
+  TRAINING_CYCLE = config;
+});
 
 /**
  * Get current training week (1-based)

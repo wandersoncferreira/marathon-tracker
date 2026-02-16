@@ -147,6 +147,22 @@ class MarathonTrackerDB extends Dexie {
   }
 
   /**
+   * Get the most recent activity date in the database
+   */
+  async getLatestActivityDate() {
+    try {
+      const latest = await this.activities
+        .orderBy('start_date_local')
+        .reverse()
+        .first();
+      return latest ? latest.start_date_local : null;
+    } catch (error) {
+      console.error('Error getting latest activity date:', error);
+      return null;
+    }
+  }
+
+  /**
    * Store activity details
    */
   async storeActivityDetails(activityId, details) {
