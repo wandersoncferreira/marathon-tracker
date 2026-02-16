@@ -6,6 +6,7 @@ import { getCurrentWeek, formatDateISO } from '../utils/dateHelpers';
 import { getCycleStats, getWeeklyMPTarget } from '../utils/trainingCycle';
 import { intervalsApi } from '../services/intervalsApi';
 import { analyzeWellnessReadiness, calculateWellnessBaseline } from '../utils/wellnessAnalysis';
+import { db } from '../services/database';
 
 function Dashboard() {
   const { activities, loading: activitiesLoading, sync } = useActivities(90, true, true);
@@ -31,12 +32,30 @@ function Dashboard() {
   const fetchTodayWellness = async (useCache = true) => {
     try {
       const today = formatDateISO(new Date());
+      const cacheKey = `readiness_${today}`;
+
+      // Check cache first (if useCache is true)
+      if (useCache) {
+        const cachedReadiness = await db.getCached(cacheKey);
+        if (cachedReadiness) {
+          console.log('📊 Using cached readiness for', today);
+          setTodayReadiness(cachedReadiness);
+          return;
+        }
+      } else {
+        // Force refresh: clear existing cache
+        await db.cache.delete(cacheKey);
+        console.log('🗑️ Cleared cached readiness for', today);
+      }
+
+      console.log('🔄 Computing readiness for', today);
+
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const startDate = formatDateISO(sevenDaysAgo);
 
       // Fetch wellness data for last 7 days (for baseline) + today
-      const wellnessData = await intervalsApi.getWellnessData(startDate, today, useCache);
+      const wellnessData = await intervalsApi.getWellnessData(startDate, today, true);
 
       if (wellnessData && wellnessData.length > 0) {
         // Find today's data
@@ -49,24 +68,31 @@ function Dashboard() {
 
           // Analyze readiness
           const readiness = analyzeWellnessReadiness(todayData, baseline);
+
+          // Cache the computed readiness for 24 hours
+          await db.setCached(cacheKey, readiness, 24 * 60 * 60 * 1000);
+          console.log('✅ Cached readiness for', today);
+
           setTodayReadiness(readiness);
         } else {
-          setTodayReadiness({
+          const noDataReadiness = {
             score: null,
             status: 'unknown',
             message: 'No wellness data for today',
             insights: ['💡 Sync wellness data from Intervals.icu'],
             metrics: {},
-          });
+          };
+          setTodayReadiness(noDataReadiness);
         }
       } else {
-        setTodayReadiness({
+        const noDataReadiness = {
           score: null,
           status: 'unknown',
           message: 'No wellness data available',
           insights: ['💡 Sync wellness data from Intervals.icu'],
           metrics: {},
-        });
+        };
+        setTodayReadiness(noDataReadiness);
       }
     } catch (error) {
       console.error('Error fetching wellness data:', error);
