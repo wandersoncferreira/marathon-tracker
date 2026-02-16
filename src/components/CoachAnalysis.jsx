@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import useAnalyses from '../hooks/useAnalyses';
 import { formatDate } from '../utils/dateHelpers';
+import CoachPromptModal from './CoachPromptModal';
 
 function CoachAnalysis() {
   const { analyses, loading, error, importFromFile } = useAnalyses();
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false);
 
   const handleImport = async (event) => {
     const file = event.target.files[0];
@@ -41,7 +43,30 @@ function CoachAnalysis() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Coach Analysis</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900">Coach Analysis</h2>
+          <button
+            onClick={() => setShowPromptModal(true)}
+            className="text-gray-400 hover:text-primary-600 transition-colors"
+            title="View coach prompt"
+            aria-label="View coach prompt"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+        </div>
         <label className="btn-primary text-sm cursor-pointer">
           {importing ? 'Importing...' : '+ Import'}
           <input
@@ -53,6 +78,11 @@ function CoachAnalysis() {
           />
         </label>
       </div>
+
+      <CoachPromptModal
+        isOpen={showPromptModal}
+        onClose={() => setShowPromptModal(false)}
+      />
 
       {analyses.length === 0 ? (
         <div className="card text-center py-12">
