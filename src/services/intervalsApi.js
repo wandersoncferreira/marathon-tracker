@@ -100,20 +100,23 @@ class IntervalsAPI {
    * @returns {Promise<Array>}
    */
   async getActivities(startDate, endDate, useCache = true) {
-    const configured = await this.isConfigured();
-    if (!configured) {
-      throw new Error('Intervals.icu not configured');
-    }
-
-    // First, try to get from database
+    // First, try to get from database (no API needed)
     if (useCache) {
       const dbActivities = await db.getActivities(startDate, endDate);
       if (dbActivities.length > 0) {
+        console.log(`📊 Loaded ${dbActivities.length} activities from database`);
         return dbActivities;
       }
     }
 
-    // If not in database or cache disabled, fetch from API
+    // Database is empty, need to fetch from API
+    const configured = await this.isConfigured();
+    if (!configured) {
+      console.log('⚠️ No activities in database and Intervals.icu not configured');
+      return []; // Return empty array instead of throwing
+    }
+
+    // Fetch from API
     await this.loadConfig();
     const endpoint = `/athlete/${this.config.athleteId}/activities`;
     const params = new URLSearchParams({
@@ -143,17 +146,19 @@ class IntervalsAPI {
    * @returns {Promise<Object>}
    */
   async getActivityDetails(activityId, useCache = true) {
-    const configured = await this.isConfigured();
-    if (!configured) {
-      throw new Error('Intervals.icu not configured');
-    }
-
-    // Try database first
+    // Try database first (no API needed)
     if (useCache) {
       const dbDetails = await db.getActivityDetails(activityId);
       if (dbDetails) {
         return dbDetails;
       }
+    }
+
+    // Database is empty, need to fetch from API
+    const configured = await this.isConfigured();
+    if (!configured) {
+      console.log('⚠️ No activity details in database and Intervals.icu not configured');
+      return null;
     }
 
     // Fetch from API
@@ -175,17 +180,19 @@ class IntervalsAPI {
    * @returns {Promise<Object>}
    */
   async getActivityIntervals(activityId, useCache = true) {
-    const configured = await this.isConfigured();
-    if (!configured) {
-      throw new Error('Intervals.icu not configured');
-    }
-
-    // Try database first (permanent storage)
+    // Try database first (no API needed)
     if (useCache) {
       const details = await db.getActivityDetails(activityId);
       if (details && details.intervals) {
         return details.intervals;
       }
+    }
+
+    // Database is empty, need to fetch from API
+    const configured = await this.isConfigured();
+    if (!configured) {
+      console.log('⚠️ No activity intervals in database and Intervals.icu not configured');
+      return null;
     }
 
     // Fetch from API
@@ -208,17 +215,20 @@ class IntervalsAPI {
    * @returns {Promise<Array>}
    */
   async getWellnessData(startDate, endDate, useCache = true) {
-    const configured = await this.isConfigured();
-    if (!configured) {
-      throw new Error('Intervals.icu not configured');
-    }
-
-    // Try database first
+    // First, try to get from database (no API needed)
     if (useCache) {
       const dbWellness = await db.getWellness(startDate, endDate);
       if (dbWellness.length > 0) {
+        console.log(`📊 Loaded ${dbWellness.length} wellness records from database`);
         return dbWellness;
       }
+    }
+
+    // Database is empty, need to fetch from API
+    const configured = await this.isConfigured();
+    if (!configured) {
+      console.log('⚠️ No wellness data in database and Intervals.icu not configured');
+      return []; // Return empty array instead of throwing
     }
 
     // Fetch from API - use query parameters instead of path
