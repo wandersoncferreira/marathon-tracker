@@ -5,6 +5,7 @@ import { db } from '../services/database';
 import { getCycleStats, TRAINING_CYCLE } from '../utils/trainingCycle';
 import { formatDateISO } from '../utils/dateHelpers';
 import { downloadDatabaseExport, uploadDatabaseImport, getDatabaseExportStats } from '../services/databaseSync';
+import { syncAllActivityDetails } from '../utils/syncAllActivityDetails';
 
 function Settings() {
   const [apiKey, setApiKey] = useState('');
@@ -18,6 +19,8 @@ function Settings() {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [dbImportInputRef, setDbImportInputRef] = useState(null);
+  const [syncingDetails, setSyncingDetails] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(null);
 
   useEffect(() => {
     loadSettings();
@@ -135,6 +138,36 @@ function Settings() {
       event.target.value = '';
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleSyncActivityDetails = async () => {
+    if (!confirm('Fetch all missing activity details from Intervals.icu? This will take several minutes and make ~100+ API calls. The app will remain responsive during sync.')) {
+      return;
+    }
+
+    setSyncingDetails(true);
+    setSyncProgress({ current: 0, total: 0, status: 'Starting...' });
+
+    try {
+      const result = await syncAllActivityDetails((progress) => {
+        setSyncProgress({
+          current: progress.current,
+          total: progress.total,
+          status: progress.success
+            ? `Fetching ${progress.activity}...`
+            : `Failed: ${progress.activity}`
+        });
+      });
+
+      await loadSettings(); // Refresh stats
+      setSyncProgress(null);
+      alert(`Sync complete!\n\nFetched: ${result.fetched} activities\nFailed: ${result.failed} activities\n\nNow you can export the database with full data.`);
+    } catch (error) {
+      setSyncProgress(null);
+      alert(`Error syncing activity details: ${error.message}`);
+    } finally {
+      setSyncingDetails(false);
     }
   };
 
@@ -373,15 +406,34 @@ function Settings() {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Management</h3>
         <div className="space-y-3">
           <button
-            onClick={handleSyncWellness}
-            disabled={syncingWellness}
-            className="btn-primary w-full disabled:opacity-50"
+            onClick={handleSyncActivityDetails}
+            disabled={syncingDetails}
+            className="btn-primary w-full disabled:opacity-50 bg-green-600 hover:bg-green-700"
           >
-            {syncingWellness ? '⏳ Syncing...' : '💪 Sync Today\'s Wellness'}
+            {syncingDetails ? '⏳ Syncing Activity Details...' : '🔄 Sync All Activity Details'}
           </button>
+          {syncProgress && (
+            <div className="text-xs text-gray-700 bg-blue-50 p-2 rounded">
+              <p className="font-semibold">Progress: {syncProgress.current}/{syncProgress.total}</p>
+              <p className="text-gray-600">{syncProgress.status}</p>
+            </div>
+          )}
           <p className="text-xs text-gray-500 mb-3">
-            Force refresh today's wellness data (sleep, HRV, resting HR) from Intervals.icu
+            Fetch full activity data (intervals, power, HR, etc.) from Intervals.icu for all activities. Required before exporting database.
           </p>
+
+          <div className="border-t border-gray-200 pt-3">
+            <button
+              onClick={handleSyncWellness}
+              disabled={syncingWellness}
+              className="btn-primary w-full disabled:opacity-50"
+            >
+              {syncingWellness ? '⏳ Syncing...' : '💪 Sync Today\'s Wellness'}
+            </button>
+            <p className="text-xs text-gray-500 mt-2">
+              Force refresh today's wellness data (sleep, HRV, resting HR) from Intervals.icu
+            </p>
+          </div>
 
           <button
             onClick={handleClearCache}
