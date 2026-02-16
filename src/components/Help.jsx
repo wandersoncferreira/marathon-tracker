@@ -1,6 +1,32 @@
 function Help() {
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Important Disclaimer */}
+      <div className="card bg-red-50 border-2 border-red-400">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl">⚠️</span>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-red-900 mb-2">
+              Personal Project Disclaimer
+            </h3>
+            <div className="text-sm text-red-800 space-y-2">
+              <p>
+                <strong>This project was built to fit my own specific training needs and workflow.</strong>
+              </p>
+              <p>
+                It may not be fully appropriate or suitable for other people's training goals, data structures,
+                or use cases. I have not thoroughly tested all features to ensure they adapt correctly to
+                different athletes' data, training phases, or marathon goals.
+              </p>
+              <p>
+                <strong>Use at your own discretion.</strong> You may need to adjust settings, calculations,
+                or expectations to match your specific training plan and goals.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">How to Use Marathon Tracker</h2>
         <p className="text-gray-600">
