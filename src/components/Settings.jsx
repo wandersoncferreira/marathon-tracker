@@ -6,6 +6,7 @@ import { getCycleStats, TRAINING_CYCLE } from '../utils/trainingCycle';
 import { formatDateISO } from '../utils/dateHelpers';
 import { downloadDatabaseExport, uploadDatabaseImport, getDatabaseExportStats } from '../services/databaseSync';
 import { syncAllActivityDetails } from '../utils/syncAllActivityDetails';
+import { cleanStravaStubs } from '../utils/cleanStravaStubs';
 
 function Settings() {
   const [apiKey, setApiKey] = useState('');
@@ -21,6 +22,7 @@ function Settings() {
   const [dbImportInputRef, setDbImportInputRef] = useState(null);
   const [syncingDetails, setSyncingDetails] = useState(false);
   const [syncProgress, setSyncProgress] = useState(null);
+  const [cleaningStrava, setCleaningStrava] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -138,6 +140,23 @@ function Settings() {
       event.target.value = '';
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleCleanStravaStubs = async () => {
+    if (!confirm('Remove all STRAVA stub activities from database? STRAVA activities cannot be accessed via Intervals.icu API and only show as stubs without training data. This action cannot be undone.')) {
+      return;
+    }
+
+    setCleaningStrava(true);
+    try {
+      const result = await cleanStravaStubs();
+      await loadSettings(); // Refresh stats
+      alert(`STRAVA cleanup complete!\n\nRemoved: ${result.removed} STRAVA stub activities\nDeleted: ${result.detailsRemoved} associated details\n\nFuture STRAVA activities will be automatically filtered out.`);
+    } catch (error) {
+      alert(`Error cleaning STRAVA stubs: ${error.message}`);
+    } finally {
+      setCleaningStrava(false);
     }
   };
 
@@ -406,21 +425,34 @@ function Settings() {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Management</h3>
         <div className="space-y-3">
           <button
-            onClick={handleSyncActivityDetails}
-            disabled={syncingDetails}
-            className="btn-primary w-full disabled:opacity-50 bg-green-600 hover:bg-green-700"
+            onClick={handleCleanStravaStubs}
+            disabled={cleaningStrava}
+            className="w-full px-4 py-2 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
           >
-            {syncingDetails ? '⏳ Syncing Activity Details...' : '🔄 Sync All Activity Details'}
+            {cleaningStrava ? '⏳ Cleaning...' : '🧹 Clean STRAVA Stubs'}
           </button>
-          {syncProgress && (
-            <div className="text-xs text-gray-700 bg-blue-50 p-2 rounded">
-              <p className="font-semibold">Progress: {syncProgress.current}/{syncProgress.total}</p>
-              <p className="text-gray-600">{syncProgress.status}</p>
-            </div>
-          )}
           <p className="text-xs text-gray-500 mb-3">
-            Fetch full activity data (intervals, power, HR, etc.) from Intervals.icu for all activities. Required before exporting database.
+            Remove STRAVA stub activities (they cannot be accessed via Intervals.icu API). Future STRAVA activities will be automatically filtered.
           </p>
+
+          <div className="border-t border-gray-200 pt-3">
+            <button
+              onClick={handleSyncActivityDetails}
+              disabled={syncingDetails}
+              className="btn-primary w-full disabled:opacity-50 bg-green-600 hover:bg-green-700"
+            >
+              {syncingDetails ? '⏳ Syncing Activity Details...' : '🔄 Sync All Activity Details'}
+            </button>
+            {syncProgress && (
+              <div className="text-xs text-gray-700 bg-blue-50 p-2 rounded mt-2">
+                <p className="font-semibold">Progress: {syncProgress.current}/{syncProgress.total}</p>
+                <p className="text-gray-600">{syncProgress.status}</p>
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              Fetch full activity data (intervals, power, HR, etc.) from Intervals.icu for non-STRAVA activities.
+            </p>
+          </div>
 
           <div className="border-t border-gray-200 pt-3">
             <button

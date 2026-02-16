@@ -10,17 +10,18 @@ export async function syncAllActivityDetails(onProgress = null) {
   try {
     console.log('🔄 Starting activity details sync...');
 
-    // Get all activities
+    // Get all activities (excluding STRAVA stubs)
     const allActivities = await db.activities.toArray();
-    console.log(`📊 Found ${allActivities.length} activities`);
+    const nonStravaActivities = allActivities.filter(a => a.source !== 'STRAVA');
+    console.log(`📊 Found ${allActivities.length} activities (${nonStravaActivities.length} non-STRAVA)`);
 
     // Get existing details
     const existingDetails = await db.activityDetails.toArray();
     const existingIds = new Set(existingDetails.map(d => d.id));
     console.log(`📊 Found ${existingDetails.length} existing details`);
 
-    // Find activities missing details
-    const missingDetails = allActivities.filter(a => !existingIds.has(a.id));
+    // Find activities missing details (excluding STRAVA)
+    const missingDetails = nonStravaActivities.filter(a => !existingIds.has(a.id));
     console.log(`📊 Need to fetch ${missingDetails.length} activity details`);
 
     if (missingDetails.length === 0) {

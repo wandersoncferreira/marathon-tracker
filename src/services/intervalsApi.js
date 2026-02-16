@@ -123,12 +123,17 @@ class IntervalsAPI {
 
     const data = await this.request(`${endpoint}?${params}`);
 
-    // Store in database
-    if (data && data.length > 0) {
-      await db.storeActivities(data);
+    // Filter out STRAVA activities (they are stubs without full data)
+    const nonStravaActivities = data.filter(activity => activity.source !== 'STRAVA');
+
+    console.log(`📊 Fetched ${data.length} activities, filtered out ${data.length - nonStravaActivities.length} STRAVA stubs`);
+
+    // Store in database (only non-STRAVA)
+    if (nonStravaActivities && nonStravaActivities.length > 0) {
+      await db.storeActivities(nonStravaActivities);
     }
 
-    return data;
+    return nonStravaActivities;
   }
 
   /**
