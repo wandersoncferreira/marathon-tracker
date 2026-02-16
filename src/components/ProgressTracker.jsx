@@ -14,12 +14,46 @@ import { intervalsApi } from '../services/intervalsApi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function ProgressTracker() {
-  const { activities, loading } = useActivities(90, true, true); // Use full cycle
+  // Use training cycle activities for main metrics (weekly progress, totals, fitness)
+  const { activities, loading } = useActivities(90, true, true); // Use full training cycle
   const { analyses } = useAnalyses();
   const [weeklyData, setWeeklyData] = useState([]);
   const [totalStats, setTotalStats] = useState(null);
   const [cycleStats, setCycleStats] = useState(null);
   const [fitnessData, setFitnessData] = useState([]);
+  const [hrByPaceData, setHrByPaceData] = useState([]);
+  const [historicalActivities, setHistoricalActivities] = useState([]);
+  const [syncingHistorical, setSyncingHistorical] = useState(false);
+  const [activityDetails, setActivityDetails] = useState({}); // Store activities by trimester and pace
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState(null);
+
+  // Load historical activities from Jan 1, 2025 ONLY for HR by Pace chart
+  useEffect(() => {
+    async function loadHistoricalActivities() {
+      try {
+        const startDate = '2025-01-01';
+        const today = formatDateISO(new Date());
+
+        // Check if we have data in database first
+        let allActivities = await intervalsApi.getActivities(startDate, today);
+
+        // If database is empty or has very few activities, sync from API
+        if (allActivities.length < 10) {
+          console.log('Syncing historical activities from Intervals.icu API for HR by Pace chart...');
+          allActivities = await intervalsApi.syncActivities(startDate, today);
+        }
+
+        const runningActivities = allActivities
+          .filter(a => a.type === 'Run')
+          .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+        setHistoricalActivities(runningActivities);
+      } catch (error) {
+        console.error('Error loading historical activities:', error);
+      }
+    }
+    loadHistoricalActivities();
+  }, []);
 
   useEffect(() => {
     const calculateProgressStats = async () => {
@@ -144,6 +178,236 @@ function ProgressTracker() {
     calculateProgressStats();
   }, [activities, analyses]);
 
+  // Calculate HR by Pace data separately using historical activities
+  useEffect(() => {
+    if (historicalActivities.length > 0) {
+      const hrByPace = calculateHRByPace(historicalActivities);
+      setHrByPaceData(hrByPace);
+    }
+  }, [historicalActivities]);
+
+
+  // Custom dot component with click handler
+  const CustomDot = (props) => {
+    const { cx, cy, payload, dataKey, stroke } = props;
+
+    // Only render if there's data for this point
+    if (!payload || payload[dataKey] === undefined || payload[dataKey] === null) {
+      return null;
+    }
+
+    const handleDotClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const bimester = payload.trimester; // Property name is 'trimester' but value is bimester (B1_2025, etc)
+      const paceLabel = dataKey; // dataKey is the pace range like "4:00-4:15"
+
+      const activities = activityDetails[bimester]?.[paceLabel] || [];
+
+      if (activities.length > 0) {
+        setModalData({
+          trimester: bimester, // Keep property name as 'trimester' for consistency
+          paceGroup: paceLabel,
+          activities,
+        });
+        setShowModal(true);
+      }
+    };
+
+    return (
+      <g>
+        {/* Larger invisible clickable area */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={12}
+          fill="transparent"
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={handleDotClick}
+        />
+        {/* Visible dot */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={5}
+          fill={stroke}
+          stroke="white"
+          strokeWidth={2}
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={handleDotClick}
+        />
+      </g>
+    );
+  };
+
+  // Sync historical data from API (complete sync)
+  const handleSyncHistorical = async () => {
+    setSyncingHistorical(true);
+    try {
+      const startDate = '2025-01-01';
+      const today = formatDateISO(new Date());
+
+      console.log('🔄 Step 1/4: Syncing activities from 2025-01-01...');
+      const allActivities = await intervalsApi.syncActivities(startDate, today);
+
+      const runningActivities = allActivities
+        .filter(a => a.type === 'Run')
+        .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+
+      console.log(`✅ Synced ${runningActivities.length} running activities`);
+
+      // Sync intervals for all activities (in batches)
+      console.log('🔄 Step 2/4: Syncing activity intervals...');
+      const batchSize = 5;
+      for (let i = 0; i < runningActivities.length; i += batchSize) {
+        const batch = runningActivities.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map(async (activity) => {
+            try {
+              await intervalsApi.getActivityIntervals(activity.id, false); // Force API fetch
+            } catch (error) {
+              console.error(`Failed to fetch intervals for activity ${activity.id}:`, error);
+            }
+          })
+        );
+        // Progress indicator
+        console.log(`  ... ${Math.min(i + batchSize, runningActivities.length)}/${runningActivities.length} activities`);
+        // Small delay between batches to avoid rate limiting
+        if (i + batchSize < runningActivities.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      // Sync messages for all activities
+      console.log('🔄 Step 3/4: Syncing activity messages...');
+      await intervalsApi.syncActivityMessages(runningActivities);
+
+      // Sync wellness data
+      console.log('🔄 Step 4/4: Syncing wellness data...');
+      await intervalsApi.getWellnessData(startDate, today, false); // Force API fetch
+
+      console.log('✅ Complete sync finished!');
+
+      setHistoricalActivities(runningActivities);
+      alert(`Successfully synced ${runningActivities.length} activities with all details from 2025-01-01!`);
+    } catch (error) {
+      console.error('Error syncing historical data:', error);
+      alert('Error syncing historical data: ' + error.message);
+    } finally {
+      setSyncingHistorical(false);
+    }
+  };
+
+  // Calculate average HR for different pace groups over time (by bimester)
+  const calculateHRByPace = (activities) => {
+    // Define pace ranges (in seconds per km) - 15 second intervals
+    const paceRanges = [
+      { min: 240, max: 255, label: '4:00-4:15' }, // 240s = 4:00, 255s = 4:15
+      { min: 255, max: 270, label: '4:15-4:30' },
+      { min: 270, max: 285, label: '4:30-4:45' },
+      { min: 285, max: 300, label: '4:45-5:00' },
+      { min: 300, max: 315, label: '5:00-5:15' },
+    ];
+
+    // Function to get bimester label from date
+    const getBimester = (dateString) => {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // 1-12
+
+      let bimester;
+      if (month >= 1 && month <= 2) bimester = 1;  // Jan-Feb
+      else if (month >= 3 && month <= 4) bimester = 2;  // Mar-Apr
+      else if (month >= 5 && month <= 6) bimester = 3;  // May-Jun
+      else if (month >= 7 && month <= 8) bimester = 4;  // Jul-Aug
+      else if (month >= 9 && month <= 10) bimester = 5; // Sep-Oct
+      else bimester = 6; // Nov-Dec
+
+      return `B${bimester}_${year}`;
+    };
+
+    // Group activities by bimester and pace range
+    const dataByBimester = {};
+    const activityDetailsByBimester = {}; // Store activities for modal
+
+    activities.forEach(activity => {
+      if (!activity.average_speed || !activity.average_heartrate) return;
+
+      const bimester = getBimester(activity.start_date_local);
+      const paceSeconds = 1000 / activity.average_speed; // Convert m/s to s/km
+      const hr = activity.average_heartrate;
+
+      // Find which pace range this activity falls into
+      const paceRange = paceRanges.find(range => paceSeconds >= range.min && paceSeconds < range.max);
+      if (!paceRange) return;
+
+      // Initialize bimester entry if needed
+      if (!dataByBimester[bimester]) {
+        dataByBimester[bimester] = {};
+        activityDetailsByBimester[bimester] = {};
+        paceRanges.forEach(range => {
+          dataByBimester[bimester][range.label] = { hrs: [], avg: null };
+          activityDetailsByBimester[bimester][range.label] = [];
+        });
+      }
+
+      // Add HR to this pace range for this bimester
+      dataByBimester[bimester][paceRange.label].hrs.push(hr);
+
+      // Store activity details for modal
+      activityDetailsByBimester[bimester][paceRange.label].push({
+        id: activity.id,
+        name: activity.name,
+        date: activity.start_date_local,
+        distance: activity.distance,
+        pace: paceSeconds,
+        hr: hr,
+        avgPower: activity.average_watts,
+      });
+    });
+
+    // Store activity details globally for modal access
+    setActivityDetails(activityDetailsByBimester);
+
+    // Generate complete list of bimesters from B1_2025 to current
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+    let currentBim;
+    if (currentMonth <= 2) currentBim = 1;
+    else if (currentMonth <= 4) currentBim = 2;
+    else if (currentMonth <= 6) currentBim = 3;
+    else if (currentMonth <= 8) currentBim = 4;
+    else if (currentMonth <= 10) currentBim = 5;
+    else currentBim = 6;
+
+    const allBimesters = [];
+    for (let year = 2025; year <= currentYear; year++) {
+      const maxBim = year === currentYear ? currentBim : 6;
+      for (let bim = 1; bim <= maxBim; bim++) {
+        allBimesters.push(`B${bim}_${year}`);
+      }
+    }
+
+    // Calculate averages and format for chart - include ALL bimesters
+    const chartData = allBimesters.map(bimester => {
+      const entry = { trimester: bimester }; // Keep property name as 'trimester' for XAxis dataKey
+
+      if (dataByBimester[bimester]) {
+        paceRanges.forEach(range => {
+          const hrs = dataByBimester[bimester][range.label].hrs;
+          if (hrs.length > 0) {
+            entry[range.label] = Math.round(hrs.reduce((sum, hr) => sum + hr, 0) / hrs.length);
+          }
+        });
+      }
+
+      return entry;
+    });
+
+    return chartData;
+  };
+
   if (loading && activities.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -239,6 +503,157 @@ function ProgressTracker() {
           </div>
         </div>
       )}
+
+      {/* Heart Rate by Pace Chart */}
+      <div className="card">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900 mb-1">Heart Rate by Pace Group (Bimester Trends)</h3>
+            <p className="text-xs text-gray-500">
+              Average heart rate at different training paces per 2-month period. Lower HR at same pace = improved fitness.
+            </p>
+          </div>
+          <button
+            onClick={handleSyncHistorical}
+            disabled={syncingHistorical}
+            className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 whitespace-nowrap ml-4"
+            title="Sync all activities, intervals, messages, and wellness data from 2025-01-01"
+          >
+            {syncingHistorical ? '⏳ Syncing...' : '🔄 Sync All Data'}
+          </button>
+        </div>
+
+        {hrByPaceData.length > 0 ? (
+          <>
+            <div style={{ width: '100%', height: '300px', position: 'relative' }}>
+              <ResponsiveContainer>
+                <LineChart
+                  data={hrByPaceData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="trimester"
+                    tick={{ fontSize: 11 }}
+                    label={{ value: 'Period', position: 'insideBottom', offset: -5, style: { fontSize: 11 } }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    label={{ value: 'Heart Rate (bpm)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                    domain={['dataMin - 5', 'dataMax + 5']}
+                  />
+                  <Tooltip
+                    offset={15}
+                    allowEscapeViewBox={{ x: true, y: true }}
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      pointerEvents: 'none',
+                      zIndex: 1000
+                    }}
+                    wrapperStyle={{
+                      pointerEvents: 'none',
+                      zIndex: 1000
+                    }}
+                    labelFormatter={(label) => {
+                      // Format B1_2025 as "Bimester 1 2025"
+                      const [bimester, year] = label.split('_');
+                      const bimNumber = bimester.replace('B', '');
+                      const months = ['Jan-Feb', 'Mar-Apr', 'May-Jun', 'Jul-Aug', 'Sep-Oct', 'Nov-Dec'];
+                      return `${months[bimNumber - 1]} ${year}`;
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="4:00-4:15"
+                    stroke="#dc2626"
+                    strokeWidth={2}
+                    name="4:00-4:15 /km"
+                    dot={<CustomDot />}
+                    activeDot={false}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="4:15-4:30"
+                    stroke="#ea580c"
+                    strokeWidth={2}
+                    name="4:15-4:30 /km"
+                    dot={<CustomDot />}
+                    activeDot={false}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="4:30-4:45"
+                    stroke="#d97706"
+                    strokeWidth={2}
+                    name="4:30-4:45 /km"
+                    dot={<CustomDot />}
+                    activeDot={false}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="4:45-5:00"
+                    stroke="#2563eb"
+                    strokeWidth={2}
+                    name="4:45-5:00 /km"
+                    dot={<CustomDot />}
+                    activeDot={false}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="5:00-5:15"
+                    stroke="#7c3aed"
+                    strokeWidth={2}
+                    name="5:00-5:15 /km"
+                    dot={<CustomDot />}
+                    activeDot={false}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="grid grid-cols-4 gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                  <span className="text-gray-600">4:00-4:20 /km</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-amber-600"></div>
+                  <span className="text-gray-600">4:20-4:40 /km</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                  <span className="text-gray-600">4:40-5:00 /km</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-violet-600"></div>
+                  <span className="text-gray-600">5:00-5:20 /km</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 italic">
+                Each point represents the average heart rate across all runs in that pace range during a 2-month period.
+                B1 = Jan-Feb, B2 = Mar-Apr, B3 = May-Jun, B4 = Jul-Aug, B5 = Sep-Oct, B6 = Nov-Dec
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500 mb-4">No historical data yet</p>
+            <p className="text-xs text-gray-400 mb-4">
+              Click "Sync All Data" above to download all activities, intervals, messages, and wellness data from 2025-01-01 onwards.
+              This may take a few minutes depending on how many activities you have.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Weekly Marathon Pace Progress */}
       <div className="card">
@@ -441,6 +856,92 @@ function ProgressTracker() {
                   className="bg-primary-600 rounded-full h-3 transition-all"
                   style={{ width: `${cycleStats.percentComplete}%` }}
                 />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Activity Details */}
+      {showModal && modalData && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-primary-600 text-white px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {(() => {
+                    const [bim, year] = modalData.trimester.split('_');
+                    const bimNumber = bim.replace('B', '');
+                    const months = ['Jan-Feb', 'Mar-Apr', 'May-Jun', 'Jul-Aug', 'Sep-Oct', 'Nov-Dec'];
+                    return `${months[bimNumber - 1]} ${year}`;
+                  })()}
+                </h3>
+                <p className="text-sm text-primary-100">
+                  Pace: {modalData.paceGroup} /km ({modalData.activities.length} activities)
+                </p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-white hover:text-primary-100 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="overflow-y-auto max-h-[calc(80vh-80px)] p-6">
+              <div className="space-y-3">
+                {modalData.activities.map((activity) => {
+                  const distanceKm = (activity.distance / 1000).toFixed(2);
+                  const paceMinutes = Math.floor(activity.pace / 60);
+                  const paceSeconds = Math.round(activity.pace % 60);
+                  const paceStr = `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`;
+                  const dateStr = new Date(activity.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+
+                  return (
+                    <div key={activity.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">
+                            {activity.name || 'Run'}
+                          </h4>
+                          <p className="text-xs text-gray-500">{dateStr}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs text-gray-600">Distance</p>
+                          <p className="font-semibold text-gray-900">{distanceKm} km</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Pace</p>
+                          <p className="font-semibold text-gray-900">{paceStr} /km</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Avg HR</p>
+                          <p className="font-semibold text-gray-900">{Math.round(activity.hr)} bpm</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Power</p>
+                          <p className="font-semibold text-gray-900">
+                            {activity.avgPower ? `${Math.round(activity.avgPower)}W` : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
