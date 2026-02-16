@@ -1,9 +1,13 @@
 /**
  * Database Sync Service
  * Export/Import IndexedDB to/from JSON files for cross-computer sync via git
+ * Files stored in public/database/ for runtime auto-loading
  */
 
 import { db } from './database';
+
+// Default database file name
+const DEFAULT_DB_FILENAME = 'marathon-tracker-db.json';
 
 /**
  * Export entire database to JSON files
@@ -230,7 +234,8 @@ export async function isDatabaseEmpty() {
 }
 
 /**
- * Auto-import from file if database is empty
+ * Auto-import from default JSON file if database is empty
+ * Fetches from public/database/marathon-tracker-db.json
  * Call this on app startup
  */
 export async function autoImportIfEmpty() {
@@ -240,16 +245,54 @@ export async function autoImportIfEmpty() {
       return { imported: false, reason: 'Database not empty' };
     }
 
-    // Check if there's a default export file
-    // This would need to be loaded from a known location
-    // For now, we'll just return that manual import is needed
-    return {
-      imported: false,
-      reason: 'No default export file found',
-      needsManualImport: true
-    };
+    // Try to fetch default database file from public folder
+    const baseUrl = import.meta.env.BASE_URL || '/';
+    const dbUrl = `${baseUrl}database/${DEFAULT_DB_FILENAME}`;
+
+    try {
+      const response = await fetch(dbUrl);
+
+      if (!response.ok) {
+        return {
+          imported: false,
+          reason: 'No database file found in public/database/',
+          needsManualImport: true
+        };
+      }
+
+      const data = await response.json();
+      const imported = await importDatabaseFromData(data, false);
+
+      return {
+        imported: true,
+        source: dbUrl,
+        stats: imported,
+        message: `Auto-imported database: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses`
+      };
+    } catch (fetchError) {
+      // File doesn't exist or network error - this is normal on first run
+      return {
+        imported: false,
+        reason: 'No database file available for auto-import',
+        needsManualImport: true
+      };
+    }
   } catch (error) {
     console.error('Error in auto-import:', error);
     return { imported: false, error: error.message };
+  }
+}
+
+/**
+ * Check if default database file exists in public folder
+ */
+export async function checkDefaultDatabaseExists() {
+  try {
+    const baseUrl = import.meta.env.BASE_URL || '/';
+    const dbUrl = `${baseUrl}database/${DEFAULT_DB_FILENAME}`;
+    const response = await fetch(dbUrl, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    return false;
   }
 }

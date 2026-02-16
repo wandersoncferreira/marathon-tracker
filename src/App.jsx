@@ -5,13 +5,28 @@ import CoachAnalysis from './components/CoachAnalysis';
 import ProgressTracker from './components/ProgressTracker';
 import Settings from './components/Settings';
 import { loadInitialAnalyses } from './utils/loadInitialAnalyses';
+import { autoImportIfEmpty } from './services/databaseSync';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Load initial analyses on first mount
+  // Auto-import database and load initial analyses on first mount
   useEffect(() => {
-    loadInitialAnalyses();
+    const initializeApp = async () => {
+      // Auto-import database from public/database/marathon-tracker-db.json if exists
+      const result = await autoImportIfEmpty();
+
+      if (result.imported) {
+        console.log('✅ Database auto-imported on startup:', result.message);
+      } else if (result.needsManualImport) {
+        console.log('ℹ️ No database file found - sync from Intervals.icu or import manually');
+      }
+
+      // Load initial coach analyses
+      await loadInitialAnalyses();
+    };
+
+    initializeApp();
   }, []);
 
   const renderContent = () => {

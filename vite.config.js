@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/', // Update to '/marathon-tracker/' if deploying to GitHub Pages subfolder
+  base: '/marathon-tracker/', // GitHub Pages subfolder
   build: {
     outDir: 'dist',
     sourcemap: true,

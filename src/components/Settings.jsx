@@ -346,7 +346,7 @@ function Settings() {
             {exporting ? '⏳ Exporting...' : '📤 Export Database to JSON'}
           </button>
           <p className="text-xs text-gray-600">
-            Downloads a JSON file with all your data. Save to <code className="bg-gray-200 px-1 rounded">data/database/</code> and commit to git.
+            Downloads a JSON file with all your data. Save to <code className="bg-gray-200 px-1 rounded">public/database/marathon-tracker-db.json</code> and commit to git.
           </p>
 
           <div className="border-t border-purple-200 pt-3">

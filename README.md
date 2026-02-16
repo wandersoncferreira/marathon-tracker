@@ -289,15 +289,24 @@ npm run lint
 
 ## Deployment
 
-The app is configured for GitHub Pages deployment:
+The app automatically deploys to GitHub Pages via GitHub Actions on every push to `main`.
 
-```bash
-# Build production bundle
-npm run build
+**Live URL**: https://wandersoncferreira.github.io/marathon-tracker/
 
-# Deploy to GitHub Pages
-# (Configure base path in vite.config.js)
-```
+### Automatic Deployment
+
+Every push triggers:
+1. Build with Vite
+2. Deploy to GitHub Pages
+3. App live in ~2 minutes
+
+### Database Auto-Import
+
+On first load, the app automatically imports from `public/database/marathon-tracker-db.json` if:
+- File exists in repository
+- Local IndexedDB is empty
+
+See **[Deployment Guide](docs/DEPLOYMENT.md)** for complete setup instructions.
 
 ## API Rate Limiting
 

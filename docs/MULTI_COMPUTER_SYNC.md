@@ -37,11 +37,11 @@ Export your database to a JSON file, commit it to git, and import on other compu
 2. **Export database**:
    - Settings → Database Sync section
    - Click **📤 Export Database to JSON**
-   - Save file as `data/database/marathon-tracker-db.json`
+   - Save file as `public/database/marathon-tracker-db.json`
 
 3. **Commit to git**:
    ```bash
-   git add data/database/marathon-tracker-db.json
+   git add public/database/marathon-tracker-db.json
    git commit -m "Export database for multi-computer sync"
    git push
    ```
@@ -57,7 +57,7 @@ Export your database to a JSON file, commit it to git, and import on other compu
    - Open app: http://localhost:5173
    - Settings → Database Sync section
    - Click **📥 Import Database from JSON**
-   - Select `data/database/marathon-tracker-db.json`
+   - Select `public/database/marathon-tracker-db.json`
    - Confirm import (replaces local data)
    - ✅ Database restored!
 
@@ -108,7 +108,7 @@ Export your database to a JSON file, commit it to git, and import on other compu
 
 # Export database
 # Settings → 📤 Export Database to JSON
-# Save to data/database/marathon-tracker-db-2026-02-16.json
+# Save to public/database/marathon-tracker-db-2026-02-16.json
 ```
 
 #### 2. Commit Database Export
@@ -117,7 +117,7 @@ Export your database to a JSON file, commit it to git, and import on other compu
 cd ~/Documents/vite
 
 # Add database file
-git add data/database/marathon-tracker-db-2026-02-16.json
+git add public/database/marathon-tracker-db-2026-02-16.json
 
 # Commit with descriptive message
 git commit -m "Export database after threshold session on 2026-02-16
@@ -150,7 +150,7 @@ npm run dev
 1. Go to **Settings** (⚙️ tab)
 2. Scroll to **Database Sync (Multi-Computer)** section
 3. Click **📥 Import Database from JSON**
-4. Select `data/database/marathon-tracker-db-2026-02-16.json`
+4. Select `public/database/marathon-tracker-db-2026-02-16.json`
 5. Confirm: "This will REPLACE all existing data"
 6. Wait for import (~30 seconds for 400 MB file)
 7. Success! Database restored
@@ -201,7 +201,7 @@ Database exports are large (~400 MB). Git handles this, but:
 **Option 1: Standard Git** (Recommended for private repos)
 ```bash
 # Works fine for private repositories
-git add data/database/*.json
+git add public/database/*.json
 git commit -m "Export database"
 git push
 ```
@@ -212,28 +212,28 @@ git push
 git lfs install
 
 # Track database exports
-git lfs track "data/database/*.json"
+git lfs track "public/database/*.json"
 git add .gitattributes
 git commit -m "Track database exports with Git LFS"
 
 # Now commits will use LFS
-git add data/database/*.json
+git add public/database/*.json
 git commit -m "Export database (LFS)"
 git push
 ```
 
 ### .gitignore
 
-The `data/database/` directory is **NOT** in .gitignore because you want to track database exports.
+The `public/database/` directory is **NOT** in .gitignore because you want to track database exports.
 
 Only ignore temporary/generated files:
 ```gitignore
 # Ignore temporary database files
-data/database/*.tmp
-data/database/*.temp
+public/database/*.tmp
+public/database/*.temp
 
 # Track actual exports
-!data/database/marathon-tracker-db-*.json
+!public/database/marathon-tracker-db-*.json
 ```
 
 ## Best Practices
@@ -268,7 +268,7 @@ Keep only recent exports in git:
 
 ```bash
 # Keep last 4 weeks of exports
-ls data/database/ | head -n -4 | xargs rm
+ls public/database/ | head -n -4 | xargs rm
 
 # Or keep monthly exports only
 # marathon-tracker-db-2026-01-31.json
@@ -343,9 +343,9 @@ Database: 4,234 activities, 387 MB"
 **Option A: Git LFS**
 ```bash
 git lfs install
-git lfs track "data/database/*.json"
+git lfs track "public/database/*.json"
 git add .gitattributes
-git lfs migrate import --include="data/database/*.json"
+git lfs migrate import --include="public/database/*.json"
 git push
 ```
 
@@ -364,13 +364,13 @@ git push
 **Solution**:
 ```bash
 # Keep your local version
-git checkout --ours data/database/marathon-tracker-db.json
+git checkout --ours public/database/marathon-tracker-db.json
 
 # Or keep remote version
-git checkout --theirs data/database/marathon-tracker-db.json
+git checkout --theirs public/database/marathon-tracker-db.json
 
 # Resolve and commit
-git add data/database/marathon-tracker-db.json
+git add public/database/marathon-tracker-db.json
 git commit -m "Resolve database sync conflict"
 git push
 ```
@@ -378,11 +378,11 @@ git push
 **Prevention**: Use dated filenames:
 ```bash
 # Instead of overwriting same file
-data/database/marathon-tracker-db.json
+public/database/marathon-tracker-db.json
 
 # Use dated exports
-data/database/marathon-tracker-db-2026-02-16.json
-data/database/marathon-tracker-db-2026-02-23.json
+public/database/marathon-tracker-db-2026-02-16.json
+public/database/marathon-tracker-db-2026-02-23.json
 ```
 
 ## Advanced: Automated Sync
