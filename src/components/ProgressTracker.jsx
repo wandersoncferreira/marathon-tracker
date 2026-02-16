@@ -27,6 +27,9 @@ function ProgressTracker() {
   const [activityDetails, setActivityDetails] = useState({}); // Store activities by trimester and pace
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState(null);
+  const [selectedPaceGroup, setSelectedPaceGroup] = useState(null); // null = show all
+  const [trendLineData, setTrendLineData] = useState([]);
+  const [trendStats, setTrendStats] = useState(null);
 
   // Load historical activities from Jan 1, 2025 ONLY for HR by Pace chart
   useEffect(() => {
@@ -185,6 +188,70 @@ function ProgressTracker() {
       setHrByPaceData(hrByPace);
     }
   }, [historicalActivities]);
+
+  // Calculate trend line when pace group is selected
+  useEffect(() => {
+    if (selectedPaceGroup && hrByPaceData.length > 0) {
+      calculateTrendLine(selectedPaceGroup);
+    } else {
+      setTrendLineData([]);
+      setTrendStats(null);
+    }
+  }, [selectedPaceGroup, hrByPaceData]);
+
+  // Calculate linear regression trend line
+  const calculateTrendLine = (paceGroup) => {
+    // Filter data points that have values for this pace group
+    const dataPoints = hrByPaceData
+      .map((point, index) => ({ x: index, y: point[paceGroup], bimester: point.trimester }))
+      .filter(point => point.y !== undefined && point.y !== null);
+
+    if (dataPoints.length < 2) {
+      setTrendLineData([]);
+      setTrendStats(null);
+      return;
+    }
+
+    // Calculate linear regression: y = mx + b
+    const n = dataPoints.length;
+    const sumX = dataPoints.reduce((sum, point) => sum + point.x, 0);
+    const sumY = dataPoints.reduce((sum, point) => sum + point.y, 0);
+    const sumXY = dataPoints.reduce((sum, point) => sum + point.x * point.y, 0);
+    const sumXX = dataPoints.reduce((sum, point) => sum + point.x * point.x, 0);
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    // Generate trend line points - merge with hrByPaceData
+    const trendLine = hrByPaceData.map((point, index) => ({
+      ...point,
+      trend: intercept + slope * index
+    }));
+
+    setTrendLineData(trendLine);
+
+    // Calculate improvement metrics
+    const firstHR = dataPoints[0].y;
+    const lastHR = dataPoints[dataPoints.length - 1].y;
+    const totalChange = lastHR - firstHR;
+    const changePerBimester = slope;
+    const percentChange = ((totalChange / firstHR) * 100);
+
+    // Calculate time span
+    const timeSpanBimesters = dataPoints.length - 1;
+    const timeSpanMonths = timeSpanBimesters * 2;
+
+    setTrendStats({
+      slope: changePerBimester,
+      totalChange,
+      percentChange,
+      timeSpanBimesters,
+      timeSpanMonths,
+      firstHR,
+      lastHR,
+      improving: slope < 0 // Negative slope = lower HR over time = better fitness
+    });
+  };
 
 
   // Custom dot component with click handler
@@ -506,7 +573,7 @@ function ProgressTracker() {
 
       {/* Heart Rate by Pace Chart */}
       <div className="card">
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900 mb-1">Heart Rate by Pace Group (Bimester Trends)</h3>
             <p className="text-xs text-gray-500">
@@ -523,19 +590,93 @@ function ProgressTracker() {
           </button>
         </div>
 
+        {/* Pace Group Selector */}
+        <div className="mb-4 flex items-center gap-3">
+          <label htmlFor="paceGroupSelect" className="text-sm font-medium text-gray-700">
+            Focus on pace:
+          </label>
+          <select
+            id="paceGroupSelect"
+            value={selectedPaceGroup || ''}
+            onChange={(e) => setSelectedPaceGroup(e.target.value || null)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All pace groups</option>
+            <option value="4:00-4:15">4:00-4:15 /km</option>
+            <option value="4:15-4:30">4:15-4:30 /km</option>
+            <option value="4:30-4:45">4:30-4:45 /km</option>
+            <option value="4:45-5:00">4:45-5:00 /km</option>
+            <option value="5:00-5:15">5:00-5:15 /km</option>
+          </select>
+        </div>
+
+        {/* Trend Stats */}
+        {trendStats && (
+          <div className={`mb-4 p-3 rounded-lg ${trendStats.improving ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  {trendStats.improving ? '✅ Fitness Improving' : '⚠️ Fitness Declining'}
+                </p>
+                <p className="text-xs text-gray-600">
+                  Pace range: {selectedPaceGroup} /km
+                </p>
+              </div>
+              <div className="text-right">
+                <p className={`text-2xl font-bold ${trendStats.improving ? 'text-green-600' : 'text-yellow-600'}`}>
+                  {trendStats.totalChange > 0 ? '+' : ''}{trendStats.totalChange.toFixed(1)} bpm
+                </p>
+                <p className="text-xs text-gray-600">
+                  over {trendStats.timeSpanMonths} months
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-xs">
+              <div>
+                <p className="text-gray-600">Rate of change</p>
+                <p className="font-semibold text-gray-900">
+                  {trendStats.slope > 0 ? '+' : ''}{trendStats.slope.toFixed(2)} bpm/bimester
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600">Starting HR</p>
+                <p className="font-semibold text-gray-900">{Math.round(trendStats.firstHR)} bpm</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Current HR</p>
+                <p className="font-semibold text-gray-900">{Math.round(trendStats.lastHR)} bpm</p>
+              </div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <p className="text-xs text-gray-600">
+                <span className="font-medium">Interpretation:</span> {trendStats.improving
+                  ? `Your heart rate at this pace is decreasing by ${Math.abs(trendStats.slope).toFixed(2)} bpm every 2 months, indicating improved aerobic efficiency.`
+                  : `Your heart rate at this pace is increasing by ${Math.abs(trendStats.slope).toFixed(2)} bpm every 2 months. Consider reviewing training load and recovery.`
+                }
+              </p>
+            </div>
+          </div>
+        )}
+
         {hrByPaceData.length > 0 ? (
           <>
+            {selectedPaceGroup && trendStats === null && (
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  No data available for pace group {selectedPaceGroup} /km. Try selecting a different pace range.
+                </p>
+              </div>
+            )}
             <div style={{ width: '100%', height: '300px', position: 'relative' }}>
               <ResponsiveContainer>
                 <LineChart
-                  data={hrByPaceData}
+                  data={selectedPaceGroup && trendLineData.length > 0 ? trendLineData : hrByPaceData}
                   margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
                     dataKey="trimester"
                     tick={{ fontSize: 11 }}
-                    label={{ value: 'Period', position: 'insideBottom', offset: -5, style: { fontSize: 11 } }}
                   />
                   <YAxis
                     tick={{ fontSize: 12 }}
@@ -566,76 +707,103 @@ function ProgressTracker() {
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Line
-                    type="monotone"
-                    dataKey="4:00-4:15"
-                    stroke="#dc2626"
-                    strokeWidth={2}
-                    name="4:00-4:15 /km"
-                    dot={<CustomDot />}
-                    activeDot={false}
-                    connectNulls
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="4:15-4:30"
-                    stroke="#ea580c"
-                    strokeWidth={2}
-                    name="4:15-4:30 /km"
-                    dot={<CustomDot />}
-                    activeDot={false}
-                    connectNulls
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="4:30-4:45"
-                    stroke="#d97706"
-                    strokeWidth={2}
-                    name="4:30-4:45 /km"
-                    dot={<CustomDot />}
-                    activeDot={false}
-                    connectNulls
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="4:45-5:00"
-                    stroke="#2563eb"
-                    strokeWidth={2}
-                    name="4:45-5:00 /km"
-                    dot={<CustomDot />}
-                    activeDot={false}
-                    connectNulls
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="5:00-5:15"
-                    stroke="#7c3aed"
-                    strokeWidth={2}
-                    name="5:00-5:15 /km"
-                    dot={<CustomDot />}
-                    activeDot={false}
-                    connectNulls
-                  />
+                  {(!selectedPaceGroup || selectedPaceGroup === '4:00-4:15') && (
+                    <Line
+                      type="monotone"
+                      dataKey="4:00-4:15"
+                      stroke="#dc2626"
+                      strokeWidth={2}
+                      name="4:00-4:15 /km"
+                      dot={<CustomDot />}
+                      activeDot={false}
+                      connectNulls
+                    />
+                  )}
+                  {(!selectedPaceGroup || selectedPaceGroup === '4:15-4:30') && (
+                    <Line
+                      type="monotone"
+                      dataKey="4:15-4:30"
+                      stroke="#ea580c"
+                      strokeWidth={2}
+                      name="4:15-4:30 /km"
+                      dot={<CustomDot />}
+                      activeDot={false}
+                      connectNulls
+                    />
+                  )}
+                  {(!selectedPaceGroup || selectedPaceGroup === '4:30-4:45') && (
+                    <Line
+                      type="monotone"
+                      dataKey="4:30-4:45"
+                      stroke="#d97706"
+                      strokeWidth={2}
+                      name="4:30-4:45 /km"
+                      dot={<CustomDot />}
+                      activeDot={false}
+                      connectNulls
+                    />
+                  )}
+                  {(!selectedPaceGroup || selectedPaceGroup === '4:45-5:00') && (
+                    <Line
+                      type="monotone"
+                      dataKey="4:45-5:00"
+                      stroke="#2563eb"
+                      strokeWidth={2}
+                      name="4:45-5:00 /km"
+                      dot={<CustomDot />}
+                      activeDot={false}
+                      connectNulls
+                    />
+                  )}
+                  {(!selectedPaceGroup || selectedPaceGroup === '5:00-5:15') && (
+                    <Line
+                      type="monotone"
+                      dataKey="5:00-5:15"
+                      stroke="#7c3aed"
+                      strokeWidth={2}
+                      name="5:00-5:15 /km"
+                      dot={<CustomDot />}
+                      activeDot={false}
+                      connectNulls
+                    />
+                  )}
+                  {/* Trend line when pace group is selected */}
+                  {selectedPaceGroup && trendLineData.length > 0 && (
+                    <Line
+                      type="monotone"
+                      dataKey="trend"
+                      stroke="#000000"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      name="Trend Line"
+                      dot={false}
+                      activeDot={false}
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
             <div className="mt-4 space-y-2">
-              <div className="grid grid-cols-4 gap-2 text-xs">
+              <div className="grid grid-cols-5 gap-2 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-red-600"></div>
-                  <span className="text-gray-600">4:00-4:20 /km</span>
+                  <span className="text-gray-600">4:00-4:15 /km</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-amber-600"></div>
-                  <span className="text-gray-600">4:20-4:40 /km</span>
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ea580c' }}></div>
+                  <span className="text-gray-600">4:15-4:30 /km</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#d97706' }}></div>
+                  <span className="text-gray-600">4:30-4:45 /km</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                  <span className="text-gray-600">4:40-5:00 /km</span>
+                  <span className="text-gray-600">4:45-5:00 /km</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-violet-600"></div>
-                  <span className="text-gray-600">5:00-5:20 /km</span>
+                  <span className="text-gray-600">5:00-5:15 /km</span>
                 </div>
               </div>
               <p className="text-xs text-gray-500 italic">
