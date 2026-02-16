@@ -4,6 +4,7 @@ import { analysisLoader } from '../services/analysisLoader';
 import { db } from '../services/database';
 import { getCycleStats, TRAINING_CYCLE } from '../utils/trainingCycle';
 import { formatDateISO } from '../utils/dateHelpers';
+import { downloadDatabaseExport, uploadDatabaseImport, getDatabaseExportStats } from '../services/databaseSync';
 
 function Settings() {
   const [apiKey, setApiKey] = useState('');
@@ -13,6 +14,10 @@ function Settings() {
   const [dbStats, setDbStats] = useState(null);
   const [fileInputRef, setFileInputRef] = useState(null);
   const [syncingWellness, setSyncingWellness] = useState(false);
+  const [exportStats, setExportStats] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [dbImportInputRef, setDbImportInputRef] = useState(null);
 
   useEffect(() => {
     loadSettings();
@@ -28,6 +33,10 @@ function Settings() {
       // Load database stats
       const stats = await intervalsApi.getStats();
       setDbStats(stats);
+
+      // Load export stats
+      const expStats = await getDatabaseExportStats();
+      setExportStats(expStats);
     } catch (error) {
       console.error('Error loading settings:', error);
     } finally {
@@ -99,6 +108,45 @@ function Settings() {
       alert(`Error syncing wellness data: ${error.message}`);
     } finally {
       setSyncingWellness(false);
+    }
+  };
+
+  const handleExportDatabase = async () => {
+    if (!confirm('Export entire database to JSON file? This will download a large file (~400MB) that you can commit to git and sync across computers.')) {
+      return;
+    }
+
+    setExporting(true);
+    try {
+      await downloadDatabaseExport();
+      alert('Database exported successfully! Save this file to data/database/ in your repository and commit it to git.');
+    } catch (error) {
+      alert(`Error exporting database: ${error.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportDatabase = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!confirm('Import database from file? This will REPLACE all existing data (activities, wellness, intervals). Make sure you have a backup!')) {
+      event.target.value = '';
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const imported = await uploadDatabaseImport(file, true); // clearExisting = true
+      await loadSettings(); // Refresh stats
+      alert(`Database imported successfully!\n\nImported:\n- ${imported.activities} activities\n- ${imported.activityDetails} activity details\n- ${imported.wellness} wellness records\n- ${imported.analyses} analyses`);
+      event.target.value = ''; // Reset file input
+    } catch (error) {
+      alert(`Error importing database: ${error.message}`);
+      event.target.value = '';
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -253,6 +301,84 @@ function Settings() {
           </button>
         </div>
       )}
+
+      {/* Database Sync for Multi-Computer */}
+      <div className="card bg-purple-50 border-purple-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">🔄 Database Sync (Multi-Computer)</h3>
+        <p className="text-sm text-gray-700 mb-4">
+          Export your database to a JSON file, commit it to git, and import on other computers. This prevents re-fetching all interval data from Intervals.icu.
+        </p>
+
+        {exportStats && (
+          <div className="bg-white rounded-lg p-3 mb-4 text-sm">
+            <p className="font-medium text-gray-900 mb-2">Export Size Preview:</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-gray-600">Activities:</span>
+                <span className="ml-2 font-semibold">{exportStats.formatted.activities}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Intervals:</span>
+                <span className="ml-2 font-semibold">{exportStats.formatted.activityDetails}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Wellness:</span>
+                <span className="ml-2 font-semibold">{exportStats.formatted.wellness}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Analyses:</span>
+                <span className="ml-2 font-semibold">{exportStats.formatted.analyses}</span>
+              </div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <span className="text-gray-900 font-semibold">Total Export Size:</span>
+              <span className="ml-2 text-purple-600 font-bold">{exportStats.formatted.total}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <button
+            onClick={handleExportDatabase}
+            disabled={exporting}
+            className="btn-primary w-full disabled:opacity-50 bg-purple-600 hover:bg-purple-700"
+          >
+            {exporting ? '⏳ Exporting...' : '📤 Export Database to JSON'}
+          </button>
+          <p className="text-xs text-gray-600">
+            Downloads a JSON file with all your data. Save to <code className="bg-gray-200 px-1 rounded">data/database/</code> and commit to git.
+          </p>
+
+          <div className="border-t border-purple-200 pt-3">
+            <label htmlFor="dbImportFile" className="btn-secondary w-full block text-center cursor-pointer">
+              📥 Import Database from JSON
+            </label>
+            <input
+              id="dbImportFile"
+              type="file"
+              accept=".json"
+              onChange={handleImportDatabase}
+              disabled={importing}
+              className="hidden"
+              ref={(ref) => setDbImportInputRef(ref)}
+            />
+            <p className="mt-2 text-xs text-gray-600">
+              {importing ? '⏳ Importing database...' : 'Replaces all local data with imported database. Use this when switching computers.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-800">
+          <p className="font-medium mb-1">💡 Workflow for multi-computer sync:</p>
+          <ol className="space-y-1 ml-4 list-decimal">
+            <li>On Computer A: Export database → save to data/database/</li>
+            <li>Commit and push to git</li>
+            <li>On Computer B: Pull from git → Import database</li>
+            <li>Continue training on Computer B</li>
+            <li>Repeat as needed across computers</li>
+          </ol>
+        </div>
+      </div>
 
       {/* Data Management */}
       <div className="card">

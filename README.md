@@ -235,9 +235,35 @@ marathon-tracker/
 └── tailwind.config.js      # Tailwind CSS config
 ```
 
+## Multi-Computer Sync
+
+Work seamlessly across 3-4 computers without re-fetching data:
+
+1. **Computer A**: Export database to JSON (Settings → Database Sync)
+2. **Commit to git**: `git add data/database/*.json && git commit && git push`
+3. **Computer B**: Pull from git and import database
+4. **Result**: All activities, intervals, and wellness data instantly available
+
+See **[Multi-Computer Sync Guide](docs/MULTI_COMPUTER_SYNC.md)** for complete workflow.
+
+### Why This Matters
+
+Without database sync, switching computers means:
+- ❌ Re-fetch 4,000+ activities (~5-10 minutes)
+- ❌ Re-download 400 MB of interval data
+- ❌ Wait for API rate limiting
+- ❌ Lose any local modifications
+
+With git-based sync:
+- ✅ One-time export (~30 seconds)
+- ✅ Git commit and push
+- ✅ Import on new computer (~30 seconds)
+- ✅ Complete training history preserved
+
 ## Documentation
 
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Setup and first sync
+- **[Multi-Computer Sync](docs/MULTI_COMPUTER_SYNC.md)** - Sync database across computers ⭐
 - **[Coach Analysis Prompt](docs/COACH_ANALYSIS_PROMPT.md)** - AI analysis generation
 - **[Training Cycle](docs/TRAINING_CYCLE.md)** - Phase details and targets
 - **[Database Architecture](docs/DATABASE.md)** - Schema and storage
