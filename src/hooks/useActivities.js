@@ -34,10 +34,10 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
 
     try {
       const range = customRange || dateRange;
+      // Only read from database, never call API
       const data = await intervalsApi.getActivities(
         range.startDate,
-        range.endDate,
-        true // use cache/database - will read from DB first, no API needed
+        range.endDate
       );
 
       // Filter for running activities only and sort by date (newest first)
@@ -75,6 +75,7 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
         throw new Error('Intervals.icu API not configured - cannot sync from API');
       }
 
+      // Sync activities
       const data = await intervalsApi.syncActivities(
         dateRange.startDate,
         dateRange.endDate
@@ -84,6 +85,11 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
         .filter(a => a.type === 'Run')
         .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
       setActivities(runningActivities);
+
+      // Sync messages for all activities (in background)
+      intervalsApi.syncActivityMessages(runningActivities).catch(err => {
+        console.error('Error syncing messages:', err);
+      });
     } catch (err) {
       setError(err.message);
       console.error('Error syncing activities:', err);

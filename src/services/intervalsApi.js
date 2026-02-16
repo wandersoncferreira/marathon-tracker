@@ -93,71 +93,39 @@ class IntervalsAPI {
   }
 
   /**
-   * Get activities for a date range
+   * Get activities for a date range from database only (no API fallback)
    * @param {string} startDate - ISO date string (YYYY-MM-DD)
    * @param {string} endDate - ISO date string (YYYY-MM-DD)
-   * @param {boolean} useCache - Whether to use cached/database data
    * @returns {Promise<Array>}
    */
-  async getActivities(startDate, endDate, useCache = true) {
-    // First, try to get from database (no API needed)
-    if (useCache) {
-      const dbActivities = await db.getActivities(startDate, endDate);
-      if (dbActivities.length > 0) {
-        console.log(`📊 Loaded ${dbActivities.length} activities from database`);
-        return dbActivities;
-      }
-    }
-
-    // Database is empty, need to fetch from API
-    const configured = await this.isConfigured();
-    if (!configured) {
-      console.log('⚠️ No activities in database and Intervals.icu not configured');
-      return []; // Return empty array instead of throwing
-    }
-
-    // Fetch from API
-    await this.loadConfig();
-    const endpoint = `/athlete/${this.config.athleteId}/activities`;
-    const params = new URLSearchParams({
-      oldest: startDate,
-      newest: endDate,
-    });
-
-    const data = await this.request(`${endpoint}?${params}`);
-
-    // Filter out STRAVA activities (they are stubs without full data)
-    const nonStravaActivities = data.filter(activity => activity.source !== 'STRAVA');
-
-    console.log(`📊 Fetched ${data.length} activities, filtered out ${data.length - nonStravaActivities.length} STRAVA stubs`);
-
-    // Store in database (only non-STRAVA)
-    if (nonStravaActivities && nonStravaActivities.length > 0) {
-      await db.storeActivities(nonStravaActivities);
-    }
-
-    return nonStravaActivities;
+  async getActivities(startDate, endDate) {
+    const dbActivities = await db.getActivities(startDate, endDate);
+    return dbActivities;
   }
 
   /**
    * Get detailed activity information
    * @param {string} activityId - Activity ID
-   * @param {boolean} useCache - Whether to use cached data
+   * @param {boolean} dbOnly - If true, only read from database (no API fallback)
    * @returns {Promise<Object>}
    */
-  async getActivityDetails(activityId, useCache = true) {
-    // Try database first (no API needed)
-    if (useCache) {
-      const dbDetails = await db.getActivityDetails(activityId);
-      if (dbDetails) {
-        return dbDetails;
-      }
+  async getActivityDetails(activityId, dbOnly = true) {
+    // Get from database
+    const dbDetails = await db.getActivityDetails(activityId);
+
+    // If dbOnly mode (default), return what we have in database
+    if (dbOnly) {
+      return dbDetails || null;
     }
 
-    // Database is empty, need to fetch from API
+    // If database has data, return it
+    if (dbDetails) {
+      return dbDetails;
+    }
+
+    // Database is empty and dbOnly=false, fetch from API
     const configured = await this.isConfigured();
     if (!configured) {
-      console.log('⚠️ No activity details in database and Intervals.icu not configured');
       return null;
     }
 
@@ -176,22 +144,26 @@ class IntervalsAPI {
   /**
    * Get interval data for an activity
    * @param {string} activityId - Activity ID
-   * @param {boolean} useCache - Whether to use database cached data
+   * @param {boolean} dbOnly - If true, only read from database (no API fallback)
    * @returns {Promise<Object>}
    */
-  async getActivityIntervals(activityId, useCache = true) {
-    // Try database first (no API needed)
-    if (useCache) {
-      const details = await db.getActivityDetails(activityId);
-      if (details && details.intervals) {
-        return details.intervals;
-      }
+  async getActivityIntervals(activityId, dbOnly = true) {
+    // Get from database
+    const details = await db.getActivityDetails(activityId);
+
+    // If dbOnly mode (default), return what we have in database
+    if (dbOnly) {
+      return details?.intervals || null;
     }
 
-    // Database is empty, need to fetch from API
+    // If database has data, return it
+    if (details && details.intervals) {
+      return details.intervals;
+    }
+
+    // Database is empty and dbOnly=false, fetch from API
     const configured = await this.isConfigured();
     if (!configured) {
-      console.log('⚠️ No activity intervals in database and Intervals.icu not configured');
       return null;
     }
 
@@ -208,30 +180,115 @@ class IntervalsAPI {
   }
 
   /**
-   * Get wellness data for a date range
-   * @param {string} startDate - ISO date string (YYYY-MM-DD)
-   * @param {string} endDate - ISO date string (YYYY-MM-DD)
-   * @param {boolean} useCache - Whether to use cached data
+   * Get messages/notes for an activity
+   * @param {string} activityId - Activity ID
+   * @param {boolean} dbOnly - If true, only read from database (no API fallback)
    * @returns {Promise<Array>}
    */
-  async getWellnessData(startDate, endDate, useCache = true) {
-    // First, try to get from database (no API needed)
-    if (useCache) {
-      const dbWellness = await db.getWellness(startDate, endDate);
-      if (dbWellness.length > 0) {
-        console.log(`📊 Loaded ${dbWellness.length} wellness records from database`);
-        return dbWellness;
+  async getActivityMessages(activityId, dbOnly = true) {
+    // Get from database
+    const dbMessages = await db.getActivityMessages(activityId);
+
+    // If dbOnly mode (default), return what we have in database
+    if (dbOnly) {
+      return dbMessages;
+    }
+
+    // If database has data, return it
+    if (dbMessages && dbMessages.length > 0) {
+      return dbMessages;
+    }
+
+    // Database is empty and dbOnly=false, fetch from API
+    const configured = await this.isConfigured();
+    if (!configured) {
+      return [];
+    }
+
+    // Fetch from API
+    try {
+      const endpoint = `/activity/${activityId}/messages`;
+      const data = await this.request(endpoint);
+
+      // Store in database
+      if (data && Array.isArray(data)) {
+        // Add activityId to each message for database indexing
+        const messagesWithActivityId = data.map(msg => ({
+          ...msg,
+          activityId: activityId
+        }));
+        await db.storeActivityMessages(activityId, messagesWithActivityId);
+        return data;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error fetching activity messages:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Sync messages for multiple activities
+   * @param {Array} activities - Array of activity objects
+   * @returns {Promise<number>} Number of activities with messages synced
+   */
+  async syncActivityMessages(activities) {
+    if (!activities || activities.length === 0) {
+      return 0;
+    }
+
+    const configured = await this.isConfigured();
+    if (!configured) {
+      return 0;
+    }
+
+    let syncedCount = 0;
+
+    // Fetch messages for each activity (with rate limiting)
+    for (const activity of activities) {
+      try {
+        await this.getActivityMessages(activity.id, false); // Force fetch from API
+        syncedCount++;
+
+        // Rate limiting: wait 100ms between requests to avoid hitting API limits
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error('Error syncing messages:', error);
       }
     }
 
-    // Database is empty, need to fetch from API
-    const configured = await this.isConfigured();
-    if (!configured) {
-      console.log('⚠️ No wellness data in database and Intervals.icu not configured');
-      return []; // Return empty array instead of throwing
+    return syncedCount;
+  }
+
+  /**
+   * Get wellness data for a date range
+   * @param {string} startDate - ISO date string (YYYY-MM-DD)
+   * @param {string} endDate - ISO date string (YYYY-MM-DD)
+   * @param {boolean} dbOnly - If true, only read from database (no API fallback)
+   * @returns {Promise<Array>}
+   */
+  async getWellnessData(startDate, endDate, dbOnly = true) {
+    // Get from database
+    const dbWellness = await db.getWellness(startDate, endDate);
+
+    // If dbOnly mode (default), return what we have in database
+    if (dbOnly) {
+      return dbWellness;
     }
 
-    // Fetch from API - use query parameters instead of path
+    // If database has data, return it
+    if (dbWellness.length > 0) {
+      return dbWellness;
+    }
+
+    // Database is empty and dbOnly=false, fetch from API
+    const configured = await this.isConfigured();
+    if (!configured) {
+      return [];
+    }
+
+    // Fetch from API
     await this.loadConfig();
     const endpoint = `/athlete/${this.config.athleteId}/wellness`;
     const params = new URLSearchParams({
@@ -342,11 +399,14 @@ class IntervalsAPI {
 
     const data = await this.request(`${endpoint}?${params}`);
 
-    if (data && data.length > 0) {
-      await db.storeActivities(data);
+    // Filter out STRAVA activities (they are stubs without full data)
+    const nonStravaActivities = data.filter(activity => activity.source !== 'STRAVA');
+
+    if (nonStravaActivities && nonStravaActivities.length > 0) {
+      await db.storeActivities(nonStravaActivities);
     }
 
-    return data;
+    return nonStravaActivities;
   }
 
   /**

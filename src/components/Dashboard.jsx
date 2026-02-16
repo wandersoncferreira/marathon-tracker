@@ -223,171 +223,151 @@ function Dashboard() {
 
       {/* Today's Readiness */}
       {todayReadiness && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">Today</h3>
+        <div className={`card p-3 ${
+          todayReadiness.status === 'excellent' ? 'bg-green-50 border-green-200' :
+          todayReadiness.status === 'good' ? 'bg-blue-50 border-blue-200' :
+          todayReadiness.status === 'moderate' ? 'bg-yellow-50 border-yellow-200' :
+          todayReadiness.status === 'poor' ? 'bg-red-50 border-red-200' :
+          'bg-gray-50 border-gray-200'
+        }`}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-600">Today:</span>
+              <span className={`text-sm font-semibold ${
+                todayReadiness.status === 'excellent' ? 'text-green-700' :
+                todayReadiness.status === 'good' ? 'text-blue-700' :
+                todayReadiness.status === 'moderate' ? 'text-yellow-700' :
+                todayReadiness.status === 'poor' ? 'text-red-700' :
+                'text-gray-600'
+              }`}>
+                {todayReadiness.message}
+              </span>
+              {todayReadiness.score !== null && (
+                <span className={`text-xs font-medium ${
+                  todayReadiness.status === 'excellent' ? 'text-green-600' :
+                  todayReadiness.status === 'good' ? 'text-blue-600' :
+                  todayReadiness.status === 'moderate' ? 'text-yellow-600' :
+                  todayReadiness.status === 'poor' ? 'text-red-600' :
+                  'text-gray-500'
+                }`}>
+                  ({todayReadiness.score}/100)
+                </span>
+              )}
+            </div>
             <button
               onClick={handleWellnessSync}
               disabled={syncingWellness}
-              className="text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
+              className="text-xs text-primary-600 hover:text-primary-700 disabled:opacity-50"
             >
               {syncingWellness ? '⏳' : '🔄'}
             </button>
           </div>
-          <div className={`card ${
-            todayReadiness.status === 'excellent' ? 'bg-green-50 border-green-200' :
-            todayReadiness.status === 'good' ? 'bg-blue-50 border-blue-200' :
-            todayReadiness.status === 'moderate' ? 'bg-yellow-50 border-yellow-200' :
-            todayReadiness.status === 'poor' ? 'bg-red-50 border-red-200' :
-            'bg-gray-50 border-gray-200'
-          }`}>
-            <div className="space-y-3">
-              {/* Readiness Score */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Training Readiness</p>
-                  <p className={`text-lg font-semibold ${
-                    todayReadiness.status === 'excellent' ? 'text-green-700' :
-                    todayReadiness.status === 'good' ? 'text-blue-700' :
-                    todayReadiness.status === 'moderate' ? 'text-yellow-700' :
-                    todayReadiness.status === 'poor' ? 'text-red-700' :
-                    'text-gray-600'
-                  }`}>
-                    {todayReadiness.message}
-                  </p>
-                </div>
-                {todayReadiness.score !== null && (
-                  <div className="text-right">
-                    <div className={`text-3xl font-bold ${
-                      todayReadiness.status === 'excellent' ? 'text-green-700' :
-                      todayReadiness.status === 'good' ? 'text-blue-700' :
-                      todayReadiness.status === 'moderate' ? 'text-yellow-700' :
-                      todayReadiness.status === 'poor' ? 'text-red-700' :
-                      'text-gray-600'
-                    }`}>
-                      {todayReadiness.score}
-                    </div>
-                    <div className="text-xs text-gray-500">/ 100</div>
-                  </div>
-                )}
-              </div>
 
-              {/* Wellness Metrics */}
-              <div className="pt-2 border-t border-gray-200">
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Form (TSB) */}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Form (TSB)</p>
-                    <p className={`text-base font-bold ${
-                      todayReadiness.metrics.form !== undefined
-                        ? todayReadiness.metrics.form < -10 ? 'text-red-600'
-                        : todayReadiness.metrics.form > 5 ? 'text-green-600'
-                        : 'text-gray-900'
-                        : 'text-gray-400'
-                    }`}>
-                      {todayReadiness.metrics.form !== undefined
-                        ? `${todayReadiness.metrics.form > 0 ? '+' : ''}${todayReadiness.metrics.form.toFixed(0)}`
-                        : '—'}
-                    </p>
-                  </div>
+          {/* Compact Wellness Metrics */}
+          <div className="grid grid-cols-6 gap-2 text-xs">
+            {/* TSB */}
+            <div className="text-center">
+              <p className="text-gray-500">TSB</p>
+              <p className={`text-sm font-semibold ${
+                todayReadiness.metrics.form !== undefined
+                  ? todayReadiness.metrics.form < -10 ? 'text-red-600'
+                  : todayReadiness.metrics.form > 5 ? 'text-green-600'
+                  : 'text-gray-900'
+                  : 'text-gray-400'
+              }`}>
+                {todayReadiness.metrics.form !== undefined
+                  ? `${todayReadiness.metrics.form > 0 ? '+' : ''}${todayReadiness.metrics.form.toFixed(0)}`
+                  : '—'}
+              </p>
+            </div>
 
-                  {/* Resting HR */}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Resting HR</p>
-                    <p className={`text-base font-bold ${
-                      todayReadiness.metrics.restingHR !== undefined
-                        ? 'text-gray-900'
-                        : 'text-gray-400'
-                    }`}>
-                      {todayReadiness.metrics.restingHR !== undefined
-                        ? `${todayReadiness.metrics.restingHR.toFixed(0)} bpm`
-                        : '—'}
-                    </p>
-                  </div>
+            {/* HR */}
+            <div className="text-center">
+              <p className="text-gray-500">HR</p>
+              <p className={`text-sm font-semibold ${
+                todayReadiness.metrics.restingHR !== undefined
+                  ? 'text-gray-900'
+                  : 'text-gray-400'
+              }`}>
+                {todayReadiness.metrics.restingHR !== undefined
+                  ? todayReadiness.metrics.restingHR.toFixed(0)
+                  : '—'}
+              </p>
+            </div>
 
-                  {/* HRV */}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">HRV</p>
-                    <p className={`text-base font-bold ${
-                      todayReadiness.metrics.hrv !== undefined
-                        ? 'text-gray-900'
-                        : 'text-gray-400'
-                    }`}>
-                      {todayReadiness.metrics.hrv !== undefined
-                        ? `${todayReadiness.metrics.hrv.toFixed(0)} ms`
-                        : '—'}
-                    </p>
-                  </div>
+            {/* HRV */}
+            <div className="text-center">
+              <p className="text-gray-500">HRV</p>
+              <p className={`text-sm font-semibold ${
+                todayReadiness.metrics.hrv !== undefined
+                  ? 'text-gray-900'
+                  : 'text-gray-400'
+              }`}>
+                {todayReadiness.metrics.hrv !== undefined
+                  ? todayReadiness.metrics.hrv.toFixed(0)
+                  : '—'}
+              </p>
+            </div>
 
-                  {/* Sleep */}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Sleep</p>
-                    <p className={`text-base font-bold ${
-                      todayReadiness.metrics.sleepHours !== undefined
-                        ? todayReadiness.metrics.sleepHours < 6 ? 'text-red-600'
-                        : todayReadiness.metrics.sleepHours >= 8 ? 'text-green-600'
-                        : 'text-gray-900'
-                        : 'text-gray-400'
-                    }`}>
-                      {todayReadiness.metrics.sleepHours !== undefined
-                        ? `${todayReadiness.metrics.sleepHours.toFixed(1)}h`
-                        : '—'}
-                    </p>
-                  </div>
+            {/* Sleep */}
+            <div className="text-center">
+              <p className="text-gray-500">Sleep</p>
+              <p className={`text-sm font-semibold ${
+                todayReadiness.metrics.sleepHours !== undefined
+                  ? todayReadiness.metrics.sleepHours < 6 ? 'text-red-600'
+                  : todayReadiness.metrics.sleepHours >= 8 ? 'text-green-600'
+                  : 'text-gray-900'
+                  : 'text-gray-400'
+              }`}>
+                {todayReadiness.metrics.sleepHours !== undefined
+                  ? `${todayReadiness.metrics.sleepHours.toFixed(1)}h`
+                  : '—'}
+              </p>
+            </div>
 
-                  {/* Sleep Quality */}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Sleep Quality</p>
-                    <p className={`text-base font-bold ${
-                      todayReadiness.metrics.sleepQuality !== undefined
-                        ? todayReadiness.metrics.sleepQuality <= 2 ? 'text-red-600'
-                        : todayReadiness.metrics.sleepQuality >= 4 ? 'text-green-600'
-                        : 'text-gray-900'
-                        : 'text-gray-400'
-                    }`}>
-                      {todayReadiness.metrics.sleepQuality !== undefined
-                        ? `${todayReadiness.metrics.sleepQuality}/5`
-                        : '—'}
-                    </p>
-                  </div>
+            {/* Quality */}
+            <div className="text-center">
+              <p className="text-gray-500">Qual</p>
+              <p className={`text-sm font-semibold ${
+                todayReadiness.metrics.sleepQuality !== undefined
+                  ? todayReadiness.metrics.sleepQuality <= 2 ? 'text-red-600'
+                  : todayReadiness.metrics.sleepQuality >= 4 ? 'text-green-600'
+                  : 'text-gray-900'
+                  : 'text-gray-400'
+              }`}>
+                {todayReadiness.metrics.sleepQuality !== undefined
+                  ? `${todayReadiness.metrics.sleepQuality}/5`
+                  : '—'}
+              </p>
+            </div>
 
-                  {/* Weight */}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Weight</p>
-                    <p className={`text-base font-bold ${
-                      todayReadiness.metrics.weight !== undefined
-                        ? 'text-gray-900'
-                        : 'text-gray-400'
-                    }`}>
-                      {todayReadiness.metrics.weight !== undefined
-                        ? `${todayReadiness.metrics.weight.toFixed(1)}kg`
-                        : '—'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Weight Change Indicator */}
-                {todayReadiness.metrics.weightChange !== undefined && (
-                  <div className="mt-2 text-xs text-gray-600">
-                    Weight: {todayReadiness.metrics.weightChange > 0 ? '+' : ''}{todayReadiness.metrics.weightChange.toFixed(1)}kg from baseline
-                  </div>
-                )}
-              </div>
-
-              {/* Insights */}
-              {todayReadiness.insights.length > 0 && (
-                <div className="pt-2 border-t border-gray-200">
-                  <div className="space-y-1">
-                    {todayReadiness.insights.map((insight, idx) => (
-                      <p key={idx} className="text-xs text-gray-700">
-                        {insight}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* Weight */}
+            <div className="text-center">
+              <p className="text-gray-500">Wt</p>
+              <p className={`text-sm font-semibold ${
+                todayReadiness.metrics.weight !== undefined
+                  ? 'text-gray-900'
+                  : 'text-gray-400'
+              }`}>
+                {todayReadiness.metrics.weight !== undefined
+                  ? todayReadiness.metrics.weight.toFixed(1)
+                  : '—'}
+              </p>
             </div>
           </div>
+
+          {/* Insights */}
+          {todayReadiness.insights.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <div className="space-y-0.5">
+                {todayReadiness.insights.map((insight, idx) => (
+                  <p key={idx} className="text-xs text-gray-600">
+                    • {insight}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

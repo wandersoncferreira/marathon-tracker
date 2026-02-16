@@ -42,6 +42,11 @@ class MarathonTrackerDB extends Dexie {
       analyses: 'activityId, date', // Primary key: activityId, indexed by date
     });
 
+    // Version 5 - Add activity messages table
+    this.version(5).stores({
+      activityMessages: 'id, activityId, created', // Primary key: message id, indexed by activityId and created date
+    });
+
     // Access tables
     this.config = this.table('config');
     this.activities = this.table('activities');
@@ -49,6 +54,7 @@ class MarathonTrackerDB extends Dexie {
     this.wellness = this.table('wellness');
     this.cache = this.table('cache');
     this.analyses = this.table('analyses');
+    this.activityMessages = this.table('activityMessages');
   }
 
   /**
@@ -354,15 +360,50 @@ class MarathonTrackerDB extends Dexie {
   }
 
   /**
+   * Store activity messages
+   */
+  async storeActivityMessages(activityId, messages) {
+    try {
+      // Delete existing messages for this activity first
+      await this.activityMessages.where('activityId').equals(activityId).delete();
+
+      // Store new messages
+      if (messages && messages.length > 0) {
+        await this.activityMessages.bulkPut(messages);
+      }
+      return true;
+    } catch (error) {
+      console.error('Error storing activity messages:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get activity messages by activity ID
+   */
+  async getActivityMessages(activityId) {
+    try {
+      return await this.activityMessages
+        .where('activityId')
+        .equals(activityId)
+        .sortBy('created'); // Sort by creation date
+    } catch (error) {
+      console.error('Error getting activity messages:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get database statistics
    */
   async getStats() {
     try {
-      const [activitiesCount, detailsCount, wellnessCount, analysesCount, cacheCount] = await Promise.all([
+      const [activitiesCount, detailsCount, wellnessCount, analysesCount, messagesCount, cacheCount] = await Promise.all([
         this.activities.count(),
         this.activityDetails.count(),
         this.wellness.count(),
         this.analyses.count(),
+        this.activityMessages.count(),
         this.cache.count(),
       ]);
 
@@ -371,6 +412,7 @@ class MarathonTrackerDB extends Dexie {
         activityDetails: detailsCount,
         wellness: wellnessCount,
         analyses: analysesCount,
+        activityMessages: messagesCount,
         cache: cacheCount,
       };
     } catch (error) {
@@ -380,6 +422,7 @@ class MarathonTrackerDB extends Dexie {
         activityDetails: 0,
         wellness: 0,
         analyses: 0,
+        activityMessages: 0,
         cache: 0,
       };
     }

@@ -1,16 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useActivities from '../hooks/useActivities';
 import { metersPerSecondToPace, formatDuration } from '../utils/trainingCalculations';
 import { formatDate } from '../utils/dateHelpers';
+import { intervalsApi } from '../services/intervalsApi';
 
 function TrainingLog() {
   const { activities, loading, error, refetch, sync } = useActivities(90);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [activityMessageCounts, setActivityMessageCounts] = useState({});
+
+  // Load message counts for all activities
+  useEffect(() => {
+    async function loadMessageCounts() {
+      const counts = {};
+      for (const activity of activities) {
+        const messages = await intervalsApi.getActivityMessages(activity.id, true);
+        if (messages && messages.length > 0) {
+          counts[activity.id] = messages.length;
+        }
+      }
+      setActivityMessageCounts(counts);
+    }
+
+    if (activities.length > 0) {
+      loadMessageCounts();
+    }
+  }, [activities]);
 
   const handleSync = async () => {
     setSyncing(true);
-    await sync();
+    await sync(); // sync() now also syncs messages
     setSyncing(false);
   };
 
@@ -107,19 +127,28 @@ function TrainingLog() {
                 </div>
               </div>
 
-              {activity.average_watts && (
-                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
-                  <span className="text-gray-600">
-                    ⚡ {activity.average_watts}W
-                  </span>
-                  <span className="text-gray-600">
-                    ❤️ {activity.average_heartrate || 'N/A'} bpm
-                  </span>
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between text-xs">
+                  {activity.average_watts && (
+                    <span className="text-gray-600">
+                      ⚡ {activity.average_watts}W
+                    </span>
+                  )}
+                  {activity.average_heartrate && (
+                    <span className="text-gray-600">
+                      ❤️ {activity.average_heartrate} bpm
+                    </span>
+                  )}
                   <span className="text-gray-600">
                     🕐 {formatDuration(activity.moving_time || activity.elapsed_time)}
                   </span>
+                  {activityMessageCounts[activity.id] > 0 && (
+                    <span className="text-blue-600 font-medium flex items-center gap-1">
+                      💬 {activityMessageCounts[activity.id]}
+                    </span>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
@@ -129,6 +158,28 @@ function TrainingLog() {
 }
 
 function ActivityDetail({ activity, onBack }) {
+  const [messages, setMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(true);
+
+  useEffect(() => {
+    async function fetchMessages() {
+      setLoadingMessages(true);
+      try {
+        const msgs = await intervalsApi.getActivityMessages(activity.id);
+        setMessages(msgs || []);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+        setMessages([]);
+      } finally {
+        setLoadingMessages(false);
+      }
+    }
+
+    if (activity?.id) {
+      fetchMessages();
+    }
+  }, [activity?.id]);
+
   return (
     <div className="space-y-4">
       <button
@@ -216,10 +267,98 @@ function ActivityDetail({ activity, onBack }) {
           </div>
         </div>
 
-        {activity.description && (
+        {(activity.description || activity.notes) && (
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-2">Notes</h3>
-            <p className="text-sm text-gray-700">{activity.description}</p>
+            <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <span>💬</span>
+              <span>Comments</span>
+            </h3>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                {activity.description || activity.notes}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Activity Messages/Notes */}
+        {loadingMessages ? (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-500">Loading messages...</p>
+          </div>
+        ) : messages.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <span>💬</span>
+              <span>Notes ({messages.length})</span>
+            </h3>
+            <div className="space-y-3">
+              {messages.map((message, idx) => {
+                // Extract message text - try multiple field names
+                const messageText = message.text || message.message || message.content || message.note || message.body || '';
+
+                // Extract author name - try multiple field structures
+                let authorName = 'Unknown';
+
+                // Try different possible structures for author name
+                if (message.athlete) {
+                  // Nested athlete object
+                  authorName = message.athlete.name ||
+                               `${message.athlete.firstName || ''} ${message.athlete.lastName || ''}`.trim() ||
+                               message.athlete.username ||
+                               message.athlete.displayName ||
+                               authorName;
+                } else if (message.author) {
+                  // Direct author field (could be string or object)
+                  if (typeof message.author === 'string') {
+                    authorName = message.author;
+                  } else if (typeof message.author === 'object') {
+                    authorName = message.author.name ||
+                                 `${message.author.firstName || ''} ${message.author.lastName || ''}`.trim() ||
+                                 message.author.username ||
+                                 authorName;
+                  }
+                } else {
+                  // Flat structure - try common field names
+                  authorName = message.athleteName ||
+                               message.authorName ||
+                               message.userName ||
+                               message.name ||
+                               `${message.firstName || ''} ${message.lastName || ''}`.trim() ||
+                               authorName;
+                }
+
+                // Extract timestamp
+                const timestamp = message.created || message.createdAt || message.timestamp || message.date || message.updatedAt;
+
+                return (
+                  <div key={message.id || idx} className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="text-xs font-medium text-blue-900">
+                        {authorName}
+                      </p>
+                      {timestamp && (
+                        <p className="text-xs text-blue-600">
+                          {formatDate(timestamp, 'MMM d, yyyy HH:mm')}
+                        </p>
+                      )}
+                    </div>
+                    {messageText ? (
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                        {messageText}
+                      </p>
+                    ) : (
+                      <div className="text-xs text-gray-500">
+                        <p className="mb-1">No text field found. Message object:</p>
+                        <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">
+                          {JSON.stringify(message, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
