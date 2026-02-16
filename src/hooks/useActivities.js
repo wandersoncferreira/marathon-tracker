@@ -29,12 +29,6 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
   const [dateRange, setDateRange] = useState(getDefaultDateRange());
 
   const fetchActivities = async (customRange = null) => {
-    const configured = await intervalsApi.isConfigured();
-    if (!configured) {
-      setError('Intervals.icu not configured');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -43,7 +37,7 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
       const data = await intervalsApi.getActivities(
         range.startDate,
         range.endDate,
-        true // use cache/database
+        true // use cache/database - will read from DB first, no API needed
       );
 
       // Filter for running activities only and sort by date (newest first)
@@ -60,15 +54,9 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
   };
 
   useEffect(() => {
-    const checkAndFetch = async () => {
-      if (autoFetch) {
-        const configured = await intervalsApi.isConfigured();
-        if (configured) {
-          fetchActivities();
-        }
-      }
-    };
-    checkAndFetch();
+    if (autoFetch) {
+      fetchActivities();
+    }
   }, [dateRange.startDate, dateRange.endDate]);
 
   const refetch = async () => {
@@ -77,17 +65,16 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
   };
 
   const sync = async () => {
-    const configured = await intervalsApi.isConfigured();
-    if (!configured) {
-      setError('Intervals.icu not configured');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      // Force sync from API
+      // Force sync from API (requires configuration)
+      const configured = await intervalsApi.isConfigured();
+      if (!configured) {
+        throw new Error('Intervals.icu API not configured - cannot sync from API');
+      }
+
       const data = await intervalsApi.syncActivities(
         dateRange.startDate,
         dateRange.endDate
