@@ -69,8 +69,17 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       throw new Error('Invalid import data');
     }
 
+    console.log('📦 Starting database import...');
+    console.log('📊 Data to import:', {
+      activities: data.tables.activities?.count || 0,
+      activityDetails: data.tables.activityDetails?.count || 0,
+      wellness: data.tables.wellness?.count || 0,
+      analyses: data.tables.analyses?.count || 0
+    });
+
     // Clear existing data if requested
     if (clearExisting) {
+      console.log('🗑️ Clearing existing data...');
       await db.activities.clear();
       await db.activityDetails.clear();
       await db.wellness.clear();
@@ -86,31 +95,60 @@ export async function importDatabaseFromData(data, clearExisting = false) {
 
     // Import activities
     if (data.tables.activities?.data) {
-      await db.activities.bulkPut(data.tables.activities.data);
-      imported.activities = data.tables.activities.data.length;
+      try {
+        console.log(`📥 Importing ${data.tables.activities.data.length} activities...`);
+        await db.activities.bulkPut(data.tables.activities.data);
+        imported.activities = data.tables.activities.data.length;
+        console.log(`✅ Imported ${imported.activities} activities`);
+      } catch (error) {
+        console.error('❌ Error importing activities:', error);
+        throw error;
+      }
     }
 
     // Import activityDetails
     if (data.tables.activityDetails?.data) {
-      await db.activityDetails.bulkPut(data.tables.activityDetails.data);
-      imported.activityDetails = data.tables.activityDetails.data.length;
+      try {
+        console.log(`📥 Importing ${data.tables.activityDetails.data.length} activity details...`);
+        await db.activityDetails.bulkPut(data.tables.activityDetails.data);
+        imported.activityDetails = data.tables.activityDetails.data.length;
+        console.log(`✅ Imported ${imported.activityDetails} activity details`);
+      } catch (error) {
+        console.error('❌ Error importing activity details:', error);
+        throw error;
+      }
     }
 
     // Import wellness
     if (data.tables.wellness?.data) {
-      await db.wellness.bulkPut(data.tables.wellness.data);
-      imported.wellness = data.tables.wellness.data.length;
+      try {
+        console.log(`📥 Importing ${data.tables.wellness.data.length} wellness records...`);
+        await db.wellness.bulkPut(data.tables.wellness.data);
+        imported.wellness = data.tables.wellness.data.length;
+        console.log(`✅ Imported ${imported.wellness} wellness records`);
+      } catch (error) {
+        console.error('❌ Error importing wellness:', error);
+        throw error;
+      }
     }
 
     // Import analyses
     if (data.tables.analyses?.data) {
-      await db.analyses.bulkPut(data.tables.analyses.data);
-      imported.analyses = data.tables.analyses.data.length;
+      try {
+        console.log(`📥 Importing ${data.tables.analyses.data.length} analyses...`);
+        await db.analyses.bulkPut(data.tables.analyses.data);
+        imported.analyses = data.tables.analyses.data.length;
+        console.log(`✅ Imported ${imported.analyses} analyses`);
+      } catch (error) {
+        console.error('❌ Error importing analyses:', error);
+        throw error;
+      }
     }
 
+    console.log('✅ Database import complete:', imported);
     return imported;
   } catch (error) {
-    console.error('Error importing database:', error);
+    console.error('❌ Fatal error importing database:', error);
     throw error;
   }
 }
