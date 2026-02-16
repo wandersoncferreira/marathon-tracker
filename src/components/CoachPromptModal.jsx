@@ -80,34 +80,46 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
 
 **IMPORTANT - Next Session Adaptive Guidance:**
 
-1. **Fetch tomorrow's workout** from Intervals.icu using \`mcp__Intervals_icu__get_events\`:
-   - Get workout details (type, distance, intervals, target pace/power)
-   - If no event found, suggest appropriate next session
+1. **Fetch tomorrow's workouts** from Intervals.icu using \`mcp__Intervals_icu__get_events\`:
+   - Get ALL events for tomorrow (may have AM and PM sessions)
+   - Use the "time" field to identify AM vs PM workouts
+   - Common pattern: doubles = AM easy recovery + PM marathon pace
+   - If no events found, suggest appropriate next session
 
-2. **Analyze today's impact:**
+2. **Distinguish AM and PM sessions:**
+   - Check event "time" field or start time
+   - Earlier time (usually before noon) = AM session
+   - Later time (usually afternoon/evening) = PM session
+   - PM sessions are typically shorter and optional/tentative
+   - Provide separate guidance for each session
+
+3. **Analyze today's impact:**
    - Training load > 80 TSS → recommend modifications
    - Average HR > 165 bpm → stress signals, reduce intensity tomorrow
    - Incomplete recoveries or poor execution → lighter day needed
 
-3. **Check current readiness** (from wellness data):
+4. **Check current readiness** (from wellness data):
    - TSB < -10 → fatigued, reduce volume/intensity tomorrow
    - Resting HR elevated → body stress, adjust tomorrow's intensity
    - HRV suppressed → recovery needed, modify tomorrow's workout
    - Poor sleep (<7h) → reduce intensity tomorrow
 
-4. **Provide specific adaptations** to tomorrow's workout:
+5. **Provide specific adaptations** for EACH workout:
+   - AM session: Primary session, typically easy/recovery
+   - PM session: Secondary, often marathon pace work (mark as optional: true)
    - Format: "[Planned workout] - ADAPTATIONS: [specific modifications]"
-   - Example: "3 x 3km @ threshold - ADAPTATIONS: Reduce to 2 x 3km if HR stays >165 in warmup. Extend recoveries to 3min if needed."
+   - Example AM: "Easy 8km @ 4:50-5:00/km - ADAPTATIONS: Execute as planned. Keep HR <140 bpm."
+   - Example PM: "4km @ 4:00-4:04/km - ADAPTATIONS: Optional session. Skip if legs feel heavy after AM run."
    - Be specific with numbers (pace, distance, HR targets)
    - Include decision criteria ("if X happens, then do Y")
 
-5. **Decision Framework:**
+6. **Decision Framework:**
    - If readiness is GOOD (TSB > -10, normal HR/HRV, good sleep):
-     → Execute as planned
+     → Execute both AM and PM as planned
    - If readiness is MODERATE (TSB -10 to -20, slightly elevated HR):
-     → Reduce intensity by 5-10s/km OR cut volume by 20%
+     → Execute AM, make PM optional OR reduce PM intensity
    - If readiness is POOR (TSB < -20, elevated HR, poor sleep):
-     → Convert to easy run OR take rest day
+     → Execute AM easy only, skip PM entirely
 
 **Output Format:**
 
@@ -150,12 +162,24 @@ Generate a valid JSON file following this schema:
     "totalKm": total distance in km
   },
   "recommendations": {
-    "nextSession": {
-      "date": "YYYY-MM-DD",
-      "type": "session type",
-      "workout": "[Planned workout from Intervals.icu] - ADAPTATIONS: [specific modifications based on today's performance and readiness]",
-      "rationale": "Why these adaptations (reference today's load, wellness metrics, readiness score)"
-    },
+    "nextSession": [
+      {
+        "date": "YYYY-MM-DD",
+        "timeOfDay": "AM",
+        "type": "session type",
+        "workout": "[Planned AM workout from Intervals.icu] - ADAPTATIONS: [specific modifications]",
+        "rationale": "Why these adaptations (reference today's load, wellness metrics, readiness score)",
+        "optional": false
+      },
+      {
+        "date": "YYYY-MM-DD",
+        "timeOfDay": "PM",
+        "type": "session type",
+        "workout": "[Planned PM workout from Intervals.icu] - ADAPTATIONS: [specific modifications]",
+        "rationale": "Why these adaptations for PM session. Note: PM sessions are tentative/optional.",
+        "optional": true
+      }
+    ],
     "weeklyFocus": [
       "Day: workout description",
       ...
@@ -179,9 +203,12 @@ Generate a valid JSON file following this schema:
 - Calculate pace zones accurately
 - Provide actionable, specific recommendations (not generic advice)
 - Consider cumulative fatigue and training phase
-- ALWAYS include tomorrow's workout with specific adaptations
+- ALWAYS include tomorrow's workout(s) with specific adaptations
 - Base adaptations on objective data (TSB, HR, HRV, sleep)
 - Include decision criteria in recommendations
+- Use array format for nextSession even if only one workout (backward compatible: single object also supported)
+- Mark PM sessions as optional: true since they are tentative
+- Use timeOfDay field to distinguish AM/PM workouts
 \`\`\`
 
 ---

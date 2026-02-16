@@ -460,23 +460,67 @@ function Dashboard() {
               {latestAnalysis.verdict.summary}
             </p>
 
-            {/* Next Session with Adaptive Guidance */}
+            {/* Next Session(s) with Adaptive Guidance */}
             {latestAnalysis.recommendations?.nextSession && (
-              <div className="bg-primary-50 p-3 rounded-lg border border-primary-200">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium text-primary-900">Tomorrow's Session:</p>
-                  <span className="text-xs text-primary-600">
-                    {latestAnalysis.recommendations.nextSession.date}
-                  </span>
-                </div>
-                <p className="text-sm text-primary-800 leading-relaxed">
-                  {latestAnalysis.recommendations.nextSession.workout}
-                </p>
-                {latestAnalysis.recommendations.nextSession.rationale && (
-                  <p className="text-xs text-primary-700 mt-2 pt-2 border-t border-primary-200">
-                    💡 {latestAnalysis.recommendations.nextSession.rationale}
-                  </p>
-                )}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-gray-700">Tomorrow's Sessions:</p>
+                {(() => {
+                  // Support both single session object and array of sessions
+                  const sessions = Array.isArray(latestAnalysis.recommendations.nextSession)
+                    ? latestAnalysis.recommendations.nextSession
+                    : [latestAnalysis.recommendations.nextSession];
+
+                  return sessions.map((session, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-lg border ${
+                        session.timeOfDay === 'PM' || session.optional
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-primary-50 border-primary-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <p className={`text-xs font-medium ${
+                            session.timeOfDay === 'PM' || session.optional
+                              ? 'text-blue-900'
+                              : 'text-primary-900'
+                          }`}>
+                            {session.timeOfDay || 'Morning'} - {session.type}
+                          </p>
+                          {(session.optional || session.timeOfDay === 'PM') && (
+                            <span className="text-xs px-1.5 py-0.5 bg-blue-200 text-blue-800 rounded font-medium">
+                              Optional
+                            </span>
+                          )}
+                        </div>
+                        <span className={`text-xs ${
+                          session.timeOfDay === 'PM' || session.optional
+                            ? 'text-blue-600'
+                            : 'text-primary-600'
+                        }`}>
+                          {session.date}
+                        </span>
+                      </div>
+                      <p className={`text-sm leading-relaxed ${
+                        session.timeOfDay === 'PM' || session.optional
+                          ? 'text-blue-800'
+                          : 'text-primary-800'
+                      }`}>
+                        {session.workout}
+                      </p>
+                      {session.rationale && (
+                        <p className={`text-xs mt-2 pt-2 border-t ${
+                          session.timeOfDay === 'PM' || session.optional
+                            ? 'text-blue-700 border-blue-200'
+                            : 'text-primary-700 border-primary-200'
+                        }`}>
+                          💡 {session.rationale}
+                        </p>
+                      )}
+                    </div>
+                  ));
+                })()}
               </div>
             )}
           </div>

@@ -319,14 +319,63 @@ function AnalysisDetail({ analysis, onBack }) {
         {activeTab === 'recommendations' && (
           <div className="space-y-4">
             {analysis.recommendations.nextSession && (
-              <div className="bg-primary-50 p-4 rounded-lg border border-primary-200">
-                <h3 className="font-semibold text-primary-900 mb-2">Next Session</h3>
-                <p className="text-sm text-primary-800 mb-2">
-                  {analysis.recommendations.nextSession.workout}
-                </p>
-                <p className="text-xs text-primary-700">
-                  {analysis.recommendations.nextSession.rationale}
-                </p>
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-900">Tomorrow's Sessions</h3>
+                {(() => {
+                  // Support both single session object and array of sessions
+                  const sessions = Array.isArray(analysis.recommendations.nextSession)
+                    ? analysis.recommendations.nextSession
+                    : [analysis.recommendations.nextSession];
+
+                  return sessions.map((session, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-lg border ${
+                        session.timeOfDay === 'PM' || session.optional
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-primary-50 border-primary-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <h4 className={`font-semibold ${
+                            session.timeOfDay === 'PM' || session.optional
+                              ? 'text-blue-900'
+                              : 'text-primary-900'
+                          }`}>
+                            {session.timeOfDay || 'Morning'} Session
+                          </h4>
+                          {(session.optional || session.timeOfDay === 'PM') && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-200 text-blue-800 rounded-full font-medium">
+                              Optional
+                            </span>
+                          )}
+                        </div>
+                        <span className={`text-xs font-medium ${
+                          session.timeOfDay === 'PM' || session.optional
+                            ? 'text-blue-700'
+                            : 'text-primary-700'
+                        }`}>
+                          {session.type}
+                        </span>
+                      </div>
+                      <p className={`text-sm mb-2 ${
+                        session.timeOfDay === 'PM' || session.optional
+                          ? 'text-blue-800'
+                          : 'text-primary-800'
+                      }`}>
+                        {session.workout}
+                      </p>
+                      <p className={`text-xs ${
+                        session.timeOfDay === 'PM' || session.optional
+                          ? 'text-blue-700'
+                          : 'text-primary-700'
+                      }`}>
+                        {session.rationale}
+                      </p>
+                    </div>
+                  ));
+                })()}
               </div>
             )}
 

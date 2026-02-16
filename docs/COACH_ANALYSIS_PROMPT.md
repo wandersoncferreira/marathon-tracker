@@ -126,27 +126,73 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
 - Consider cumulative fatigue and current training phase
 - Compare to marathon goal pace (4:02/km) and provide context
 
-**IMPORTANT - Next Session Adaptive Guidance:**
-1. **Fetch tomorrow's workout** from Intervals.icu using `mcp__Intervals_icu__get_events`
-2. **Analyze today's impact:**
+**IMPORTANT - Next Session Adaptive Guidance (Multiple Sessions Support):**
+1. **Fetch tomorrow's workouts** from Intervals.icu using `mcp__Intervals_icu__get_events`:
+   - Get ALL events for tomorrow (may have AM and PM sessions - doubles)
+   - Use the "time" field to identify AM vs PM workouts
+   - Common pattern: AM = easy recovery, PM = marathon pace work
+   - If no events found, suggest appropriate next session
+
+2. **Distinguish AM and PM sessions:**
+   - Check event "time" field or start time to determine AM/PM
+   - AM sessions: Primary workout, typically easy/recovery or quality
+   - PM sessions: Secondary, often short marathon pace work (3-5km)
+   - PM sessions are tentative/optional (mark with "optional": true)
+   - Provide separate guidance for each session
+
+3. **Analyze today's impact:**
    - Training load >80 TSS → recommend modifications
    - Average HR >165 bpm → stress signals, reduce intensity
    - Inconsistent pacing → fatigue, prioritize recovery
-3. **Check current readiness** (from wellness data):
+
+4. **Check current readiness** (from wellness data):
    - TSB < -10 → fatigued, reduce volume/intensity
    - Elevated resting HR (>55 bpm) → possible illness/stress
    - Low HRV (<30 ms) → poor recovery
    - Sleep <6h → compromised recovery
-4. **Provide specific adaptations** to tomorrow's workout:
-   - If readiness excellent (TSB >5, good sleep, normal HR) → "Execute as planned" or "Push top end of ranges"
-   - If moderate concerns (TSB -5 to -10, decent sleep) → "Reduce volume 10-15%" or "Run 5-10s/km slower"
-   - If poor readiness (TSB <-10, high RHR, poor sleep) → "Convert to easy run" or "Consider rest day"
-5. **Format**: Show actual planned workout, then add "- ADAPTATIONS:" with specific guidance
 
-**Example NextSession formats:**
-- Good readiness: "Easy 8km @ 4:50-5:00/km - ADAPTATIONS: Execute as planned. You're well-rested (TSB +3) after yesterday's moderate session."
-- Moderate readiness: "Threshold 2x3km @ 4:00/km - ADAPTATIONS: Reduce to 2x2km given yesterday's high load (85 TSS) and current fatigue (TSB -12). Monitor HR in warmup."
-- Poor readiness: "Long run 24km - ADAPTATIONS: ABORT. Replace with easy 60min given poor sleep (5.2h), elevated RHR (+6 bpm), and accumulated fatigue (TSB -18)."
+5. **Provide specific adaptations for EACH workout:**
+   - AM session: Primary guidance (typically more detailed)
+   - PM session: Secondary guidance, emphasize it's optional
+   - Format: "[Planned workout] - ADAPTATIONS: [specific modifications]"
+   - Include decision criteria for PM ("if X, then skip PM")
+
+6. **Decision Framework:**
+   - Good readiness (TSB >-5): Execute both AM and PM
+   - Moderate (TSB -5 to -15): Execute AM, PM optional or reduced
+   - Poor (TSB <-15): AM easy only, skip PM
+
+**Example NextSession formats (doubles):**
+```json
+"nextSession": [
+  {
+    "date": "2026-02-17",
+    "timeOfDay": "AM",
+    "type": "easy",
+    "workout": "Easy 8km @ 4:50-5:00/km - ADAPTATIONS: Execute as planned. Keep HR <140 bpm.",
+    "rationale": "Standard recovery after yesterday's threshold work (59 TSS). Current TSB -10 allows normal easy pace.",
+    "optional": false
+  },
+  {
+    "date": "2026-02-17",
+    "timeOfDay": "PM",
+    "type": "marathon_pace",
+    "workout": "4km @ 4:00-4:04/km - ADAPTATIONS: Optional session to bank MP kilometers. Skip if legs feel heavy after AM run. Execute only if HR and legs respond well.",
+    "rationale": "Optional PM session for MP banking strategy. Total 12km for day if executed. Skip if recovery feels compromised.",
+    "optional": true
+  }
+]
+```
+
+**Single session format (backward compatible):**
+```json
+"nextSession": {
+  "date": "2026-02-17",
+  "type": "easy",
+  "workout": "Easy 10km @ 4:55-5:05/km - ADAPTATIONS: Execute as planned.",
+  "rationale": "Standard recovery protocol."
+}
+```
 
 **Output Format:**
 
@@ -200,12 +246,25 @@ Generate a valid JSON file with this exact structure:
     "totalKm": [total distance in km]
   },
   "recommendations": {
-    "nextSession": {
-      "date": "YYYY-MM-DD (tomorrow's date)",
-      "type": "session type from Intervals.icu planned workout",
-      "workout": "TOMORROW'S ACTUAL PLANNED WORKOUT from Intervals.icu with adaptive guidance. Format: '[Original workout description] - ADAPTATIONS: [specific modifications based on today's performance and readiness]'",
-      "rationale": "Why these specific adaptations are recommended based on: (1) today's training load/performance quality, (2) current wellness metrics (TSB/HR/HRV/sleep), (3) planned workout intensity"
-    },
+    "nextSession": [
+      {
+        "date": "YYYY-MM-DD (tomorrow's date)",
+        "timeOfDay": "AM|PM",
+        "type": "session type from Intervals.icu planned workout",
+        "workout": "TOMORROW'S ACTUAL PLANNED WORKOUT from Intervals.icu with adaptive guidance. Format: '[Original workout description] - ADAPTATIONS: [specific modifications based on today's performance and readiness]'",
+        "rationale": "Why these specific adaptations are recommended based on: (1) today's training load/performance quality, (2) current wellness metrics (TSB/HR/HRV/sleep), (3) planned workout intensity",
+        "optional": false
+      },
+      {
+        "date": "YYYY-MM-DD (tomorrow's date)",
+        "timeOfDay": "PM",
+        "type": "session type from Intervals.icu planned PM workout",
+        "workout": "PM workout (if scheduled) with adaptations. Note: PM sessions are typically for MP banking and are optional/tentative",
+        "rationale": "Guidance for PM session. Include decision criteria for skipping if needed.",
+        "optional": true
+      }
+    ],
+    "// Note": "nextSession can be either an array (for multiple sessions) or a single object (backward compatible)",
     "weeklyFocus": [
       "Day (Date): Workout description - e.g., Tuesday (Feb 18): AM - Easy 8km @ 4:50-5:00/km, PM - 4km @ 4:00-4:04/km (doubles for MP banking)",
       "Day (Date): Workout description - e.g., Wednesday (Feb 19): Speed work - 10 x 400m @ 3:35-3:40/km with 90s jog recovery",
