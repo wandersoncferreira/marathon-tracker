@@ -34,7 +34,13 @@ Export your database to a JSON file, commit it to git, and import on other compu
    # Wait for complete sync (~5-10 minutes)
    ```
 
-2. **Export database**:
+2. **Clean STRAVA stubs** (if any):
+   - Settings → Data Management section
+   - Click **🧹 Clean STRAVA Stubs**
+   - Removes STRAVA activities (cannot be accessed via API)
+   - Future STRAVA activities are automatically filtered
+
+3. **Export database**:
    - Settings → Database Sync section
    - Click **📤 Export Database to JSON**
    - Save file as `public/database/marathon-tracker-db.json`
@@ -177,6 +183,32 @@ Check that data loaded correctly:
 - ✅ Activity Details: 1,256
 - ✅ Wellness: 28
 - ✅ Analyses: 1
+
+## STRAVA Activity Filtering
+
+**Important**: STRAVA activities are returned as **stubs** from Intervals.icu API without full training data (no distance, pace, HR, power). The app automatically filters these out.
+
+### Automatic Filtering
+
+When syncing from Intervals.icu:
+- ✅ Intervals.icu native activities: **Saved to database**
+- ❌ STRAVA activities: **Filtered out (not saved)**
+
+Console output shows filtering:
+```
+📊 Fetched 150 activities, filtered out 16 STRAVA stubs
+```
+
+### Manual Cleanup
+
+If you already have STRAVA stubs in your database:
+
+1. Go to **Settings** → **Data Management**
+2. Click **🧹 Clean STRAVA Stubs**
+3. Confirm deletion
+4. Result: All STRAVA activities removed
+
+This cleanup should be done **before exporting** to ensure clean database.
 
 ## Export Size Breakdown
 
