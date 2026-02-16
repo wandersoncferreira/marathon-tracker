@@ -246,22 +246,36 @@ export async function autoImportIfEmpty() {
     }
 
     // Try to fetch default database file from public folder
-    const baseUrl = import.meta.env.BASE_URL || '/';
+    // BASE_URL includes trailing slash, e.g., '/marathon-tracker/'
+    let baseUrl = import.meta.env.BASE_URL || '/';
+    // Ensure single trailing slash
+    if (!baseUrl.endsWith('/')) {
+      baseUrl += '/';
+    }
     const dbUrl = `${baseUrl}database/${DEFAULT_DB_FILENAME}`;
+
+    console.log('🔍 Auto-import: Attempting to fetch database from:', dbUrl);
 
     try {
       const response = await fetch(dbUrl);
 
       if (!response.ok) {
+        console.log(`❌ Auto-import failed: HTTP ${response.status} ${response.statusText}`);
+        console.log('💡 This is normal on first visit - database file not found');
         return {
           imported: false,
-          reason: 'No database file found in public/database/',
+          reason: `No database file found at ${dbUrl}`,
           needsManualImport: true
         };
       }
 
+      console.log('✅ Database file found, parsing JSON...');
       const data = await response.json();
+
+      console.log('📦 Importing database...');
       const imported = await importDatabaseFromData(data, false);
+
+      console.log(`✅ Auto-imported: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses`);
 
       return {
         imported: true,
@@ -271,10 +285,13 @@ export async function autoImportIfEmpty() {
       };
     } catch (fetchError) {
       // File doesn't exist or network error - this is normal on first run
+      console.log('❌ Auto-import error:', fetchError.message);
+      console.log('💡 This is normal if no database file exists yet');
       return {
         imported: false,
-        reason: 'No database file available for auto-import',
-        needsManualImport: true
+        reason: `Error fetching database: ${fetchError.message}`,
+        needsManualImport: true,
+        error: fetchError.message
       };
     }
   } catch (error) {
@@ -288,7 +305,10 @@ export async function autoImportIfEmpty() {
  */
 export async function checkDefaultDatabaseExists() {
   try {
-    const baseUrl = import.meta.env.BASE_URL || '/';
+    let baseUrl = import.meta.env.BASE_URL || '/';
+    if (!baseUrl.endsWith('/')) {
+      baseUrl += '/';
+    }
     const dbUrl = `${baseUrl}database/${DEFAULT_DB_FILENAME}`;
     const response = await fetch(dbUrl, { method: 'HEAD' });
     return response.ok;
