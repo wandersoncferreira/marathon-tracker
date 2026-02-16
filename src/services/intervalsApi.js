@@ -307,6 +307,24 @@ class IntervalsAPI {
   }
 
   /**
+   * Attach interval data from database to activities
+   * @param {Array} activities - Activities to attach intervals to
+   * @returns {Promise<Array>} Activities with intervals attached
+   */
+  async attachIntervalsFromDB(activities) {
+    const activitiesWithIntervals = await Promise.all(
+      activities.map(async (activity) => {
+        const details = await db.getActivityDetails(activity.id);
+        return {
+          ...activity,
+          intervals: details?.intervals?.icu_intervals || []
+        };
+      })
+    );
+    return activitiesWithIntervals;
+  }
+
+  /**
    * Sync activities - force refresh from API and update database
    */
   async syncActivities(startDate, endDate) {
