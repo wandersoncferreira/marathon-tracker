@@ -13,17 +13,30 @@ function App() {
   // Auto-import database and load initial analyses on first mount
   useEffect(() => {
     const initializeApp = async () => {
-      // Auto-import database from public/database/marathon-tracker-db.json if exists
-      const result = await autoImportIfEmpty();
+      console.log('🚀 App initializing...');
 
-      if (result.imported) {
-        console.log('✅ Database auto-imported on startup:', result.message);
-      } else if (result.needsManualImport) {
-        console.log('ℹ️ No database file found - sync from Intervals.icu or import manually');
+      try {
+        // Auto-import database from public/database/marathon-tracker-db.json if exists
+        const result = await autoImportIfEmpty();
+
+        if (result.imported) {
+          console.log('✅ Database auto-imported on startup:', result.message);
+        } else if (result.needsManualImport) {
+          console.log('ℹ️ No database file found - sync from Intervals.icu or import manually');
+        } else {
+          console.log('ℹ️ Auto-import result:', result.reason);
+        }
+      } catch (error) {
+        console.error('❌ Error during app initialization:', error);
       }
 
       // Load initial coach analyses
-      await loadInitialAnalyses();
+      try {
+        await loadInitialAnalyses();
+        console.log('✅ Coach analyses loaded');
+      } catch (error) {
+        console.error('❌ Error loading coach analyses:', error);
+      }
     };
 
     initializeApp();

@@ -226,7 +226,13 @@ function formatBytes(bytes, decimals = 2) {
 export async function isDatabaseEmpty() {
   try {
     const stats = await db.getStats();
-    return stats.activities === 0 && stats.activityDetails === 0;
+    const isEmpty = stats.activities === 0 && stats.activityDetails === 0;
+    console.log('📊 Database check:', {
+      activities: stats.activities,
+      activityDetails: stats.activityDetails,
+      isEmpty
+    });
+    return isEmpty;
   } catch (error) {
     console.error('Error checking database:', error);
     return true;
@@ -239,11 +245,15 @@ export async function isDatabaseEmpty() {
  * Call this on app startup
  */
 export async function autoImportIfEmpty() {
+  console.log('🔄 autoImportIfEmpty() called');
   try {
     const isEmpty = await isDatabaseEmpty();
     if (!isEmpty) {
+      console.log('ℹ️ Database already has data - skipping auto-import');
       return { imported: false, reason: 'Database not empty' };
     }
+
+    console.log('✅ Database is empty - attempting auto-import');
 
     // Try to fetch default database file from public folder
     // BASE_URL includes trailing slash, e.g., '/marathon-tracker/'
