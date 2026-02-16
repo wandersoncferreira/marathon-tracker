@@ -7,7 +7,7 @@ export default defineConfig({
   base: '/marathon-tracker/', // GitHub Pages subfolder
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable source maps in production (avoids 404 errors)
   },
   server: {
     port: 3000,
