@@ -16,15 +16,17 @@ function App() {
       console.log('🚀 App initializing...');
 
       try {
-        // Auto-import database from public/database/marathon-tracker-db.json if exists
+        // Auto-import database from public/database/marathon-tracker-db.json
+        // Imports if file is newer than last import OR database is empty
         const result = await autoImportIfEmpty();
 
         if (result.imported) {
-          console.log('✅ Database auto-imported on startup:', result.message);
-        } else if (result.needsManualImport) {
-          console.log('ℹ️ No database file found - sync from Intervals.icu or import manually');
+          console.log('✅ Database loaded from file:', result.message);
+          console.log('📊 File timestamp:', result.fileTimestamp);
+        } else if (result.needsManualSync) {
+          console.log('ℹ️ No database file found - configure Intervals.icu API in Settings');
         } else {
-          console.log('ℹ️ Auto-import result:', result.reason);
+          console.log('ℹ️ Database status:', result.reason);
         }
       } catch (error) {
         console.error('❌ Error during app initialization:', error);

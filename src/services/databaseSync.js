@@ -278,72 +278,124 @@ export async function isDatabaseEmpty() {
 }
 
 /**
- * Auto-import from default JSON file if database is empty
+ * Auto-import from default JSON file on app startup
  * Fetches from public/database/marathon-tracker-db.json
- * Call this on app startup
+ * Imports if:
+ *  - Database is empty, OR
+ *  - JSON file timestamp is newer than last import
+ * This ensures the app always loads the latest git-synced data
  */
 export async function autoImportIfEmpty() {
-  console.log('🔄 autoImportIfEmpty() called');
+  console.log('🔄 Auto-import starting...');
   try {
-    const isEmpty = await isDatabaseEmpty();
-    if (!isEmpty) {
-      console.log('ℹ️ Database already has data - skipping auto-import');
-      return { imported: false, reason: 'Database not empty' };
-    }
-
-    console.log('✅ Database is empty - attempting auto-import');
-
     // Try to fetch default database file from public folder
-    // BASE_URL includes trailing slash, e.g., '/marathon-tracker/'
     let baseUrl = import.meta.env.BASE_URL || '/';
-    // Ensure single trailing slash
     if (!baseUrl.endsWith('/')) {
       baseUrl += '/';
     }
     const dbUrl = `${baseUrl}database/${DEFAULT_DB_FILENAME}`;
 
-    console.log('🔍 Auto-import: Attempting to fetch database from:', dbUrl);
+    console.log('🔍 Fetching database from:', dbUrl);
 
     try {
       const response = await fetch(dbUrl);
 
       if (!response.ok) {
-        console.log(`❌ Auto-import failed: HTTP ${response.status} ${response.statusText}`);
-        console.log('💡 This is normal on first visit - database file not found');
-        return {
-          imported: false,
-          reason: `No database file found at ${dbUrl}`,
-          needsManualImport: true
-        };
+        console.log(`❌ No database file found (HTTP ${response.status})`);
+        console.log('💡 This is normal on first deployment');
+
+        // Check if IndexedDB is empty
+        const isEmpty = await isDatabaseEmpty();
+        if (isEmpty) {
+          return {
+            imported: false,
+            reason: 'No database file found and IndexedDB is empty',
+            needsManualSync: true
+          };
+        } else {
+          return {
+            imported: false,
+            reason: 'No database file found, using existing IndexedDB data'
+          };
+        }
       }
 
       console.log('✅ Database file found, parsing JSON...');
       const data = await response.json();
+      const fileTimestamp = data.timestamp;
 
-      console.log('📦 Importing database...');
-      const imported = await importDatabaseFromData(data, false);
+      console.log('📊 File timestamp:', fileTimestamp);
 
-      console.log(`✅ Auto-imported: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses`);
+      // Check if we should import
+      const stats = await db.getStats();
+      const lastImport = await db.getConfig('last_db_import_timestamp');
+
+      console.log('📊 Current IndexedDB:', {
+        activities: stats.activities,
+        activityDetails: stats.activityDetails,
+        lastImport: lastImport || 'never'
+      });
+
+      // Decide: import if database is empty OR file is newer
+      const isEmpty = stats.activities === 0 && stats.activityDetails === 0;
+      const isNewer = !lastImport || (fileTimestamp && new Date(fileTimestamp) > new Date(lastImport));
+
+      if (!isEmpty && !isNewer) {
+        console.log('ℹ️ Database is up-to-date, skipping import');
+        return {
+          imported: false,
+          reason: 'Database already up-to-date',
+          lastImport: lastImport
+        };
+      }
+
+      if (isEmpty) {
+        console.log('✅ Database is empty - importing...');
+      } else if (isNewer) {
+        console.log('✅ Database file is newer - updating...');
+        console.log(`   File: ${fileTimestamp}`);
+        console.log(`   Last import: ${lastImport}`);
+      }
+
+      // Import with clearExisting=true to replace old data
+      console.log('📦 Importing database (replacing existing data)...');
+      const imported = await importDatabaseFromData(data, true);
+
+      // Store import timestamp
+      await db.setConfig('last_db_import_timestamp', fileTimestamp || new Date().toISOString());
+
+      console.log(`✅ Import complete: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses`);
 
       return {
         imported: true,
         source: dbUrl,
         stats: imported,
-        message: `Auto-imported database: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses`
+        fileTimestamp: fileTimestamp,
+        message: `Loaded database: ${imported.activities} activities, ${imported.activityDetails} details`
       };
     } catch (fetchError) {
-      // File doesn't exist or network error - this is normal on first run
-      console.log('❌ Auto-import error:', fetchError.message);
-      console.log('💡 This is normal if no database file exists yet');
-      return {
-        imported: false,
-        reason: `Error fetching database: ${fetchError.message}`,
-        needsManualImport: true,
-        error: fetchError.message
-      };
+      console.log('❌ Error fetching database:', fetchError.message);
+
+      // Check if IndexedDB has data
+      const stats = await db.getStats();
+      if (stats.activities > 0) {
+        console.log('ℹ️ Using existing IndexedDB data');
+        return {
+          imported: false,
+          reason: 'Failed to fetch file, using existing data',
+          error: fetchError.message
+        };
+      } else {
+        return {
+          imported: false,
+          reason: 'No database file and IndexedDB empty',
+          needsManualSync: true,
+          error: fetchError.message
+        };
+      }
     }
   } catch (error) {
-    console.error('Error in auto-import:', error);
+    console.error('❌ Auto-import error:', error);
     return { imported: false, error: error.message };
   }
 }
