@@ -64,18 +64,6 @@ function Settings() {
     }
   };
 
-  const handleClearAllData = async () => {
-    if (confirm('Are you sure you want to clear ALL training data? This will remove all activities and cache from the database. API configuration will be preserved.')) {
-      try {
-        await db.clearAll();
-        await loadSettings(); // Reload stats
-        alert('All training data cleared!');
-      } catch (error) {
-        alert(`Error clearing data: ${error.message}`);
-      }
-    }
-  };
-
   const handleImportAnalysis = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -401,18 +389,8 @@ function Settings() {
           >
             Clear API Cache
           </button>
-          <p className="text-xs text-gray-500 mb-3">
-            Clear temporary cache to force refresh from API
-          </p>
-
-          <button
-            onClick={handleClearAllData}
-            className="w-full px-4 py-2 bg-red-50 text-red-700 font-medium rounded-lg hover:bg-red-100 transition-colors"
-          >
-            Clear All Training Data
-          </button>
           <p className="text-xs text-gray-500">
-            Remove all activities and cache from database (keeps API config)
+            Clear temporary cache to force refresh from API
           </p>
         </div>
       </div>
