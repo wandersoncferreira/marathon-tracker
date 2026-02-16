@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "date": "2026-02-16",
+    "activityId": "i125562353",
+    "activityName": "Forte x Fraco",
+    "analysisDate": "2026-02-16T10:00:00Z",
+    "coach": "Claude-2h50-Marathon"
+  },
+  "session": {
+    "type": "threshold",
+    "distance": 11028,
+    "duration": 2941,
+    "avgPace": "4:26/km",
+    "avgPower": 304,
+    "avgHR": 155,
+    "trainingLoad": 59
+  },
+  "marathonContext": {
+    "goalPace": "4:02/km",
+    "goalTime": "2:50:00",
+    "weeksToRace": 15,
+    "currentPhase": "Base/Build (Weeks 1-4)"
+  },
+  "analysis": {
+    "strengths": [
+      "Progressive overload - each interval slightly harder than the last",
+      "Power:HR decoupling of 2.9% - excellent aerobic efficiency",
+      "Consistent cadence 87-90 rpm throughout intervals",
+      "Variability Index: 1.01 - very steady effort",
+      "W' Balance remained high - only used 79 kJ of anaerobic reserve"
+    ],
+    "concerns": [
+      "Recovery intervals incomplete - HR only dropped to 159 avg during recoveries",
+      "Interval length too short (3min) for marathon specificity",
+      "Peak effort at 93% FTP pushes into VO2max territory",
+      "Progressive cardiac drift - HR climbed from 155 to 167 across intervals"
+    ],
+    "keyFindings": [
+      "Threshold pace (4:06/km) is faster than marathon goal (4:02/km) - excellent positioning",
+      "HR progression 155→167 bpm tracks with lactate threshold work",
+      "Cardiovascular cost: need 158-164 bpm for marathon pace",
+      "Training Load: 59 (solid stress without breaking down)"
+    ]
+  },
+  "metrics": {
+    "kmAtMarathonPace": 0,
+    "kmAtThresholdPace": 5.6,
+    "kmAtEasyPace": 4.0,
+    "totalKm": 11.0
+  },
+  "recommendations": {
+    "nextSession": {
+      "date": "2026-02-23",
+      "type": "threshold",
+      "workout": "30 minutes continuous @ 3:50-3:55/km (~315-320W)",
+      "rationale": "Progress from short intervals to sustained threshold efforts for marathon specificity"
+    },
+    "weeklyFocus": [
+      "Tuesday: Easy 12-14km @ 4:50-5:00/km OR double with 6km @ 4:05/km in PM",
+      "Wednesday: Speed work - 8 x 600m @ 3:38-3:40/km with 60-90s jog",
+      "Thursday: Easy 10km @ 5:00/km",
+      "Friday: Recovery 8km @ 5:10/km",
+      "Saturday: Long run 26-28km - start 4:35/km, finish last 5km @ 4:05/km"
+    ],
+    "progressionNotes": "Extend threshold intervals. You've proven you can execute 800m reps - time to progress to longer efforts that build sustained lactate clearance."
+  },
+  "verdict": {
+    "rating": "good",
+    "summary": "Strong threshold session with good progressive execution. Power output and physiological response indicate solid fitness at lactate threshold.",
+    "goalViability": {
+      "2h50": "possible",
+      "confidence": "moderate",
+      "notes": "Requires perfect execution of plan for 15 weeks. Current threshold pace is strong, but need more volume at marathon pace."
+    }
+  }
+}
