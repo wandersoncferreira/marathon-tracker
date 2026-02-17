@@ -49,6 +49,13 @@ export async function exportDatabaseToFiles() {
       data: analyses
     };
 
+    // Export events (weekly plan)
+    const events = await db.events.toArray();
+    exports.tables.events = {
+      count: events.length,
+      data: events
+    };
+
     // Don't export cache or config (those are temporary/sensitive)
 
     return exports;
@@ -74,7 +81,8 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       activities: data.tables.activities?.count || 0,
       activityDetails: data.tables.activityDetails?.count || 0,
       wellness: data.tables.wellness?.count || 0,
-      analyses: data.tables.analyses?.count || 0
+      analyses: data.tables.analyses?.count || 0,
+      events: data.tables.events?.count || 0
     });
 
     // Clear existing data if requested
@@ -84,13 +92,15 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       await db.activityDetails.clear();
       await db.wellness.clear();
       await db.analyses.clear();
+      await db.events.clear();
     }
 
     let imported = {
       activities: 0,
       activityDetails: 0,
       wellness: 0,
-      analyses: 0
+      analyses: 0,
+      events: 0
     };
 
     // Import activities
@@ -141,6 +151,19 @@ export async function importDatabaseFromData(data, clearExisting = false) {
         console.log(`✅ Imported ${imported.analyses} analyses`);
       } catch (error) {
         console.error('❌ Error importing analyses:', error);
+        throw error;
+      }
+    }
+
+    // Import events (weekly plan)
+    if (data.tables.events?.data) {
+      try {
+        console.log(`📥 Importing ${data.tables.events.data.length} events...`);
+        await db.events.bulkPut(data.tables.events.data);
+        imported.events = data.tables.events.data.length;
+        console.log(`✅ Imported ${imported.events} events`);
+      } catch (error) {
+        console.error('❌ Error importing events:', error);
         throw error;
       }
     }

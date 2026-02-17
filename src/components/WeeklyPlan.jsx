@@ -7,6 +7,7 @@ function WeeklyPlan() {
   const { t } = useTranslation();
   const { events, loading, error, refresh, weekRange } = useWeeklyPlan(true);
   const [completedActivities, setCompletedActivities] = useState([]);
+  const [syncing, setSyncing] = useState(false);
 
   // Fetch completed activities for the week to show which workouts are done
   useEffect(() => {
@@ -119,18 +120,24 @@ function WeeklyPlan() {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-3">
-        <div>
+        <div className="flex-1">
           <h3 className="font-semibold text-gray-900">{t('coachAnalysis.weeklyPlan')}</h3>
           <p className="text-xs text-gray-500">
             {t('coachAnalysis.weeklyPlanFrom')} {formatDate(weekRange.start)} - {formatDate(weekRange.end)}
           </p>
         </div>
         <button
-          onClick={refresh}
-          className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-          title={t('coachAnalysis.refreshPlan')}
+          onClick={async () => {
+            setSyncing(true);
+            await refresh();
+            setSyncing(false);
+          }}
+          disabled={syncing || loading}
+          className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          title={t('coachAnalysis.syncPlan')}
         >
-          ↻
+          <span>{syncing ? '⏳' : '↻'}</span>
+          <span>{syncing ? t('common.syncing') : t('coachAnalysis.syncPlan')}</span>
         </button>
       </div>
 

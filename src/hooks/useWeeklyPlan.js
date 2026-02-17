@@ -53,8 +53,16 @@ function useWeeklyPlan(autoLoad = true) {
 
       const { start, end } = getWeekRange();
 
+      if (forceRefresh) {
+        console.log('🔄 Force refreshing weekly plan from API');
+      } else {
+        console.log('📅 Loading weekly plan (checking cache first)');
+      }
+
       // Fetch events - will use database cache unless forceRefresh is true
       const data = await intervalsApi.getEvents(start, end, false, forceRefresh);
+
+      console.log(`📊 Loaded ${data.length} events for week ${start} to ${end}`);
 
       // Filter for workouts only (not races, notes, etc.)
       const workouts = data.filter(event =>
