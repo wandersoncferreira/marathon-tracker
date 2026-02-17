@@ -33,6 +33,7 @@ function ProgressTracker() {
   const [trendLineData, setTrendLineData] = useState([]);
   const [trendStats, setTrendStats] = useState(null);
   const [loadingHistorical, setLoadingHistorical] = useState(false);
+  const [refreshingFitness, setRefreshingFitness] = useState(false);
 
   // Load historical activities from Jan 1, 2025 ONLY for HR by Pace chart
   const loadHistoricalActivities = async () => {
@@ -53,6 +54,40 @@ function ProgressTracker() {
       console.error('Error loading historical activities:', error);
     } finally {
       setLoadingHistorical(false);
+    }
+  };
+
+  // Refresh fitness data from Intervals.icu
+  const refreshFitnessData = async () => {
+    setRefreshingFitness(true);
+    try {
+      console.log('🔄 Force refreshing fitness data from API');
+      const wellnessData = await intervalsApi.getWellnessData(
+        TRAINING_CYCLE.startDate,
+        formatDateISO(new Date()),
+        false, // not dbOnly
+        true   // forceRefresh
+      );
+
+      if (wellnessData && Array.isArray(wellnessData)) {
+        const fitnessTimeSeries = wellnessData
+          .map(entry => {
+            const date = entry.id;
+            const fitness = entry.ctl || 0;
+            const fatigue = entry.atl || 0;
+            const form = fitness - fatigue;
+            return { date, fitness, fatigue, form };
+          })
+          .filter(d => d.date && (d.fitness > 0 || d.fatigue > 0))
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        setFitnessData(fitnessTimeSeries);
+        console.log('✅ Fitness data refreshed');
+      }
+    } catch (error) {
+      console.error('Error refreshing fitness data:', error);
+    } finally {
+      setRefreshingFitness(false);
     }
   };
 
@@ -458,7 +493,17 @@ function ProgressTracker() {
       {/* Fitness/Fatigue/Form Chart */}
       {fitnessData.length > 0 && (
         <div className="card">
-          <h3 className="font-semibold text-gray-900 mb-4">{t('progress.fitnessChart')}</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">{t('progress.fitnessChart')}</h3>
+            <button
+              onClick={refreshFitnessData}
+              disabled={refreshingFitness}
+              className="text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
+              title={t('progress.refreshFitness')}
+            >
+              {refreshingFitness ? '⏳' : '↻'}
+            </button>
+          </div>
           <div style={{ width: '100%', height: '256px' }}>
             <ResponsiveContainer>
               <LineChart data={fitnessData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>

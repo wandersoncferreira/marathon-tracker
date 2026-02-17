@@ -1,18 +1,18 @@
 {
-  "version": "1.0",
+  "version": "2.0",
   "metadata": {
     "date": "2026-02-17",
     "activityId": "i125799639",
     "activityName": {
-      "en_US": "Tuesday Easy",
-      "pt_BR": "Fácil de Terça"
+      "en_US": "Tuesday Easy Recovery",
+      "pt_BR": "Fácil de Terça - Recuperação"
     },
     "analysisDate": "2026-02-17T20:00:00Z",
     "coach": "Claude-2h50-Marathon"
   },
   "session": {
     "type": "easy",
-    "distance": 20016,
+    "distance": 20017,
     "duration": 5934,
     "avgPace": "4:58/km",
     "avgPower": 272,
@@ -24,8 +24,8 @@
     "goalTime": "2:50:00",
     "weeksToRace": 15,
     "currentPhase": {
-      "en_US": "Build (Weeks 5-8)",
-      "pt_BR": "Construção (Semanas 5-8)"
+      "en_US": "Base Building - Week 1",
+      "pt_BR": "Construção de Base - Semana 1"
     }
   },
   "analysis": {
@@ -34,41 +34,45 @@
         "Excellent aerobic efficiency with only 2.01% decoupling over 20km, demonstrating strong cardiovascular adaptation",
         "Maintained controlled heart rate at 148 bpm (83% LTHR), staying solidly in Zone 2 throughout the session",
         "Pace of 4:58/km is appropriately easy and builds aerobic base effectively",
-        "Good cadence average of 87 spm indicates efficient running mechanics even at easy pace"
+        "Good cadence average of 87 spm indicates efficient running mechanics even at easy pace",
+        "Power-HR coupling of 1.84 shows excellent aerobic efficiency at recovery intensity"
       ],
       "pt_BR": [
         "Excelente eficiência aeróbica com apenas 2,01% de descoplamento em 20km, demonstrando forte adaptação cardiovascular",
         "Manteve frequência cardíaca controlada em 148 bpm (83% LTHR), permanecendo solidamente na Zona 2 durante toda a sessão",
         "Ritmo de 4:58/km é apropriadamente fácil e constrói base aeróbica efetivamente",
-        "Boa média de cadência de 87 ppm indica mecânica de corrida eficiente mesmo em ritmo fácil"
+        "Boa média de cadência de 87 ppm indica mecânica de corrida eficiente mesmo em ritmo fácil",
+        "Acoplamento Potência-FC de 1,84 mostra excelente eficiência aeróbica em intensidade de recuperação"
       ]
     },
     "concerns": {
       "en_US": [
-        "Training load of 95 TSS is excessive for a recovery day following threshold work - should be 40-50 TSS maximum",
-        "The 20km distance defeats the purpose of recovery - recommended maximum was 12-14km",
-        "TSB has dropped to -26, indicating significant fatigue accumulation and inadequate recovery",
-        "Despite 'easy pace', the high volume prevents actual recovery and adaptation from yesterday's quality session"
+        "Training load of 95 TSS is excessive for a recovery day following double day - should be 40-50 TSS maximum",
+        "The 20km distance undermines recovery goals - recommended maximum was 8-10km after yesterday's double",
+        "Despite easy pace, the high volume prevents actual recovery from Monday's 94 TSS combined load",
+        "Current TSB of -15 indicates accumulated fatigue requiring careful load management this week"
       ],
       "pt_BR": [
-        "Carga de treino de 95 TSS é excessiva para um dia de recuperação seguindo trabalho de limiar - deveria ser máximo 40-50 TSS",
-        "A distância de 20km derrota o propósito da recuperação - máximo recomendado era 12-14km",
-        "TSB caiu para -26, indicando acúmulo significativo de fadiga e recuperação inadequada",
-        "Apesar do 'ritmo fácil', o alto volume previne recuperação e adaptação reais da sessão de qualidade de ontem"
+        "Carga de treino de 95 TSS é excessiva para um dia de recuperação seguindo dia duplo - deveria ser máximo 40-50 TSS",
+        "A distância de 20km prejudica objetivos de recuperação - máximo recomendado era 8-10km após o dia duplo de ontem",
+        "Apesar do ritmo fácil, o alto volume previne recuperação real da carga combinada de 94 TSS de segunda",
+        "TSB atual de -15 indica fadiga acumulada requerendo gestão cuidadosa de carga esta semana"
       ]
     },
     "keyFindings": {
       "en_US": [
         "This demonstrates a critical training error: confusing 'easy pace' with 'easy training load'",
         "Running 20km at easy pace still accumulates 95 TSS, which is a moderate workout - not recovery",
-        "TSB dropped from -10 to -26 in one day, showing this session added fatigue rather than promoted recovery",
-        "Quality sessions like Monday's threshold work require SHORT recovery runs to allow adaptation"
+        "Current TSB at -15 (down from -13.6 yesterday) shows fatigue is accumulating, not dissipating",
+        "Quality sessions like Monday's double require SHORT recovery runs (6-8km max) to allow adaptation",
+        "The aerobic execution was technically excellent, but volume timing was inappropriate for recovery"
       ],
       "pt_BR": [
         "Isto demonstra um erro crítico de treinamento: confundir 'ritmo fácil' com 'carga de treino fácil'",
         "Correr 20km em ritmo fácil ainda acumula 95 TSS, que é um treino moderado - não recuperação",
-        "TSB caiu de -10 para -26 em um dia, mostrando que esta sessão adicionou fadiga ao invés de promover recuperação",
-        "Sessões de qualidade como o trabalho de limiar de segunda requerem corridas de recuperação CURTAS para permitir adaptação"
+        "TSB atual em -15 (caiu de -13.6 ontem) mostra que fadiga está acumulando, não dissipando",
+        "Sessões de qualidade como o dia duplo de segunda requerem corridas de recuperação CURTAS (máx 6-8km) para permitir adaptação",
+        "A execução aeróbica foi tecnicamente excelente, mas o timing do volume foi inapropriado para recuperação"
       ]
     }
   },
@@ -79,51 +83,57 @@
     "totalKm": 20.02
   },
   "recommendations": {
-    "nextSession": {
-      "date": "2026-02-18",
-      "type": "rest",
-      "workout": {
-        "en_US": "COMPLETE REST DAY - MANDATORY. Current TSB of -26 requires immediate intervention. No running. Focus on sleep (9+ hours), hydration, and light mobility work only.",
-        "pt_BR": "DIA DE DESCANSO COMPLETO - OBRIGATÓRIO. TSB atual de -26 requer intervenção imediata. Sem corrida. Foco em sono (9+ horas), hidratação e apenas trabalho leve de mobilidade."
-      },
-      "rationale": {
-        "en_US": "With TSB at -26 after yesterday's 95 TSS 'recovery' run, continuing to train would be counterproductive and risks injury or illness. Your body needs actual rest to absorb the training stress from Monday's quality threshold session. The goal is to have TSB recover to -15 or better before resuming training.",
-        "pt_BR": "Com TSB em -26 após a corrida de 'recuperação' de 95 TSS de ontem, continuar treinando seria contraproducente e arriscaria lesão ou doença. Seu corpo precisa de descanso real para absorver o estresse do treino da sessão de limiar de qualidade de segunda. O objetivo é ter TSB recuperar para -15 ou melhor antes de retomar o treino."
+    "nextSession": [
+      {
+        "date": "2026-02-18",
+        "timeOfDay": "AM",
+        "type": "easy",
+        "optional": false,
+        "workout": {
+          "en_US": "6-8km EASY @ 5:15-5:30/km, HR <140bpm - ADAPTATIONS: Reduce volume significantly. Current TSB -15 requires active recovery, not training stimulus. Focus on movement and blood flow only.",
+          "pt_BR": "6-8km FÁCIL @ 5:15-5:30/km, FC <140bpm - ADAPTAÇÕES: Reduza volume significativamente. TSB atual -15 requer recuperação ativa, não estímulo de treino. Foco em movimento e fluxo sanguíneo apenas."
+        },
+        "rationale": {
+          "en_US": "With TSB at -15 after two high-volume days (94 TSS Mon + 95 TSS Tue), the priority is recovery. A short, very easy run promotes blood flow without adding fatigue. If legs feel heavy, take complete rest instead.",
+          "pt_BR": "Com TSB em -15 após dois dias de alto volume (94 TSS Seg + 95 TSS Ter), a prioridade é recuperação. Uma corrida curta e muito fácil promove fluxo sanguíneo sem adicionar fadiga. Se pernas estiverem pesadas, faça descanso completo."
+        }
       }
-    },
+    ],
     "weeklyAdjustments": {
       "en_US": [
-        "Wednesday: COMPLETE REST - no running, regardless of what was planned",
-        "Thursday: If TSB improves to -15, do short easy 8km @ 5:10-5:20/km. If TSB still below -15, take another rest day",
-        "Any threshold or speed sessions planned this week: SKIP until TSB recovers to -10 or better",
-        "Weekend long run: Reduce by 30-40% if you do proceed (e.g., if 24km planned, do 16km max)",
-        "CRITICAL: All recovery runs must be <10km and <50 TSS going forward - this is non-negotiable for adaptation"
+        "Critical: Limit ALL recovery runs to 10km maximum for remainder of training cycle",
+        "Wednesday: Execute 6-8km easy only. Skip any PM session regardless of plan",
+        "Thursday: If TSB improves to -10 or better, can proceed with planned quality session at 90% volume",
+        "Friday: Another short easy day (6-8km), no PM session",
+        "Weekend long run: If planned, reduce by 20-25% to allow recovery buffer",
+        "Remember: Recovery runs build fitness through adaptation, not through accumulation of more fatigue"
       ],
       "pt_BR": [
-        "Quarta: DESCANSO COMPLETO - sem corrida, independentemente do que foi planejado",
-        "Quinta: Se TSB melhorar para -15, faça curto fácil 8km @ 5:10-5:20/km. Se TSB ainda abaixo de -15, faça outro dia de descanso",
-        "Quaisquer sessões de limiar ou velocidade planejadas esta semana: PULE até TSB recuperar para -10 ou melhor",
-        "Longão do fim de semana: Reduza em 30-40% se você prosseguir (ex: se 24km planejados, faça máx 16km)",
-        "CRÍTICO: Todas as corridas de recuperação devem ser <10km e <50 TSS daqui pra frente - isto é inegociável para adaptação"
+        "Crítico: Limite TODAS corridas de recuperação a máximo 10km pelo resto do ciclo de treino",
+        "Quarta: Execute apenas 6-8km fácil. Pule qualquer sessão PM independentemente do plano",
+        "Quinta: Se TSB melhorar para -10 ou melhor, pode prosseguir com sessão de qualidade planejada a 90% do volume",
+        "Sexta: Outro dia fácil curto (6-8km), sem sessão PM",
+        "Longão do fim de semana: Se planejado, reduza em 20-25% para permitir margem de recuperação",
+        "Lembre-se: Corridas de recuperação constroem fitness através de adaptação, não através de acúmulo de mais fadiga"
       ]
     },
     "progressionNotes": {
-      "en_US": "URGENT CORRECTION NEEDED: You are confusing 'easy pace' with 'easy training'. Running 20km at 4:58/km accumulates 95 TSS - this is NOT recovery, it's a moderate aerobic workout. Recovery days must be SHORT (6-10km) to allow adaptation from quality sessions. With TSB at -26, you are at high risk of overtraining, injury, or illness. Your fitness (CTL) is good, but ATL is dangerously high. Take 2-3 complete rest days immediately. When you resume, cap ALL recovery runs at 10km maximum regardless of pace.",
-      "pt_BR": "CORREÇÃO URGENTE NECESSÁRIA: Você está confundindo 'ritmo fácil' com 'treino fácil'. Correr 20km em 4:58/km acumula 95 TSS - isto NÃO é recuperação, é um treino aeróbico moderado. Dias de recuperação devem ser CURTOS (6-10km) para permitir adaptação das sessões de qualidade. Com TSB em -26, você está em alto risco de overtraining, lesão ou doença. Seu fitness (CTL) é bom, mas ATL está perigosamente alto. Faça 2-3 dias de descanso completo imediatamente. Quando retomar, limite TODAS as corridas de recuperação em máximo 10km independentemente do ritmo."
+      "en_US": "IMPORTANT CORRECTION NEEDED: You are confusing 'easy pace' with 'easy training'. Running 20km at 4:58/km accumulates 95 TSS - this is NOT recovery, it's a moderate aerobic workout. Recovery days must be SHORT (6-10km max) to allow adaptation from quality sessions. Your aerobic efficiency is excellent (2% decoupling, good power-HR), showing strong base fitness. However, with TSB now at -15 (worse than yesterday's -13.6), you're accumulating fatigue instead of recovering. For Week 1 of a new cycle, this is particularly concerning. Moving forward: cap ALL recovery runs at 10km maximum. This will allow your body to adapt to quality sessions and improve your CTL/ATL ratio naturally.",
+      "pt_BR": "CORREÇÃO IMPORTANTE NECESSÁRIA: Você está confundindo 'ritmo fácil' com 'treino fácil'. Correr 20km em 4:58/km acumula 95 TSS - isto NÃO é recuperação, é um treino aeróbico moderado. Dias de recuperação devem ser CURTOS (máx 6-10km) para permitir adaptação das sessões de qualidade. Sua eficiência aeróbica é excelente (2% descoplamento, bom potência-FC), mostrando base forte de condicionamento. Porém, com TSB agora em -15 (pior que -13.6 de ontem), você está acumulando fadiga ao invés de recuperar. Para Semana 1 de um novo ciclo, isto é particularmente preocupante. Daqui pra frente: limite TODAS corridas de recuperação em máximo 10km. Isto permitirá que seu corpo se adapte às sessões de qualidade e melhore sua relação CTL/ATL naturalmente."
     }
   },
   "verdict": {
-    "rating": "poor",
+    "rating": "acceptable",
     "summary": {
-      "en_US": "While the aerobic execution was excellent (controlled HR, low decoupling, good pace), this session represents a critical training error: excessive volume on what must be a recovery day. TSB dropped to -26, severely compromising adaptation and significantly increasing injury risk.",
-      "pt_BR": "Embora a execução aeróbica tenha sido excelente (FC controlada, baixo descoplamento, bom ritmo), esta sessão representa um erro crítico de treinamento: volume excessivo no que deve ser um dia de recuperação. TSB caiu para -26, comprometendo severamente a adaptação e aumentando significativamente o risco de lesão."
+      "en_US": "Technically well-executed aerobic session (controlled HR, excellent decoupling, good efficiency), but inappropriately high volume for a recovery day. Current TSB of -15 requires immediate attention to load management.",
+      "pt_BR": "Sessão aeróbica tecnicamente bem executada (FC controlada, excelente descoplamento, boa eficiência), mas volume inapropriadamente alto para um dia de recuperação. TSB atual de -15 requer atenção imediata à gestão de carga."
     },
     "goalViability": {
       "2h50": "possible",
       "confidence": "moderate",
       "notes": {
-        "en_US": "Your underlying fitness (CTL 68.8, strong aerobic efficiency, good threshold capacity from Monday) supports the 2h50 goal. However, current training execution is problematic and unsustainable. Accumulating excessive fatigue prevents quality session execution and risks overtraining. With immediate correction (rest days now, then strict 10km cap on all recovery runs), the goal remains achievable. Without correction, performance will deteriorate.",
-        "pt_BR": "Sua aptidão subjacente (CTL 68,8, forte eficiência aeróbica, boa capacidade de limiar de segunda) suporta o objetivo de 2h50. No entanto, a execução atual do treino é problemática e insustentável. Acumular fadiga excessiva previne execução de sessões de qualidade e arrisca overtraining. Com correção imediata (dias de descanso agora, depois limite estrito de 10km em todas corridas de recuperação), o objetivo permanece alcançável. Sem correção, o desempenho se deteriorará."
+        "en_US": "Your underlying fitness is strong (CTL 68.8, excellent aerobic efficiency, good base from Monday's quality work). The 2h50 goal remains achievable. However, current training execution shows a misunderstanding of recovery principles. TSB at -15 after a recovery day indicates volume is too high. With immediate correction (strict 10km cap on all easy runs), adaptation will improve and goal remains on track. Without correction, you risk overtraining and performance decline.",
+        "pt_BR": "Sua aptidão subjacente é forte (CTL 68,8, excelente eficiência aeróbica, boa base do trabalho de qualidade de segunda). O objetivo de 2h50 permanece alcançável. Porém, a execução atual do treino mostra má compreensão de princípios de recuperação. TSB em -15 após um dia de recuperação indica que volume está muito alto. Com correção imediata (limite estrito de 10km em todas corridas fáceis), a adaptação melhorará e objetivo permanece no caminho. Sem correção, você arrisca overtraining e declínio de desempenho."
       }
     }
   }

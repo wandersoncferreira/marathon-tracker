@@ -40,7 +40,14 @@ Analyze the following training session from Intervals.icu and generate a structu
 - Date: [date]
 - Get activity details: mcp__Intervals_icu__get_activity_details
 - Get intervals: mcp__Intervals_icu__get_activity_intervals
-- Get today's wellness: mcp__Intervals_icu__get_wellness_data (for readiness assessment)
+
+**CRITICAL - Current Wellness Data:**
+- ALWAYS fetch CURRENT wellness separately: mcp__Intervals_icu__get_wellness_data(start_date="YYYY-MM-DD", end_date="YYYY-MM-DD")
+- DO NOT use icu_atl/icu_ctl from activity data - these are historical snapshots from upload time
+- USE the latest wellness API response for current TSB/CTL/ATL values
+- Current TSB is critical for accurate recommendations
+
+**Tomorrow's Plan:**
 - Get tomorrow's planned workout: mcp__Intervals_icu__get_events (fetch events for tomorrow's date)
 
 **Athlete Context:**
@@ -72,8 +79,8 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
 4. **Assess today's performance impact on recovery:**
    - Training load (TSS > 80 → recommend modifications)
    - Average HR (> 165 bpm → stress signals, reduce intensity)
-5. **Check current readiness** from wellness data:
-   - TSB < -10 → fatigued, reduce volume/intensity
+5. **Check current readiness** from CURRENT wellness API (NOT activity snapshot):
+   - TSB (ctl - atl from wellness API) < -10 → fatigued, reduce volume/intensity
    - Resting HR elevated → body stress, consider adjustment
    - HRV suppressed → recovery needed
    - Poor sleep (<7h or low quality) → adjust intensity
@@ -98,8 +105,9 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
    - Average HR > 165 bpm → stress signals, reduce intensity tomorrow
    - Incomplete recoveries or poor execution → lighter day needed
 
-4. **Check current readiness** (from wellness data):
-   - TSB < -10 → fatigued, reduce volume/intensity tomorrow
+4. **Check current readiness** (from CURRENT wellness API, NOT activity data):
+   - IMPORTANT: Use mcp__Intervals_icu__get_wellness_data for latest values
+   - TSB (ctl - atl) < -10 → fatigued, reduce volume/intensity tomorrow
    - Resting HR elevated → body stress, adjust tomorrow's intensity
    - HRV suppressed → recovery needed, modify tomorrow's workout
    - Poor sleep (<7h) → reduce intensity tomorrow

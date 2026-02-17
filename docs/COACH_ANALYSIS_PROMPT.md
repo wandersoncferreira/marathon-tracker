@@ -30,10 +30,11 @@ When generating a coach analysis, follow this sequence:
    mcp__Intervals_icu__get_activity_intervals(activity_id="i125562353")
    ```
 
-2. **Fetch today's wellness data:**
+2. **Fetch CURRENT wellness data (CRITICAL):**
    ```
    mcp__Intervals_icu__get_wellness_data(start_date="2026-02-16", end_date="2026-02-16")
    ```
+   **IMPORTANT:** The activity data contains historical CTL/ATL values from when the activity was uploaded. You MUST fetch the LATEST wellness data separately to get current TSB/CTL/ATL values for accurate analysis and recommendations.
 
 3. **Fetch tomorrow's planned workout:**
    ```
@@ -42,7 +43,7 @@ When generating a coach analysis, follow this sequence:
 
 4. **Analyze and generate:**
    - Assess today's performance (load, HR, pacing consistency)
-   - Check wellness metrics (TSB, resting HR, HRV, sleep)
+   - Check wellness metrics (TSB, resting HR, HRV, sleep) - USE CURRENT VALUES FROM WELLNESS API
    - Review tomorrow's planned workout
    - Provide adaptive guidance based on all factors
 
@@ -66,7 +67,14 @@ Analyze the following training session from Intervals.icu and generate a structu
 - Date: [date]
 - Get activity details: mcp__Intervals_icu__get_activity_details
 - Get intervals: mcp__Intervals_icu__get_activity_intervals
-- Get today's wellness: mcp__Intervals_icu__get_wellness_data (for readiness assessment)
+
+**CRITICAL - Current Wellness Data:**
+- ALWAYS fetch CURRENT wellness separately: mcp__Intervals_icu__get_wellness_data(start_date="YYYY-MM-DD", end_date="YYYY-MM-DD")
+- DO NOT use icu_atl/icu_ctl from activity data - these are historical snapshots from upload time
+- USE the latest wellness API response for current TSB/CTL/ATL values
+- Current TSB is critical for accurate recommendations
+
+**Tomorrow's Plan:**
 - Get tomorrow's planned workout: mcp__Intervals_icu__get_events (fetch events for tomorrow's date)
 
 **Athlete Context:**
@@ -80,7 +88,10 @@ Analyze the following training session from Intervals.icu and generate a structu
   - Weeks 9-16: Peak
   - Weeks 17-20: Taper
 - Weeks to Race: [Calculate from today's date]
-- Current CTL/Fitness: [Get from Intervals.icu if available]
+- **Current Fitness Metrics:** [Fetch from wellness API using mcp__Intervals_icu__get_wellness_data]
+  - CTL (Chronic Training Load / Fitness): [from wellness.ctl]
+  - ATL (Acute Training Load / Fatigue): [from wellness.atl]
+  - TSB (Training Stress Balance / Form): CTL - ATL = [calculated value]
 
 **Coaching Philosophy (from docs/running-coach-directives.md):**
 You are coaching a very close to elite runner with average performance of 2h50min for marathon distance. Use knowledge of exercise science, nutrition advice, and sport psychology. Keep recommendations short and brief with proven results.
@@ -101,15 +112,19 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
    - High training load (>80 TSS) → affects tomorrow
    - Elevated average HR (>165 bpm) → stress signals
    - Inconsistent pacing in intervals → fatigue indicators
-5. **Analyze current readiness from wellness data:**
-   - Form/TSB: negative = fatigued, positive = rested
+5. **Analyze current readiness from LATEST wellness data:**
+   - **TSB (Training Stress Balance)**: CTL - ATL from current wellness API (NOT from activity.icu_atl/icu_ctl)
+     - TSB < -20: Very fatigued, high risk
+     - TSB -10 to -20: Moderately fatigued
+     - TSB -5 to -10: Slight fatigue, manageable
+     - TSB > -5: Fresh, ready for quality work
    - Resting HR: elevated = stress/illness
    - HRV: low = poor recovery
    - Sleep: <6h = compromised recovery
 6. **Fetch tomorrow's planned workout** from Intervals.icu events
 7. **Provide adaptive guidance for tomorrow** based on:
    - Today's training load and performance quality
-   - Current wellness/readiness metrics
+   - **CURRENT wellness/readiness metrics (from latest API call)**
    - Planned workout type and intensity
 8. **Calculate KM at different training zones:**
    - Marathon Pace: pace within 6s/km of 4:02/km
@@ -145,8 +160,9 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
    - Average HR >165 bpm → stress signals, reduce intensity
    - Inconsistent pacing → fatigue, prioritize recovery
 
-4. **Check current readiness** (from wellness data):
-   - TSB < -10 → fatigued, reduce volume/intensity
+4. **Check current readiness** (from CURRENT wellness API data):
+   - **IMPORTANT:** Use wellness data from `mcp__Intervals_icu__get_wellness_data`, NOT from activity.icu_atl/icu_ctl
+   - TSB (ctl - atl from wellness API) < -10 → fatigued, reduce volume/intensity
    - Elevated resting HR (>55 bpm) → possible illness/stress
    - Low HRV (<30 ms) → poor recovery
    - Sleep <6h → compromised recovery
@@ -432,17 +448,18 @@ From `/docs/running-coach-directives.md`:
 ## Tips for Generating Quality Analyses
 
 1. **Always fetch actual activity data** - Don't make up numbers
-2. **Calculate zones from intervals** - Use the interval breakdown to accurately determine time in zones
-3. **Compare to plan** - Reference the weekly training structure and progressions
-4. **Be specific** - "4:06/km avg" not "good pace"
-5. **Provide context** - "167 bpm (94% LTHR)" not just "167 bpm"
-6. **Actionable recommendations** - "Extend intervals to 5min at 3:50/km" not "work on endurance"
-7. **Consider fatigue** - Look at CTL/ATL and recent training load
-8. **Marathon-focused** - Always tie analysis back to 2h50 goal
-9. **Incorporate doubles strategy** - Recommend doubles (AM easy + PM short MP) on recovery days to bank marathon pace kilometers without compromising quality sessions
-10. **Elite athlete mindset** - Remember this athlete is near-elite level (2h50 marathon capability), so recommendations should reflect high training volume and intensity tolerance
-11. **Fetch tomorrow's workout** - Use `mcp__Intervals_icu__get_events` to get the actual planned workout for tomorrow
-12. **Adaptive guidance format** - Show tomorrow's workout with "- ADAPTATIONS:" followed by specific modifications based on today's performance and current wellness
+2. **CRITICAL: Fetch CURRENT wellness data** - Use `mcp__Intervals_icu__get_wellness_data` to get latest TSB/CTL/ATL. Never use `activity.icu_atl` or `activity.icu_ctl` as these are historical snapshots from upload time
+3. **Calculate zones from intervals** - Use the interval breakdown to accurately determine time in zones
+4. **Compare to plan** - Reference the weekly training structure and progressions
+5. **Be specific** - "4:06/km avg" not "good pace"
+6. **Provide context** - "167 bpm (94% LTHR)" not just "167 bpm"
+7. **Actionable recommendations** - "Extend intervals to 5min at 3:50/km" not "work on endurance"
+8. **Consider current fatigue** - Use latest TSB from wellness API, not activity snapshot
+9. **Marathon-focused** - Always tie analysis back to 2h50 goal
+10. **Incorporate doubles strategy** - Recommend doubles (AM easy + PM short MP) on recovery days to bank marathon pace kilometers without compromising quality sessions
+11. **Elite athlete mindset** - Remember this athlete is near-elite level (2h50 marathon capability), so recommendations should reflect high training volume and intensity tolerance
+12. **Fetch tomorrow's workout** - Use `mcp__Intervals_icu__get_events` to get the actual planned workout for tomorrow
+13. **Adaptive guidance format** - Show tomorrow's workout with "- ADAPTATIONS:" followed by specific modifications based on today's performance and CURRENT wellness (from latest API)
 
 ---
 

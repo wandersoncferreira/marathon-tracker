@@ -254,9 +254,9 @@ function Dashboard() {
           'bg-gray-50 border-gray-200'
         }`}>
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-600">Today:</span>
-              <span className={`text-sm font-semibold ${
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-xs font-medium text-gray-600">{t('dashboard.todayReadiness')}:</span>
+              <span className={`text-sm font-semibold truncate ${
                 todayReadiness.status === 'excellent' ? 'text-green-700' :
                 todayReadiness.status === 'good' ? 'text-blue-700' :
                 todayReadiness.status === 'moderate' ? 'text-yellow-700' :
@@ -266,7 +266,7 @@ function Dashboard() {
                 {todayReadiness.message}
               </span>
               {todayReadiness.score !== null && (
-                <span className={`text-xs font-medium ${
+                <span className={`text-xs font-medium flex-shrink-0 ${
                   todayReadiness.status === 'excellent' ? 'text-green-600' :
                   todayReadiness.status === 'good' ? 'text-blue-600' :
                   todayReadiness.status === 'moderate' ? 'text-yellow-600' :
@@ -277,6 +277,13 @@ function Dashboard() {
                 </span>
               )}
             </div>
+            <button
+              onClick={() => fetchTodayWellness(false)}
+              className="text-xs text-gray-500 hover:text-primary-600 ml-2 flex-shrink-0"
+              title={t('dashboard.refreshReadiness')}
+            >
+              ↻
+            </button>
           </div>
 
           {/* Compact Wellness Metrics */}
