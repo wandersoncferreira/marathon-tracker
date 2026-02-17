@@ -44,39 +44,61 @@ function useWeeklyPlan(autoLoad = true) {
     setError(null);
 
     try {
-      const configured = await intervalsApi.isConfigured();
-      if (!configured) {
-        setError('Intervals.icu not configured');
-        setLoading(false);
-        return;
-      }
-
       const { start, end } = getWeekRange();
 
       if (forceRefresh) {
         console.log('🔄 Force refreshing weekly plan from API');
+
+        // Check if API is configured for force refresh
+        const configured = await intervalsApi.isConfigured();
+        if (!configured) {
+          setError('Intervals.icu not configured - cannot sync from API');
+          setLoading(false);
+          return;
+        }
+
+        // Fetch from API and update database
+        const data = await intervalsApi.getEvents(start, end, false, true);
+        console.log(`📊 Synced ${data.length} events from API for week ${start} to ${end}`);
+
+        const workouts = data.filter(event =>
+          event.category === 'WORKOUT' || !event.category
+        );
+        workouts.sort((a, b) => {
+          const dateA = new Date(a.start_date_local || a.date);
+          const dateB = new Date(b.start_date_local || b.date);
+          return dateA - dateB;
+        });
+
+        setEvents(workouts);
       } else {
-        console.log('📅 Loading weekly plan (checking cache first)');
+        console.log('📅 Loading weekly plan from database');
+
+        // Load from database only (works even without API configuration)
+        const data = await intervalsApi.getEvents(start, end, true, false);
+
+        console.log(`📊 Loaded ${data.length} events from database for week ${start} to ${end}`);
+
+        // Filter for workouts only (not races, notes, etc.)
+        const workouts = data.filter(event =>
+          event.category === 'WORKOUT' || !event.category
+        );
+
+        // Sort by date
+        workouts.sort((a, b) => {
+          const dateA = new Date(a.start_date_local || a.date);
+          const dateB = new Date(b.start_date_local || b.date);
+          return dateA - dateB;
+        });
+
+        setEvents(workouts);
+
+        // If no events found in database, show helpful message
+        if (workouts.length === 0) {
+          console.log('ℹ️ No events found in database for current week');
+          // Don't set error if no events - just show empty state
+        }
       }
-
-      // Fetch events - will use database cache unless forceRefresh is true
-      const data = await intervalsApi.getEvents(start, end, false, forceRefresh);
-
-      console.log(`📊 Loaded ${data.length} events for week ${start} to ${end}`);
-
-      // Filter for workouts only (not races, notes, etc.)
-      const workouts = data.filter(event =>
-        event.category === 'WORKOUT' || !event.category
-      );
-
-      // Sort by date
-      workouts.sort((a, b) => {
-        const dateA = new Date(a.start_date_local || a.date);
-        const dateB = new Date(b.start_date_local || b.date);
-        return dateA - dateB;
-      });
-
-      setEvents(workouts);
     } catch (err) {
       console.error('Error fetching weekly plan:', err);
       setError(err.message);
