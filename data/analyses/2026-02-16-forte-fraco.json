@@ -1,0 +1,138 @@
+{
+  "version": "2.0",
+  "metadata": {
+    "date": "2026-02-16",
+    "activityId": "i125562353",
+    "activityName": {
+      "en_US": "Forte x Fraco (Strong/Weak Intervals)",
+      "pt_BR": "Forte x Fraco (Intervalos Forte/Fraco)"
+    },
+    "generatedAt": "2026-02-17T10:30:00Z"
+  },
+  "session": {
+    "type": "tempo_intervals",
+    "distance": 11028,
+    "duration": 2938,
+    "avgPace": "4:26/km",
+    "avgHR": 155,
+    "avgPower": 307,
+    "trainingLoad": 59
+  },
+  "marathonContext": {
+    "goalPace": "4:02/km",
+    "weeksToRace": 17,
+    "currentPhase": {
+      "en_US": "Base Building - Week 1",
+      "pt_BR": "Construção de Base - Semana 1"
+    }
+  },
+  "analysis": {
+    "strengths": {
+      "en_US": [
+        "Excellent double training day execution with 94km total weekly volume",
+        "Strong tempo intervals: 7x3:17 @ 4:06/km (12 seconds faster than marathon pace)",
+        "Consistent pacing across all hard intervals with minimal fade",
+        "Good recovery management: kept easy intervals at 4:56/km (proper recovery intensity)",
+        "Morning power output of 307W shows excellent running economy",
+        "Followed up with smart PM easy run (6.4km @ 4:41/km) for additional volume"
+      ],
+      "pt_BR": [
+        "Excelente execução de dia duplo de treino com 94km de volume semanal total",
+        "Intervalos de ritmo fortes: 7x3:17 @ 4:06/km (12 segundos mais rápido que pace de maratona)",
+        "Ritmo consistente em todos intervalos fortes com mínima queda",
+        "Boa gestão de recuperação: manteve intervalos fáceis em 4:56/km (intensidade de recuperação adequada)",
+        "Potência matinal de 307W mostra excelente economia de corrida",
+        "Seguido por corrida fácil inteligente à tarde (6.4km @ 4:41/km) para volume adicional"
+      ]
+    },
+    "concerns": {
+      "en_US": [
+        "Negative TSB of -13.6 indicates accumulated fatigue entering Week 1 of new cycle",
+        "High ATL (79.3) vs CTL (65.7) suggests recent spike in training load",
+        "Double day on first day of new training cycle may extend recovery needs",
+        "Combined daily training load of 94 is very high for base building phase",
+        "Risk of starting new cycle without adequate recovery from previous block"
+      ],
+      "pt_BR": [
+        "TSB negativo de -13.6 indica fadiga acumulada entrando na Semana 1 do novo ciclo",
+        "ATL alto (79.3) vs CTL (65.7) sugere pico recente na carga de treino",
+        "Dia duplo no primeiro dia do novo ciclo de treino pode estender necessidades de recuperação",
+        "Carga de treino diária combinada de 94 é muito alta para fase de construção de base",
+        "Risco de iniciar novo ciclo sem recuperação adequada do bloco anterior"
+      ]
+    },
+    "keyFindings": {
+      "en_US": [
+        "The 'Forte x Fraco' format is highly effective: alternating fast/recovery intervals build tempo endurance",
+        "Running faster than marathon pace (4:06 vs 4:02 goal) for sustained intervals shows strong fitness",
+        "Heart rate discipline: averaged 155bpm (82% max HR) - perfect tempo intensity",
+        "Power-HR coupling of 1.98 demonstrates excellent aerobic efficiency",
+        "Total session demonstrates capacity for 2.5+ hours of quality marathon-paced work"
+      ],
+      "pt_BR": [
+        "O formato 'Forte x Fraco' é altamente efetivo: intervalos alternados rápido/recuperação constroem resistência de ritmo",
+        "Correr mais rápido que pace de maratona (4:06 vs meta 4:02) por intervalos sustentados mostra forte condicionamento",
+        "Disciplina de frequência cardíaca: média de 155bpm (82% FC máx) - intensidade de ritmo perfeita",
+        "Acoplamento Potência-FC de 1.98 demonstra excelente eficiência aeróbica",
+        "Sessão total demonstra capacidade para 2.5+ horas de trabalho de qualidade no pace de maratona"
+      ]
+    }
+  },
+  "recommendations": {
+    "nextSession": [
+      {
+        "date": "2026-02-17",
+        "type": "Easy Recovery",
+        "timeOfDay": "Morning",
+        "optional": false,
+        "workout": {
+          "en_US": "8-10km easy @ 5:15-5:30/km, HR <145bpm. Focus on active recovery.",
+          "pt_BR": "8-10km fácil @ 5:15-5:30/km, FC <145bpm. Foco em recuperação ativa."
+        },
+        "rationale": {
+          "en_US": "Critical recovery day after yesterday's double. Keep intensity very low to clear fatigue while maintaining aerobic stimulus.",
+          "pt_BR": "Dia de recuperação crítico após o treino duplo de ontem. Mantenha intensidade muito baixa para limpar fadiga mantendo estímulo aeróbico."
+        }
+      }
+    ],
+    "weeklyAdjustments": {
+      "en_US": [
+        "Monitor fatigue closely this week - TSB -13.6 requires careful load management",
+        "Keep next 2-3 days at recovery intensity (HR <145, pace >5:10/km)",
+        "Consider reducing weekly volume to 75-80km to allow CTL to catch up with ATL",
+        "Schedule your next quality session (threshold or intervals) no earlier than Thursday",
+        "Prioritize sleep and nutrition to support recovery from high training load",
+        "If fatigue persists past Wednesday, take a complete rest day instead of easy run"
+      ],
+      "pt_BR": [
+        "Monitore fadiga de perto esta semana - TSB -13.6 requer gestão cuidadosa de carga",
+        "Mantenha próximos 2-3 dias em intensidade de recuperação (FC <145, pace >5:10/km)",
+        "Considere reduzir volume semanal para 75-80km para permitir que CTL alcance ATL",
+        "Agende sua próxima sessão de qualidade (limiar ou intervalos) não antes de quinta-feira",
+        "Priorize sono e nutrição para suportar recuperação da alta carga de treino",
+        "Se fadiga persistir após quarta-feira, faça dia de descanso completo ao invés de corrida fácil"
+      ]
+    },
+    "progressionNotes": {
+      "en_US": "Strong execution of tempo intervals demonstrates readiness for marathon-paced work. However, entering a new training cycle with negative TSB requires immediate attention to recovery. The double day was well-executed but may have been premature given the fatigue state. Focus this week on rebuilding freshness while maintaining aerobic base. Week 2 should introduce structured marathon pace work once TSB returns to positive range.",
+      "pt_BR": "Forte execução dos intervalos de ritmo demonstra prontidão para trabalho no pace de maratona. Porém, entrar em um novo ciclo de treino com TSB negativo requer atenção imediata à recuperação. O dia duplo foi bem executado, mas pode ter sido prematuro dado o estado de fadiga. Foque esta semana em reconstruir frescor mantendo base aeróbica. Semana 2 deve introduzir trabalho estruturado no pace de maratona quando TSB retornar à faixa positiva."
+    }
+  },
+  "metrics": {
+    "totalKm": 11.03,
+    "kmAtMarathonPace": 0,
+    "kmAtThresholdPace": 3.8,
+    "kmAtEasyPace": 7.2
+  },
+  "verdict": {
+    "rating": "good",
+    "summary": {
+      "en_US": "Well-executed tempo interval session with excellent pacing and power output, but concerning fatigue levels (TSB -13.6) warrant increased focus on recovery this week.",
+      "pt_BR": "Sessão de intervalos de ritmo bem executada com excelente controle de pace e potência, mas níveis preocupantes de fadiga (TSB -13.6) justificam foco aumentado em recuperação esta semana."
+    },
+    "notes": {
+      "en_US": "The 'Forte x Fraco' workout format proved highly effective for building tempo endurance. Running the strong intervals at 4:06/km (faster than 4:02 marathon goal) shows strong fitness foundations. However, starting Week 1 with elevated fatigue requires conservative load management to avoid overreaching.",
+      "pt_BR": "O formato de treino 'Forte x Fraco' provou ser altamente efetivo para construir resistência de ritmo. Correr os intervalos fortes a 4:06/km (mais rápido que meta de 4:02 na maratona) mostra bases fortes de condicionamento. Porém, iniciar Semana 1 com fadiga elevada requer gestão conservadora de carga para evitar overreaching."
+    }
+  }
+}

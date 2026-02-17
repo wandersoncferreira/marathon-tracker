@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check IndexedDB</title>
+</head>
+<body>
+    <h1>Check IndexedDB Analyses</h1>
+    <button onclick="checkDB()">Check Database</button>
+    <button onclick="clearDB()">Clear All Analyses</button>
+    <pre id="output"></pre>
+
+    <script type="module">
+        window.checkDB = async function() {
+            try {
+                const dbName = 'MarathonTrackerDB';
+                const request = indexedDB.open(dbName);
+
+                request.onsuccess = function(event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['analyses'], 'readonly');
+                    const store = transaction.objectStore('analyses');
+                    const getAllRequest = store.getAll();
+
+                    getAllRequest.onsuccess = function() {
+                        const analyses = getAllRequest.result;
+                        document.getElementById('output').textContent =
+                            'Found ' + analyses.length + ' analyses:\n\n' +
+                            JSON.stringify(analyses, null, 2);
+                    };
+                };
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error: ' + error.message;
+            }
+        };
+
+        window.clearDB = async function() {
+            if (!confirm('Clear all analyses?')) return;
+
+            try {
+                const dbName = 'MarathonTrackerDB';
+                const request = indexedDB.open(dbName);
+
+                request.onsuccess = function(event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['analyses'], 'readwrite');
+                    const store = transaction.objectStore('analyses');
+                    const clearRequest = store.clear();
+
+                    clearRequest.onsuccess = function() {
+                        document.getElementById('output').textContent = 'All analyses cleared!\nRefresh the main app to reload new analyses.';
+                    };
+                };
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error: ' + error.message;
+            }
+        };
+    </script>
+</body>
+</html>

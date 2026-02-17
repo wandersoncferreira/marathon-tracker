@@ -15,12 +15,59 @@ function validateAnalysis(data) {
       throw new Error(`Missing required field: ${field}`);
     }
   }
+
+  // Validate bilingual format (version 2.0+)
+  // Check that activityName is an object with en_US and pt_BR keys
+  if (data.metadata && data.metadata.activityName) {
+    const activityName = data.metadata.activityName;
+    if (typeof activityName === 'string') {
+      throw new Error('Analysis uses old schema. Please reimport with bilingual format.');
+    }
+    if (typeof activityName === 'object' && !activityName.en_US && !activityName.pt_BR) {
+      throw new Error('Analysis must include bilingual content (en_US and pt_BR).');
+    }
+  }
+
   return true;
 }
 
 class AnalysisLoader {
   constructor() {
     this.loaded = false;
+    this.migrated = false;
+  }
+
+  /**
+   * Check if an analysis has the old schema (non-bilingual)
+   */
+  hasOldSchema(analysis) {
+    if (!analysis || !analysis.metadata) return false;
+    const activityName = analysis.metadata.activityName;
+    return typeof activityName === 'string';
+  }
+
+  /**
+   * Migrate old schema analyses (clear them to force reload)
+   */
+  async migrateOldSchema() {
+    if (this.migrated) return; // Only migrate once per session
+
+    try {
+      const allAnalyses = await db.getAllAnalyses();
+      const hasOld = allAnalyses.some(a => this.hasOldSchema(a));
+
+      if (hasOld) {
+        console.log('🔄 Detected old non-bilingual analyses - clearing database');
+        await db.clearAnalyses();
+        console.log('✅ Old analyses cleared - new bilingual analyses will be loaded');
+        this.loaded = false; // Force reload
+      }
+
+      this.migrated = true;
+    } catch (error) {
+      console.error('Error during schema migration:', error);
+      this.migrated = true; // Don't retry
+    }
   }
 
   /**
@@ -47,10 +94,13 @@ class AnalysisLoader {
    */
   async loadAnalyses() {
     try {
-      // Migrate from localStorage if needed (one-time)
+      // FIRST: Check for old schema and migrate if needed
+      await this.migrateOldSchema();
+
+      // THEN: Migrate from localStorage if needed (one-time)
       await this.migrateFromLocalStorage();
 
-      // Load from database
+      // FINALLY: Load from database
       this.loaded = true;
       return await db.getAllAnalyses();
     } catch (error) {
@@ -77,6 +127,11 @@ class AnalysisLoader {
    * Get all analyses
    */
   async getAllAnalyses() {
+    // Always check for migration on first load
+    if (!this.migrated) {
+      await this.migrateOldSchema();
+    }
+
     if (!this.loaded) {
       await this.loadAnalyses();
     }

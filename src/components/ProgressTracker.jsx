@@ -13,8 +13,10 @@ import { formatDateISO } from '../utils/dateHelpers';
 import { intervalsApi } from '../services/intervalsApi';
 import { db } from '../services/database';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useTranslation } from '../i18n/LanguageContext';
 
 function ProgressTracker() {
+  const { t } = useTranslation();
   // Use training cycle activities for main metrics (weekly progress, totals, fitness)
   const { activities, loading } = useActivities(90, true, true); // Use full training cycle
   const { analyses } = useAnalyses();
@@ -419,7 +421,7 @@ function ProgressTracker() {
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading progress data...</p>
+          <p className="text-gray-600">{t('progress.loading')}</p>
         </div>
       </div>
     );
@@ -428,27 +430,27 @@ function ProgressTracker() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Progress Tracker</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('progress.title')}</h2>
         <p className="text-sm text-gray-600">
-          {cycleStats && `Week ${cycleStats.currentWeek}/${cycleStats.totalWeeks} - ${cycleStats.phase}`}
+          {cycleStats && `${t('common.week')} ${cycleStats.currentWeek}/${cycleStats.totalWeeks} - ${cycleStats.phase}`}
         </p>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 gap-4">
         <div className="card bg-gradient-to-br from-primary-600 to-primary-700 text-white">
-          <p className="text-sm text-primary-100 mb-1">Total KM at Marathon Pace</p>
+          <p className="text-sm text-primary-100 mb-1">{t('progress.totalKmAtMP')}</p>
           <p className="text-3xl font-bold">{totalStats?.totalKmAtMP.toFixed(1) || '0.0'}</p>
           <p className="text-xs text-primary-100 mt-2">
-            Target: {totalStats?.expectedKmAtMP.toFixed(0) || 0} km (cycle so far)
+            {t('progress.expectedTarget')}: {totalStats?.expectedKmAtMP.toFixed(0) || 0} {t('progress.cycleSoFar')}
           </p>
         </div>
 
         <div className="card bg-gradient-to-br from-blue-600 to-blue-700 text-white">
-          <p className="text-sm text-blue-100 mb-1">Threshold KM</p>
+          <p className="text-sm text-blue-100 mb-1">{t('progress.thresholdKm')}</p>
           <p className="text-3xl font-bold">{totalStats?.totalKmThreshold.toFixed(1) || '0.0'}</p>
           <p className="text-xs text-blue-100 mt-2">
-            {totalStats?.analysisCount || 0} analyzed sessions
+            {totalStats?.analysisCount || 0} {t('progress.analyzedSessions')}
           </p>
         </div>
       </div>
@@ -456,7 +458,7 @@ function ProgressTracker() {
       {/* Fitness/Fatigue/Form Chart */}
       {fitnessData.length > 0 && (
         <div className="card">
-          <h3 className="font-semibold text-gray-900 mb-4">Fitness, Fatigue & Form</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('progress.fitnessChart')}</h3>
           <div style={{ width: '100%', height: '256px' }}>
             <ResponsiveContainer>
               <LineChart data={fitnessData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -480,7 +482,7 @@ function ProgressTracker() {
                   dataKey="fitness"
                   stroke="#3b82f6"
                   strokeWidth={2}
-                  name="Fitness (CTL)"
+                  name={t('progress.fitness')}
                   dot={false}
                 />
                 <Line
@@ -488,7 +490,7 @@ function ProgressTracker() {
                   dataKey="fatigue"
                   stroke="#ef4444"
                   strokeWidth={2}
-                  name="Fatigue (ATL)"
+                  name={t('progress.fatigue')}
                   dot={false}
                 />
                 <Line
@@ -496,16 +498,16 @@ function ProgressTracker() {
                   dataKey="form"
                   stroke="#10b981"
                   strokeWidth={2}
-                  name="Form (TSB)"
+                  name={t('progress.form')}
                   dot={false}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-4 text-xs text-gray-500 space-y-1">
-            <p><span className="font-medium text-blue-600">Fitness (CTL)</span>: Chronic Training Load - long-term fitness buildup</p>
-            <p><span className="font-medium text-red-600">Fatigue (ATL)</span>: Acute Training Load - recent training stress</p>
-            <p><span className="font-medium text-green-600">Form (TSB)</span>: Training Stress Balance - readiness to perform (Fitness - Fatigue)</p>
+            <p><span className="font-medium text-blue-600">{t('progress.fitness')}</span>: {t('progress.fitnessDesc')}</p>
+            <p><span className="font-medium text-red-600">{t('progress.fatigue')}</span>: {t('progress.fatigueDesc')}</p>
+            <p><span className="font-medium text-green-600">{t('progress.form')}</span>: {t('progress.formDesc')}</p>
           </div>
         </div>
       )}
@@ -514,25 +516,25 @@ function ProgressTracker() {
       <div className="card">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 mb-1">Heart Rate by Pace Group (Bimester Trends)</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('progress.hrByPaceChart')}</h3>
             <p className="text-xs text-gray-500">
-              Average heart rate at different training paces per 2-month period. Lower HR at same pace = improved fitness.
+              {t('progress.hrByPaceDesc')}
             </p>
           </div>
           <button
             onClick={loadHistoricalActivities}
             disabled={loadingHistorical}
             className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed ml-4"
-            title="Refresh chart data from database"
+            title={t('progress.refreshTooltip')}
           >
-            {loadingHistorical ? '⏳ Loading...' : '🔄 Refresh'}
+            {loadingHistorical ? `⏳ ${t('progress.loading')}` : `🔄 ${t('common.refresh')}`}
           </button>
         </div>
 
         {/* Pace Group Selector */}
         <div className="mb-4 flex items-center gap-3">
           <label htmlFor="paceGroupSelect" className="text-sm font-medium text-gray-700">
-            Focus on pace:
+            {t('progress.focusOnPace')}
           </label>
           <select
             id="paceGroupSelect"
@@ -540,7 +542,7 @@ function ProgressTracker() {
             onChange={(e) => setSelectedPaceGroup(e.target.value || null)}
             className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="">All pace groups</option>
+            <option value="">{t('progress.allPaceGroups')}</option>
             <option value="4:00-4:15">4:00-4:15 /km</option>
             <option value="4:15-4:30">4:15-4:30 /km</option>
             <option value="4:30-4:45">4:30-4:45 /km</option>
@@ -555,10 +557,10 @@ function ProgressTracker() {
             <div className="flex items-start justify-between mb-2">
               <div>
                 <p className="text-sm font-semibold text-gray-900">
-                  {trendStats.improving ? '✅ Fitness Improving' : '⚠️ Fitness Declining'}
+                  {trendStats.improving ? `✅ ${t('progress.fitnessImproving')}` : `⚠️ ${t('progress.fitnessDeclining')}`}
                 </p>
                 <p className="text-xs text-gray-600">
-                  Pace range: {selectedPaceGroup} /km
+                  {t('progress.paceRange')}: {selectedPaceGroup} /km
                 </p>
               </div>
               <div className="text-right">
@@ -572,25 +574,25 @@ function ProgressTracker() {
             </div>
             <div className="grid grid-cols-3 gap-3 text-xs">
               <div>
-                <p className="text-gray-600">Rate of change</p>
+                <p className="text-gray-600">{t('progress.rateOfChange')}</p>
                 <p className="font-semibold text-gray-900">
                   {trendStats.slope > 0 ? '+' : ''}{trendStats.slope.toFixed(2)} bpm/bimester
                 </p>
               </div>
               <div>
-                <p className="text-gray-600">Starting HR</p>
+                <p className="text-gray-600">{t('progress.startingHR')}</p>
                 <p className="font-semibold text-gray-900">{Math.round(trendStats.firstHR)} bpm</p>
               </div>
               <div>
-                <p className="text-gray-600">Current HR</p>
+                <p className="text-gray-600">{t('progress.currentHR')}</p>
                 <p className="font-semibold text-gray-900">{Math.round(trendStats.lastHR)} bpm</p>
               </div>
             </div>
             <div className="mt-2 pt-2 border-t border-gray-200">
               <p className="text-xs text-gray-600">
-                <span className="font-medium">Interpretation:</span> {trendStats.improving
-                  ? `Your heart rate at this pace is decreasing by ${Math.abs(trendStats.slope).toFixed(2)} bpm every 2 months, indicating improved aerobic efficiency.`
-                  : `Your heart rate at this pace is increasing by ${Math.abs(trendStats.slope).toFixed(2)} bpm every 2 months. Consider reviewing training load and recovery.`
+                <span className="font-medium">{t('progress.interpretation')}:</span> {trendStats.improving
+                  ? `${t('progress.hrDecreasing')} ${Math.abs(trendStats.slope).toFixed(2)} ${t('progress.everyBimester')}`
+                  : `${t('progress.hrIncreasing')} ${Math.abs(trendStats.slope).toFixed(2)} ${t('progress.reviewTraining')}`
                 }
               </p>
             </div>
@@ -602,7 +604,7 @@ function ProgressTracker() {
             {selectedPaceGroup && trendStats === null && (
               <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                 <p className="text-sm text-gray-600">
-                  No data available for pace group {selectedPaceGroup} /km. Try selecting a different pace range.
+                  {t('progress.noData')} {selectedPaceGroup} /km. {t('progress.tryDifferent')}
                 </p>
               </div>
             )}
@@ -619,7 +621,7 @@ function ProgressTracker() {
                   />
                   <YAxis
                     tick={{ fontSize: 12 }}
-                    label={{ value: 'Heart Rate (bpm)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                    label={{ value: t('progress.heartRateBpm'), angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
                     domain={['dataMin - 5', 'dataMax + 5']}
                   />
                   <Tooltip
@@ -714,7 +716,7 @@ function ProgressTracker() {
                       stroke="#000000"
                       strokeWidth={2}
                       strokeDasharray="5 5"
-                      name="Trend Line"
+                      name={t('progress.trendLine')}
                       dot={false}
                       activeDot={false}
                     />
@@ -753,9 +755,9 @@ function ProgressTracker() {
           </>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">No historical data yet</p>
+            <p className="text-gray-500 mb-4">{t('progress.noHistoricalData')}</p>
             <p className="text-xs text-gray-400 mb-4">
-              Use the sync functionality in the Training Log tab to download all activities, intervals, messages, and wellness data.
+              {t('progress.useSyncFunctionality')}
             </p>
           </div>
         )}
@@ -763,7 +765,7 @@ function ProgressTracker() {
 
       {/* Weekly Marathon Pace Progress */}
       <div className="card">
-        <h3 className="font-semibold text-gray-900 mb-4">Weekly KM at Marathon Pace</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{t('progress.weeklyMP')}</h3>
         <div className="space-y-3">
           {weeklyData.slice(-4).reverse().map((week, idx) => {
             // Get the current week number from cycle stats
@@ -776,7 +778,7 @@ function ProgressTracker() {
               <div key={idx}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm text-gray-700">
-                    Week of {new Date(week.week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {t('progress.weekOf')} {new Date(week.week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                   <span className={`text-sm font-semibold ${
                     isOnTrack ? 'text-green-600' : 'text-yellow-600'
@@ -793,26 +795,26 @@ function ProgressTracker() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Target: {weekTarget.min}-{weekTarget.max} km
+                  {t('progress.expectedTarget')}: {weekTarget.min}-{weekTarget.max} km
                 </p>
               </div>
             );
           })}
         </div>
         <p className="text-xs text-gray-500 mt-3">
-          Marathon pace: 4:02/km ± 6s
+          {t('progress.marathonPace')}
         </p>
       </div>
 
       {/* Weekly Volume Trend */}
       <div className="card">
-        <h3 className="font-semibold text-gray-900 mb-4">Weekly Volume</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{t('progress.weeklyVolume')}</h3>
         <div className="space-y-3">
           {weeklyData.slice(-4).reverse().map((week, idx) => (
             <div key={idx}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-gray-700">
-                  Week of {new Date(week.week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {t('progress.weekOf')} {new Date(week.week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
                 <span className="text-sm font-semibold text-gray-900">
                   {week.totalKm.toFixed(1)} km
@@ -825,8 +827,8 @@ function ProgressTracker() {
                 />
               </div>
               <div className="flex items-center justify-between mt-1 text-xs text-gray-500">
-                <span>{week.sessions} sessions</span>
-                <span>Load: {week.totalLoad.toFixed(0)}</span>
+                <span>{week.sessions} {t('dashboard.sessions')}</span>
+                <span>{t('common.load')}: {week.totalLoad.toFixed(0)}</span>
               </div>
             </div>
           ))}
@@ -835,7 +837,7 @@ function ProgressTracker() {
 
       {/* Training Distribution */}
       <div className="card">
-        <h3 className="font-semibold text-gray-900 mb-4">Training Distribution (Last 4 Weeks)</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{t('progress.trainingDistribution')}</h3>
         <div className="space-y-3">
           {weeklyData.slice(-4).reverse().map((week, idx) => {
             const dist = week.distribution || {};
@@ -849,7 +851,7 @@ function ProgressTracker() {
             return (
               <div key={idx}>
                 <p className="text-sm text-gray-700 mb-2">
-                  Week of {new Date(week.week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {total.toFixed(1)} km
+                  {t('progress.weekOf')} {new Date(week.week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {total.toFixed(1)} km
                 </p>
                 <div className="flex h-8 rounded-lg overflow-hidden">
                   {speedPercent > 0 && (
@@ -899,24 +901,24 @@ function ProgressTracker() {
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-1 mt-2 text-xs text-gray-500">
-                  <span>🔴 Speed: {dist.speed?.toFixed(1) || 0}</span>
-                  <span>🟠 Threshold: {dist.threshold?.toFixed(1) || 0}</span>
-                  <span>🔵 Marathon Pace: {dist.marathonPace?.toFixed(1) || 0}</span>
-                  <span>🟡 Tempo: {dist.tempo?.toFixed(1) || 0}</span>
-                  <span className="col-span-2">🟢 Easy: {dist.easy?.toFixed(1) || 0}</span>
+                  <span>🔴 {t('progress.speed')}: {dist.speed?.toFixed(1) || 0}</span>
+                  <span>🟠 {t('progress.threshold')}: {dist.threshold?.toFixed(1) || 0}</span>
+                  <span>🔵 {t('progress.marathonPace')}: {dist.marathonPace?.toFixed(1) || 0}</span>
+                  <span>🟡 {t('progress.tempo')}: {dist.tempo?.toFixed(1) || 0}</span>
+                  <span className="col-span-2">🟢 {t('progress.easy')}: {dist.easy?.toFixed(1) || 0}</span>
                 </div>
               </div>
             );
           })}
         </div>
         <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
-          <p className="font-medium mb-1">Pace Zones:</p>
+          <p className="font-medium mb-1">{t('progress.paceZones')}:</p>
           <ul className="space-y-1">
-            <li>🔴 Speed: &lt;3:40/km</li>
-            <li>🟠 Threshold: 3:40-3:55/km</li>
-            <li>🔵 Marathon Pace: 3:56-4:08/km</li>
-            <li>🟡 Tempo: 4:08-4:45/km</li>
-            <li>🟢 Easy: &gt;4:45/km</li>
+            <li>🔴 {t('progress.speed')}: &lt;3:40/km</li>
+            <li>🟠 {t('progress.threshold')}: 3:40-3:55/km</li>
+            <li>🔵 {t('progress.marathonPace')}: 3:56-4:08/km</li>
+            <li>🟡 {t('progress.tempo')}: 4:08-4:45/km</li>
+            <li>🟢 {t('progress.easy')}: &gt;4:45/km</li>
           </ul>
         </div>
       </div>
@@ -924,37 +926,37 @@ function ProgressTracker() {
       {/* Goal Status */}
       {cycleStats && (
         <div className="card bg-gray-50">
-          <h3 className="font-semibold text-gray-900 mb-3">Cycle Status</h3>
+          <h3 className="font-semibold text-gray-900 mb-3">{t('progress.cycleStatus')}</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Cycle Start</span>
+              <span className="text-gray-600">{t('progress.cycleStart')}</span>
               <span className="font-semibold text-gray-900">{cycleStats.startDate}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Current Week</span>
+              <span className="text-gray-600">{t('progress.currentWeek')}</span>
               <span className="font-semibold text-gray-900">
-                Week {cycleStats.currentWeek} of {cycleStats.totalWeeks}
+                {t('common.week')} {cycleStats.currentWeek} of {cycleStats.totalWeeks}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Training Phase</span>
+              <span className="text-gray-600">{t('progress.trainingPhase')}</span>
               <span className="font-semibold text-gray-900">{cycleStats.phase}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Weeks to Race</span>
+              <span className="text-gray-600">{t('dashboard.weeksToRace')}</span>
               <span className="font-semibold text-gray-900">{cycleStats.weeksToRace}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Race Date</span>
+              <span className="text-gray-600">{t('progress.raceDate')}</span>
               <span className="font-semibold text-primary-600">{cycleStats.raceDate}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Goal Time</span>
+              <span className="text-gray-600">{t('progress.goalTime')}</span>
               <span className="font-semibold text-primary-600">2:50:00 (4:02/km)</span>
             </div>
             <div className="mt-3 pt-3 border-t border-gray-200">
               <div className="flex justify-between mb-1">
-                <span className="text-gray-600">Cycle Progress</span>
+                <span className="text-gray-600">{t('progress.cycleProgress')}</span>
                 <span className="font-semibold text-gray-900">{cycleStats.percentComplete}%</span>
               </div>
               <div className="w-full bg-gray-300 rounded-full h-3">
@@ -990,7 +992,7 @@ function ProgressTracker() {
                   })()}
                 </h3>
                 <p className="text-sm text-primary-100">
-                  Pace: {modalData.paceGroup} /km ({modalData.activities.length} activities)
+                  {t('common.pace')}: {modalData.paceGroup} /km ({modalData.activities.length} activities)
                 </p>
               </div>
               <button
@@ -1022,26 +1024,26 @@ function ProgressTracker() {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900">
-                            {activity.name || 'Run'}
+                            {activity.name || t('progress.run')}
                           </h4>
                           <p className="text-xs text-gray-500">{dateStr}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-4 gap-3 text-sm">
                         <div>
-                          <p className="text-xs text-gray-600">Distance</p>
+                          <p className="text-xs text-gray-600">{t('common.distance')}</p>
                           <p className="font-semibold text-gray-900">{distanceKm} km</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600">Pace</p>
+                          <p className="text-xs text-gray-600">{t('common.pace')}</p>
                           <p className="font-semibold text-gray-900">{paceStr} /km</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600">Avg HR</p>
+                          <p className="text-xs text-gray-600">{t('common.avgHR')}</p>
                           <p className="font-semibold text-gray-900">{Math.round(activity.hr)} bpm</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600">Power</p>
+                          <p className="text-xs text-gray-600">{t('common.avgPower')}</p>
                           <p className="font-semibold text-gray-900">
                             {activity.avgPower ? `${Math.round(activity.avgPower)}W` : 'N/A'}
                           </p>

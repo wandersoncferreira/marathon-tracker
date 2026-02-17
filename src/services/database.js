@@ -47,6 +47,11 @@ class MarathonTrackerDB extends Dexie {
       activityMessages: 'id, activityId, created', // Primary key: message id, indexed by activityId and created date
     });
 
+    // Version 6 - Add events/planned workouts table
+    this.version(6).stores({
+      events: 'id, start_date_local, category', // Primary key: event id, indexed by start date and category
+    });
+
     // Access tables
     this.config = this.table('config');
     this.activities = this.table('activities');
@@ -55,6 +60,7 @@ class MarathonTrackerDB extends Dexie {
     this.cache = this.table('cache');
     this.analyses = this.table('analyses');
     this.activityMessages = this.table('activityMessages');
+    this.events = this.table('events');
   }
 
   /**
@@ -426,16 +432,62 @@ class MarathonTrackerDB extends Dexie {
   }
 
   /**
+   * Store events/planned workouts
+   */
+  async storeEvents(events) {
+    try {
+      if (events && events.length > 0) {
+        await this.events.bulkPut(events);
+      }
+      return true;
+    } catch (error) {
+      console.error('Error storing events:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get events for a date range
+   */
+  async getEvents(startDate, endDate) {
+    try {
+      return await this.events
+        .where('start_date_local')
+        .between(startDate, endDate + 'T23:59:59', true, true)
+        .toArray();
+    } catch (error) {
+      console.error('Error getting events:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Delete events in a date range (useful for refreshing)
+   */
+  async deleteEvents(startDate, endDate) {
+    try {
+      const events = await this.getEvents(startDate, endDate);
+      const eventIds = events.map(e => e.id);
+      await this.events.bulkDelete(eventIds);
+      return true;
+    } catch (error) {
+      console.error('Error deleting events:', error);
+      return false;
+    }
+  }
+
+  /**
    * Get database statistics
    */
   async getStats() {
     try {
-      const [activitiesCount, detailsCount, wellnessCount, analysesCount, messagesCount, cacheCount] = await Promise.all([
+      const [activitiesCount, detailsCount, wellnessCount, analysesCount, messagesCount, eventsCount, cacheCount] = await Promise.all([
         this.activities.count(),
         this.activityDetails.count(),
         this.wellness.count(),
         this.analyses.count(),
         this.activityMessages.count(),
+        this.events.count(),
         this.cache.count(),
       ]);
 
@@ -445,6 +497,7 @@ class MarathonTrackerDB extends Dexie {
         wellness: wellnessCount,
         analyses: analysesCount,
         activityMessages: messagesCount,
+        events: eventsCount,
         cache: cacheCount,
       };
     } catch (error) {
@@ -455,6 +508,7 @@ class MarathonTrackerDB extends Dexie {
         wellness: 0,
         analyses: 0,
         activityMessages: 0,
+        events: 0,
         cache: 0,
       };
     }

@@ -162,6 +162,21 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
    - Moderate (TSB -5 to -15): Execute AM, PM optional or reduced
    - Poor (TSB <-15): AM easy only, skip PM
 
+**IMPORTANT - Weekly Adjustments (NOT Weekly Plan):**
+The athlete already has their real weekly plan in Intervals.icu. DO NOT generate a new weekly plan.
+
+Instead, provide **3-5 brief tips** on how to adjust/tweak their existing planned workouts based on:
+- Today's performance and recovery state
+- Current fatigue levels (TSB)
+- Upcoming planned sessions this week
+- What to prioritize, reduce, or skip
+
+Focus on actionable adjustments like:
+- "Reduce Thursday's threshold reps from 5 to 3 if TSB still below -15"
+- "Add 10min easy cooldown to Saturday's long run"
+- "Skip Wednesday PM session if legs feel heavy"
+- "Move Friday's easy run to complete rest if needed"
+
 **Example NextSession formats (doubles):**
 ```json
 "nextSession": [
@@ -198,12 +213,18 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
 
 Generate a valid JSON file with this exact structure:
 
+**IMPORTANT - Bilingual Content:**
+The app supports both English (en_US) and Portuguese (pt_BR). All user-facing text content must be provided in BOTH languages using the structure shown below. Numeric data, dates, IDs, and enums remain single-value.
+
 {
   "version": "1.0",
   "metadata": {
     "date": "YYYY-MM-DD",
     "activityId": "intervals.icu activity ID (e.g., i125562353)",
-    "activityName": "activity name from Intervals.icu",
+    "activityName": {
+      "en_US": "activity name in English",
+      "pt_BR": "nome da atividade em português"
+    },
     "analysisDate": "ISO timestamp when analysis was created",
     "coach": "Claude-2h50-Marathon"
   },
@@ -220,24 +241,48 @@ Generate a valid JSON file with this exact structure:
     "goalPace": "4:02/km",
     "goalTime": "2:50:00",
     "weeksToRace": [number of weeks],
-    "currentPhase": "Base/Build (Weeks 1-4)" or "Peak (Weeks 5-11)" or "Taper (Weeks 12-14)"
+    "currentPhase": {
+      "en_US": "Base/Build (Weeks 1-4)" or "Peak (Weeks 5-11)" or "Taper (Weeks 12-14)",
+      "pt_BR": "Base/Construção (Semanas 1-4)" or "Pico (Semanas 5-11)" or "Recuperação (Semanas 12-14)"
+    }
   },
   "analysis": {
-    "strengths": [
-      "Specific strength with numbers/metrics",
-      "Another strength with data",
-      ...
-    ],
-    "concerns": [
-      "Specific concern with context",
-      "Another area needing attention",
-      ...
-    ],
-    "keyFindings": [
-      "Important insight with metrics",
-      "Another key finding",
-      ...
-    ]
+    "strengths": {
+      "en_US": [
+        "Specific strength with numbers/metrics in English",
+        "Another strength with data",
+        ...
+      ],
+      "pt_BR": [
+        "Força específica com números/métricas em português",
+        "Outra força com dados",
+        ...
+      ]
+    },
+    "concerns": {
+      "en_US": [
+        "Specific concern with context in English",
+        "Another area needing attention",
+        ...
+      ],
+      "pt_BR": [
+        "Preocupação específica com contexto em português",
+        "Outra área que precisa de atenção",
+        ...
+      ]
+    },
+    "keyFindings": {
+      "en_US": [
+        "Important insight with metrics in English",
+        "Another key finding",
+        ...
+      ],
+      "pt_BR": [
+        "Insight importante com métricas em português",
+        "Outra descoberta chave",
+        ...
+      ]
+    }
   },
   "metrics": {
     "kmAtMarathonPace": [km within 5s/km of 4:02],
@@ -251,36 +296,64 @@ Generate a valid JSON file with this exact structure:
         "date": "YYYY-MM-DD (tomorrow's date)",
         "timeOfDay": "AM|PM",
         "type": "session type from Intervals.icu planned workout",
-        "workout": "TOMORROW'S ACTUAL PLANNED WORKOUT from Intervals.icu with adaptive guidance. Format: '[Original workout description] - ADAPTATIONS: [specific modifications based on today's performance and readiness]'",
-        "rationale": "Why these specific adaptations are recommended based on: (1) today's training load/performance quality, (2) current wellness metrics (TSB/HR/HRV/sleep), (3) planned workout intensity",
+        "workout": {
+          "en_US": "TOMORROW'S ACTUAL PLANNED WORKOUT in English with adaptive guidance. Format: '[Original workout description] - ADAPTATIONS: [specific modifications]'",
+          "pt_BR": "TREINO PLANEJADO DE AMANHÃ em português com orientação adaptativa. Formato: '[Descrição do treino original] - ADAPTAÇÕES: [modificações específicas]'"
+        },
+        "rationale": {
+          "en_US": "Why these specific adaptations are recommended based on: (1) today's training load/performance quality, (2) current wellness metrics (TSB/HR/HRV/sleep), (3) planned workout intensity",
+          "pt_BR": "Por que essas adaptações específicas são recomendadas com base em: (1) carga de treino e qualidade do desempenho de hoje, (2) métricas atuais de bem-estar (TSB/FC/HRV/sono), (3) intensidade do treino planejado"
+        },
         "optional": false
       },
       {
         "date": "YYYY-MM-DD (tomorrow's date)",
         "timeOfDay": "PM",
         "type": "session type from Intervals.icu planned PM workout",
-        "workout": "PM workout (if scheduled) with adaptations. Note: PM sessions are typically for MP banking and are optional/tentative",
-        "rationale": "Guidance for PM session. Include decision criteria for skipping if needed.",
+        "workout": {
+          "en_US": "PM workout (if scheduled) with adaptations in English. Note: PM sessions are typically for MP banking and are optional/tentative",
+          "pt_BR": "Treino PM (se agendado) com adaptações em português. Nota: Sessões PM são tipicamente para acumular ritmo de maratona e são opcionais/tentativas"
+        },
+        "rationale": {
+          "en_US": "Guidance for PM session. Include decision criteria for skipping if needed.",
+          "pt_BR": "Orientação para sessão PM. Incluir critérios de decisão para pular se necessário."
+        },
         "optional": true
       }
     ],
     "// Note": "nextSession can be either an array (for multiple sessions) or a single object (backward compatible)",
-    "weeklyFocus": [
-      "Day (Date): Workout description - e.g., Tuesday (Feb 18): AM - Easy 8km @ 4:50-5:00/km, PM - 4km @ 4:00-4:04/km (doubles for MP banking)",
-      "Day (Date): Workout description - e.g., Wednesday (Feb 19): Speed work - 10 x 400m @ 3:35-3:40/km with 90s jog recovery",
-      "Day (Date): Workout description - e.g., Thursday (Feb 20): AM - Easy 7km @ 5:00-5:10/km, PM - 3km @ 4:00-4:04/km (doubles for MP banking)",
-      "Day (Date): Workout description - e.g., Saturday (Feb 22): Long run 24km - first 18km @ 4:35-4:45/km, final 6km @ 4:10-4:15/km",
-      ...
-    ],
-    "progressionNotes": "Coaching guidance on progression and what to focus on"
+    "weeklyAdjustments": {
+      "en_US": [
+        "Brief tip on how to adjust/tweak planned workouts based on today's performance",
+        "Another guidance on recovery needs or intensity modifications",
+        "Advice on which sessions to prioritize or skip this week",
+        ...
+      ],
+      "pt_BR": [
+        "Dica breve sobre como ajustar/modificar treinos planejados com base no desempenho de hoje",
+        "Outra orientação sobre necessidades de recuperação ou modificações de intensidade",
+        "Conselho sobre quais sessões priorizar ou pular esta semana",
+        ...
+      ]
+    },
+    "progressionNotes": {
+      "en_US": "Coaching guidance on progression and what to focus on in English",
+      "pt_BR": "Orientação de coaching sobre progressão e no que focar em português"
+    }
   },
   "verdict": {
     "rating": "excellent|good|acceptable|poor",
-    "summary": "1-2 sentence overall assessment of the session",
+    "summary": {
+      "en_US": "1-2 sentence overall assessment of the session in English",
+      "pt_BR": "Avaliação geral da sessão em 1-2 frases em português"
+    },
     "goalViability": {
       "2h50": "on_track|possible|unlikely",
       "confidence": "high|moderate|low",
-      "notes": "Brief explanation of goal viability assessment"
+      "notes": {
+        "en_US": "Brief explanation of goal viability assessment in English",
+        "pt_BR": "Breve explicação da avaliação de viabilidade do objetivo em português"
+      }
     }
   }
 }
@@ -302,9 +375,37 @@ Generate a valid JSON file with this exact structure:
 
 ---
 
+## Bilingual Content Guidelines
+
+**Fields requiring both en_US and pt_BR:**
+- metadata.activityName
+- marathonContext.currentPhase
+- analysis.strengths (array)
+- analysis.concerns (array)
+- analysis.keyFindings (array)
+- recommendations.nextSession[].workout
+- recommendations.nextSession[].rationale
+- recommendations.weeklyFocus (array)
+- recommendations.progressionNotes
+- verdict.summary
+- verdict.goalViability.notes
+
+**Fields that remain single-value (no translation):**
+- All numeric values (distance, pace, HR, power, load, etc.)
+- Dates, timestamps, IDs
+- Enums: session.type, verdict.rating, verdict.goalViability.2h50, verdict.goalViability.confidence
+- Boolean values: optional
+
+**Translation Tips:**
+- Translate concepts naturally, not word-for-word
+- Keep technical terms consistent (TSS, CTL, ATL, HR, etc.)
+- Maintain the same level of detail in both languages
+- Use appropriate coaching tone in both languages
+- Numbers and paces remain the same (4:02/km works in both languages)
+
 ## Example Output
 
-See `/app/data/analyses/2026-02-16-threshold-session.json` for a complete example.
+See `/app/data/analyses/2026-02-17-easy.json` for a complete bilingual example.
 
 ---
 

@@ -5,8 +5,12 @@
  * Fetches data from Intervals.icu API and generates analysis
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load database to get API config
 const dbPath = path.join(__dirname, 'public/database/marathon-tracker-db.json');
@@ -167,6 +171,8 @@ async function generateAnalysis() {
 
 Analyze the following training session and generate a structured JSON report following the schema in docs/COACH_ANALYSIS_PROMPT.md.
 
+**IMPORTANT: Generate bilingual content in both English (en_US) and Portuguese (pt_BR).**
+
 **Activity Data:**
 - Date: ${targetDate}
 - Activity ID: ${activity.id}
@@ -190,23 +196,54 @@ ${workoutsSection}
 - Weeks to Race: ${weeksToRace}
 - Current CTL/Fitness: ${todayWellness?.ctl || 'N/A'}
 
-Please generate a complete JSON analysis following the exact structure from docs/COACH_ANALYSIS_PROMPT.md. Include:
-1. All metadata fields
-2. Session details and metrics
-3. Marathon context
-4. Analysis with strengths, concerns, and key findings
-5. Calculated metrics (kmAtMarathonPace, kmAtThresholdPace, kmAtEasyPace)
-6. Recommendations including nextSession (with tomorrow's actual planned workouts adapted based on today's performance)
-7. Verdict with rating and goal viability
+Please generate a complete JSON analysis with the following bilingual structure:
 
-Be specific with numbers, brutally honest, and provide actionable guidance.`);
+**Bilingual Fields (provide both en_US and pt_BR):**
+- metadata.activityName: { "en_US": "...", "pt_BR": "..." }
+- marathonContext.currentPhase: { "en_US": "...", "pt_BR": "..." }
+- analysis.strengths: { "en_US": ["..."], "pt_BR": ["..."] }
+- analysis.concerns: { "en_US": ["..."], "pt_BR": ["..."] }
+- analysis.keyFindings: { "en_US": ["..."], "pt_BR": ["..."] }
+- recommendations.nextSession.workout: { "en_US": "...", "pt_BR": "..." }
+- recommendations.nextSession.rationale: { "en_US": "...", "pt_BR": "..." }
+- recommendations.weeklyAdjustments: { "en_US": ["..."], "pt_BR": ["..."] }
+- recommendations.progressionNotes: { "en_US": "...", "pt_BR": "..." }
+- verdict.summary: { "en_US": "...", "pt_BR": "..." }
+- verdict.goalViability.notes: { "en_US": "...", "pt_BR": "..." }
+
+**Single-value Fields (no translation needed):**
+- All numeric values (distance, pace, HR, power, etc.)
+- Dates, IDs, and structured data
+- session.type (use lowercase: "easy", "tempo", "intervals", "long_run", "recovery")
+- verdict.rating (use: "excellent", "good", "acceptable", "poor")
+
+Include:
+1. All metadata fields with bilingual activity name
+2. Session details and metrics (single-value)
+3. Marathon context with bilingual phase
+4. Analysis with bilingual strengths, concerns, and key findings
+5. Calculated metrics (kmAtMarathonPace, kmAtThresholdPace, kmAtEasyPace)
+6. Bilingual recommendations including:
+   - nextSession: Tomorrow's workouts with adaptations based on today's performance
+   - weeklyAdjustments: 3-5 brief tips on how to adjust THIS WEEK'S existing planned workouts (DO NOT generate a new weekly plan)
+   - progressionNotes: Overall guidance
+7. Verdict with rating and bilingual summary/notes
+
+**IMPORTANT for weeklyAdjustments:**
+- DO NOT create a new weekly training plan
+- DO NOT list day-by-day workouts
+- INSTEAD: Provide 3-5 actionable tips to tweak the athlete's existing Intervals.icu weekly plan
+- Examples: "Reduce threshold reps if TSB below -15", "Skip PM sessions if legs heavy", "Add recovery day if needed"
+
+Be specific with numbers, brutally honest, and provide actionable guidance. Write naturally in both English and Portuguese - translate concepts, not just words.`);
     console.log('---END PROMPT---\n');
 
     console.log(`\n📝 Next steps:`);
     console.log(`   1. Copy the prompt above`);
     console.log(`   2. Paste it into Claude (claude.ai or API)`);
-    console.log(`   3. Save the JSON response to: data/analyses/${targetDate}-easy.json`);
-    console.log(`   4. The app will automatically load it from the database\n`);
+    console.log(`   3. Save the JSON response to: data/analyses/${targetDate}-<type>.json`);
+    console.log(`   4. Import it into the app via Settings > Database > Import Coach Analysis`);
+    console.log(`   5. The analysis will be available in both English and Portuguese\n`);
 
   } catch (error) {
     console.error('❌ Error generating analysis:', error.message);

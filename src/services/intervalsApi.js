@@ -353,12 +353,50 @@ class IntervalsAPI {
    * Get events (planned workouts) for a date range
    * @param {string} startDate - ISO date string (YYYY-MM-DD)
    * @param {string} endDate - ISO date string (YYYY-MM-DD)
+   * @param {boolean} dbOnly - If true, only read from database (no API fallback)
+   * @param {boolean} forceRefresh - If true, always fetch from API and update cache
    * @returns {Promise<Array>}
    */
-  async getEvents(startDate, endDate) {
+  async getEvents(startDate, endDate, dbOnly = false, forceRefresh = false) {
+    // If forcing refresh, fetch from API and update database
+    if (forceRefresh) {
+      const configured = await this.isConfigured();
+      if (!configured) {
+        throw new Error('Intervals.icu not configured');
+      }
+
+      console.log('🔄 Force refreshing events from API');
+      await this.loadConfig();
+      const endpoint = `/athlete/${this.config.athleteId}/events`;
+      const params = new URLSearchParams({
+        oldest: startDate,
+        newest: endDate,
+      });
+
+      const data = await this.request(`${endpoint}?${params}`);
+
+      // Store in database
+      if (data && data.length > 0) {
+        // Delete old events in this date range first
+        await db.deleteEvents(startDate, endDate);
+        await db.storeEvents(data);
+      }
+
+      return data || [];
+    }
+
+    // Try database first
+    const dbEvents = await db.getEvents(startDate, endDate);
+
+    // If dbOnly mode or we have data, return it
+    if (dbOnly || dbEvents.length > 0) {
+      return dbEvents;
+    }
+
+    // No data in database and not dbOnly, fetch from API
     const configured = await this.isConfigured();
     if (!configured) {
-      throw new Error('Intervals.icu not configured');
+      return [];
     }
 
     await this.loadConfig();
@@ -369,6 +407,12 @@ class IntervalsAPI {
     });
 
     const data = await this.request(`${endpoint}?${params}`);
+
+    // Store in database
+    if (data && data.length > 0) {
+      await db.storeEvents(data);
+    }
+
     return data || [];
   }
 

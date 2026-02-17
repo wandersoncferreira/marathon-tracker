@@ -1,4 +1,8 @@
+import { useTranslation } from '../i18n/LanguageContext';
+
 function Help() {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Important Disclaimer */}
@@ -7,20 +11,17 @@ function Help() {
           <span className="text-3xl">⚠️</span>
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-red-900 mb-2">
-              Personal Project Disclaimer
+              {t('help.disclaimer.title')}
             </h3>
             <div className="text-sm text-red-800 space-y-2">
               <p>
-                <strong>This project was built to fit my own specific training needs and workflow.</strong>
+                <strong>{t('help.disclaimer.warning')}</strong>
               </p>
               <p>
-                It may not be fully appropriate or suitable for other people's training goals, data structures,
-                or use cases. I have not thoroughly tested all features to ensure they adapt correctly to
-                different athletes' data, training phases, or marathon goals.
+                {t('help.disclaimer.description')}
               </p>
               <p>
-                <strong>Use at your own discretion.</strong> You may need to adjust settings, calculations,
-                or expectations to match your specific training plan and goals.
+                <strong>{t('help.disclaimer.useDiscretion')}</strong>
               </p>
             </div>
           </div>
@@ -28,9 +29,9 @@ function Help() {
       </div>
 
       <div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">How to Use Marathon Tracker</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('help.title')}</h2>
         <p className="text-gray-600">
-          Follow these steps to get started with your marathon training tracking
+          {t('help.subtitle')}
         </p>
       </div>
 
@@ -40,16 +41,16 @@ function Help() {
           <span className="text-3xl font-bold text-primary-600">1</span>
           <div className="flex-1">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Add Intervals.icu API Credentials
+              {t('help.step1.title')}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Marathon Tracker syncs your training data from Intervals.icu. You need to configure your API credentials first.
+              {t('help.step1.description')}
             </p>
           </div>
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <p className="text-sm font-medium text-blue-900 mb-3">How to get your Intervals.icu credentials:</p>
+          <p className="text-sm font-medium text-blue-900 mb-3">{t('help.step1.howToGet')}</p>
           <ol className="text-sm text-blue-800 space-y-2 ml-4 list-decimal">
             <li>
               Go to{' '}
@@ -63,21 +64,21 @@ function Help() {
               </a>
               {' '}and log in to your account
             </li>
-            <li>Click on your profile icon in the top right corner</li>
-            <li>Select <strong>"Settings"</strong> from the dropdown menu</li>
-            <li>Navigate to the <strong>"Developer"</strong> tab</li>
-            <li>Copy your <strong>API Key</strong></li>
-            <li>Your <strong>Athlete ID</strong> is in your profile URL (e.g., <code className="bg-blue-100 px-1 rounded">i12345678</code>)</li>
+            <li>{t('help.step1.instructions.i2')}</li>
+            <li>{t('help.step1.instructions.i3')}</li>
+            <li>{t('help.step1.instructions.i4')}</li>
+            <li>{t('help.step1.instructions.i5')}</li>
+            <li>{t('help.step1.instructions.i6')}</li>
           </ol>
         </div>
 
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <p className="text-sm font-medium text-gray-900 mb-2">Enter credentials in Marathon Tracker:</p>
+          <p className="text-sm font-medium text-gray-900 mb-2">{t('help.step1.enterCredentials')}</p>
           <ol className="text-sm text-gray-700 space-y-2 ml-4 list-decimal">
-            <li>Click the <strong>⚙️ Settings</strong> icon in the top right</li>
-            <li>Scroll to <strong>"Intervals.icu API"</strong> section</li>
-            <li>Paste your <strong>API Key</strong> and <strong>Athlete ID</strong></li>
-            <li>Click <strong>"Save Configuration"</strong></li>
+            <li>{t('help.step1.setup.s1')}</li>
+            <li>{t('help.step1.setup.s2')}</li>
+            <li>{t('help.step1.setup.s3')}</li>
+            <li>{t('help.step1.setup.s4')}</li>
           </ol>
         </div>
       </div>
@@ -88,52 +89,42 @@ function Help() {
           <span className="text-3xl font-bold text-primary-600">2</span>
           <div className="flex-1">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Sync Your Training Data
+              {t('help.step2.title')}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Once your credentials are configured, sync your training activities from Intervals.icu.
+              {t('help.step2.description')}
             </p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-sm font-medium text-green-900 mb-2">📝 Go to Training Log:</p>
+            <p className="text-sm font-medium text-green-900 mb-2">📝 {t('help.step2.goToLog')}</p>
             <ol className="text-sm text-green-800 space-y-2 ml-4 list-decimal">
-              <li>Tap the <strong>"Log"</strong> tab in the bottom navigation</li>
-              <li>Click <strong>"🔄 Sync New"</strong> button in the top right</li>
-              <li>Wait for the sync to complete</li>
+              <li>{t('help.step2.instructions.i1')}</li>
+              <li>{t('help.step2.instructions.i2')}</li>
+              <li>{t('help.step2.instructions.i3')}</li>
             </ol>
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-sm font-medium text-yellow-900 mb-2">ℹ️ What gets synced:</p>
+            <p className="text-sm font-medium text-yellow-900 mb-2">ℹ️ {t('help.step2.whatSync')}</p>
             <ul className="text-sm text-yellow-800 space-y-1 ml-4 list-disc">
-              <li>
-                <strong>By default:</strong> Only new activities since your last sync (incremental sync)
-              </li>
-              <li>
-                <strong>Sync date range:</strong> Last 90 days from today
-              </li>
-              <li>
-                <strong>Data included:</strong> Activities, intervals, power data, heart rate, messages/notes
-              </li>
-              <li>
-                <strong>First time sync:</strong> If this is your first sync, it will download all activities from the last 90 days
-              </li>
-              <li>
-                <strong>For full history:</strong> Go to Progress tab → "Sync New" to load from 2025-01-01 for heart rate trend analysis
-              </li>
+              <li>{t('help.step2.syncInfo.default')}</li>
+              <li>{t('help.step2.syncInfo.dateRange')}</li>
+              <li>{t('help.step2.syncInfo.dataIncluded')}</li>
+              <li>{t('help.step2.syncInfo.firstTime')}</li>
+              <li>{t('help.step2.syncInfo.fullHistory')}</li>
             </ul>
           </div>
 
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <p className="text-sm font-medium text-purple-900 mb-2">💡 Pro Tips:</p>
+            <p className="text-sm font-medium text-purple-900 mb-2">💡 {t('help.step2.proTips')}</p>
             <ul className="text-sm text-purple-800 space-y-1 ml-4 list-disc">
-              <li>Use <strong>"Sync New"</strong> for daily updates (faster, only fetches new activities)</li>
-              <li>Use <strong>"Force Full Sync"</strong> to refresh everything including activity messages/notes</li>
-              <li>All data is cached locally in your browser - no need to sync repeatedly!</li>
-              <li><strong>Messages/notes</strong> are only synced during Force Full Sync to reduce API calls</li>
+              <li>{t('help.step2.tips.t1')}</li>
+              <li>{t('help.step2.tips.t2')}</li>
+              <li>{t('help.step2.tips.t3')}</li>
+              <li>{t('help.step2.tips.t4')}</li>
             </ul>
           </div>
         </div>
@@ -145,10 +136,10 @@ function Help() {
           <span className="text-3xl font-bold text-primary-600">3</span>
           <div className="flex-1">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Explore Your Training Data
+              {t('help.step3.title')}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Now you're ready to track your marathon training progress!
+              {t('help.step3.description')}
             </p>
           </div>
         </div>
@@ -157,32 +148,32 @@ function Help() {
           <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
             <span className="text-2xl">📊</span>
             <div>
-              <p className="font-medium text-gray-900 text-sm">Dashboard</p>
-              <p className="text-xs text-gray-600">View weekly stats, training readiness, and upcoming workouts</p>
+              <p className="font-medium text-gray-900 text-sm">{t('help.step3.features.dashboard.title')}</p>
+              <p className="text-xs text-gray-600">{t('help.step3.features.dashboard.description')}</p>
             </div>
           </div>
 
           <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
             <span className="text-2xl">📝</span>
             <div>
-              <p className="font-medium text-gray-900 text-sm">Training Log</p>
-              <p className="text-xs text-gray-600">Browse all your activities with detailed metrics and notes</p>
+              <p className="font-medium text-gray-900 text-sm">{t('help.step3.features.trainingLog.title')}</p>
+              <p className="text-xs text-gray-600">{t('help.step3.features.trainingLog.description')}</p>
             </div>
           </div>
 
           <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
             <span className="text-2xl">🏃</span>
             <div>
-              <p className="font-medium text-gray-900 text-sm">Coach Analysis</p>
-              <p className="text-xs text-gray-600">AI-powered training insights and recommendations</p>
+              <p className="font-medium text-gray-900 text-sm">{t('help.step3.features.coachAnalysis.title')}</p>
+              <p className="text-xs text-gray-600">{t('help.step3.features.coachAnalysis.description')}</p>
             </div>
           </div>
 
           <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
             <span className="text-2xl">📈</span>
             <div>
-              <p className="font-medium text-gray-900 text-sm">Progress Tracker</p>
-              <p className="text-xs text-gray-600">Monitor KM at marathon pace, fitness trends, and heart rate efficiency</p>
+              <p className="font-medium text-gray-900 text-sm">{t('help.step3.features.progress.title')}</p>
+              <p className="text-xs text-gray-600">{t('help.step3.features.progress.description')}</p>
             </div>
           </div>
         </div>
@@ -194,20 +185,20 @@ function Help() {
           <span className="text-3xl">🎁</span>
           <div className="flex-1">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Bonus: Get AI Coach Analysis
+              {t('help.bonus.title')}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Optional: Use Claude AI to generate personalized training analysis that's compatible with Marathon Tracker
+              {t('help.bonus.description')}
             </p>
           </div>
         </div>
 
         <div className="bg-white border border-purple-200 rounded-lg p-4 mb-4">
-          <p className="text-sm font-medium text-gray-900 mb-3">What you'll need:</p>
+          <p className="text-sm font-medium text-gray-900 mb-3">{t('help.bonus.whatYouNeed')}</p>
           <ul className="text-sm text-gray-700 space-y-2 ml-4 list-disc">
-            <li>Access to Claude AI (claude.ai or Claude Desktop app)</li>
-            <li>The Marathon Coach prompt template (available in the Coach tab)</li>
-            <li>Your activity data from Intervals.icu</li>
+            <li>{t('help.bonus.requirements.r1')}</li>
+            <li>{t('help.bonus.requirements.r2')}</li>
+            <li>{t('help.bonus.requirements.r3')}</li>
           </ul>
         </div>
 
@@ -215,62 +206,59 @@ function Help() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">ℹ️</span>
             <div>
-              <p className="text-sm font-bold text-primary-900 mb-2">Get the Official Coach Prompt Template</p>
+              <p className="text-sm font-bold text-primary-900 mb-2">{t('help.bonus.getPrompt')}</p>
               <p className="text-sm text-primary-800 mb-3">
-                The template in the <strong>Coach</strong> tab generates JSON output that's fully compatible
-                with Marathon Tracker's analysis format.
+                {t('help.bonus.promptInfo')}
               </p>
               <ol className="text-sm text-primary-800 space-y-2 ml-4 list-decimal">
-                <li>Go to the <strong>🏃 Coach</strong> tab (bottom navigation)</li>
-                <li>Click the <strong>ℹ️ information icon</strong> next to "Coach Analysis" title</li>
-                <li>Copy the complete prompt template from the modal</li>
-                <li>Use it with Claude AI to generate structured training analysis</li>
+                <li>{t('help.bonus.promptSteps.s1')}</li>
+                <li>{t('help.bonus.promptSteps.s2')}</li>
+                <li>{t('help.bonus.promptSteps.s3')}</li>
+                <li>{t('help.bonus.promptSteps.s4')}</li>
               </ol>
             </div>
           </div>
         </div>
 
         <div className="bg-white border border-purple-200 rounded-lg p-4">
-          <p className="text-sm font-medium text-gray-900 mb-2">How to use the coach prompt:</p>
+          <p className="text-sm font-medium text-gray-900 mb-2">{t('help.bonus.howToUse')}</p>
           <ol className="text-sm text-gray-700 space-y-2 ml-4 list-decimal">
-            <li>Get the prompt template from the <strong>Coach → ℹ️</strong> tab</li>
-            <li>Go to your activity on Intervals.icu</li>
-            <li>Copy the activity details (distance, pace, intervals, HR, power)</li>
-            <li>Paste the prompt template + activity data into Claude AI</li>
-            <li>Claude will generate a structured JSON analysis</li>
-            <li>Save the JSON file and import it in the <strong>Coach</strong> tab</li>
+            <li>{t('help.bonus.usage.u1')}</li>
+            <li>{t('help.bonus.usage.u2')}</li>
+            <li>{t('help.bonus.usage.u3')}</li>
+            <li>{t('help.bonus.usage.u4')}</li>
+            <li>{t('help.bonus.usage.u5')}</li>
+            <li>{t('help.bonus.usage.u6')}</li>
           </ol>
         </div>
 
         <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-xs text-blue-800">
-            <strong>💡 Tip:</strong> The coach analysis feature helps you understand each training session in the context
-            of your marathon goal. The JSON format allows Marathon Tracker to display rich insights, track progress over time,
-            and provide visual feedback on your training quality.
+            <strong>💡 {t('help.bonus.tip')}</strong>
           </p>
         </div>
       </div>
 
       {/* Quick Reference Card */}
       <div className="card bg-gray-50">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Reference</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('help.quickRef.title')}</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="font-medium text-gray-900 mb-1">Daily Workflow:</p>
+            <p className="font-medium text-gray-900 mb-1">{t('help.quickRef.dailyWorkflow')}</p>
             <ol className="text-gray-600 space-y-1 ml-4 list-decimal text-xs">
-              <li>Check Dashboard for readiness</li>
-              <li>Sync new activities (if needed)</li>
-              <li>Review training log</li>
-              <li>Monitor progress metrics</li>
+              <li>{t('help.quickRef.workflow.w1')}</li>
+              <li>{t('help.quickRef.workflow.w2')}</li>
+              <li>{t('help.quickRef.workflow.w3')}</li>
+              <li>{t('help.quickRef.workflow.w4')}</li>
             </ol>
           </div>
           <div>
-            <p className="font-medium text-gray-900 mb-1">Data is Cached:</p>
+            <p className="font-medium text-gray-900 mb-1">{t('help.quickRef.dataCached')}</p>
             <ul className="text-gray-600 space-y-1 ml-4 list-disc text-xs">
-              <li>All synced data stays in browser</li>
-              <li>No need to re-sync constantly</li>
-              <li>Only sync for new activities</li>
-              <li>Works offline after sync</li>
+              <li>{t('help.quickRef.cacheInfo.c1')}</li>
+              <li>{t('help.quickRef.cacheInfo.c2')}</li>
+              <li>{t('help.quickRef.cacheInfo.c3')}</li>
+              <li>{t('help.quickRef.cacheInfo.c4')}</li>
             </ul>
           </div>
         </div>
@@ -278,10 +266,9 @@ function Help() {
 
       {/* Support */}
       <div className="card bg-primary-50 border-primary-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Need Help?</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('help.support.title')}</h3>
         <p className="text-sm text-gray-700">
-          If you encounter any issues or have questions, check your browser console for error messages
-          or verify your Intervals.icu credentials in Settings.
+          {t('help.support.description')}
         </p>
       </div>
 
@@ -291,30 +278,21 @@ function Help() {
           <span className="text-3xl">⚠️</span>
           <div className="flex-1">
             <h3 className="text-xl font-semibold text-red-900 mb-2">
-              Important: Your Data is Stored Locally
+              {t('help.localStorage.title')}
             </h3>
             <p className="text-sm text-red-800 mb-4">
-              All your training data is stored only in your browser's local storage (IndexedDB).
-              This means your data is tied to this specific browser on this specific computer.
+              {t('help.localStorage.description')}
             </p>
           </div>
         </div>
 
         <div className="bg-white border border-red-200 rounded-lg p-4 mb-4">
-          <p className="text-sm font-medium text-gray-900 mb-3">What this means:</p>
+          <p className="text-sm font-medium text-gray-900 mb-3">{t('help.localStorage.whatMeans')}</p>
           <ul className="text-sm text-gray-700 space-y-2 ml-4 list-disc">
-            <li>
-              <strong>Clearing browser data will delete everything</strong> - Be careful when clearing cache/cookies
-            </li>
-            <li>
-              <strong>Different browsers = different data</strong> - Chrome and Firefox don't share data
-            </li>
-            <li>
-              <strong>Incognito/Private mode won't persist data</strong> - Data is lost when you close the window
-            </li>
-            <li>
-              <strong>Switching computers = starting fresh</strong> - Unless you export and import your database
-            </li>
+            <li>{t('help.localStorage.implications.i1')}</li>
+            <li>{t('help.localStorage.implications.i2')}</li>
+            <li>{t('help.localStorage.implications.i3')}</li>
+            <li>{t('help.localStorage.implications.i4')}</li>
           </ul>
         </div>
 
@@ -322,22 +300,20 @@ function Help() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">💾</span>
             <div>
-              <p className="text-sm font-bold text-blue-900 mb-2">Solution: Export Your Database</p>
+              <p className="text-sm font-bold text-blue-900 mb-2">{t('help.localStorage.solution')}</p>
               <p className="text-sm text-blue-800 mb-3">
-                To use Marathon Tracker on multiple computers or backup your data:
+                {t('help.localStorage.solutionInfo')}
               </p>
               <ol className="text-sm text-blue-800 space-y-2 ml-4 list-decimal">
-                <li>Go to <strong>⚙️ Settings</strong> (top right corner)</li>
-                <li>Scroll to <strong>"Database Sync (Multi-Computer)"</strong> section</li>
-                <li>Click <strong>"📤 Export Database to JSON"</strong></li>
-                <li>Save the file to a safe location (cloud storage, USB drive, etc.)</li>
-                <li>On another computer: <strong>"📥 Import Database from JSON"</strong> to restore all your data</li>
+                <li>{t('help.localStorage.steps.s1')}</li>
+                <li>{t('help.localStorage.steps.s2')}</li>
+                <li>{t('help.localStorage.steps.s3')}</li>
+                <li>{t('help.localStorage.steps.s4')}</li>
+                <li>{t('help.localStorage.steps.s5')}</li>
               </ol>
               <div className="mt-3 pt-3 border-t border-blue-200">
                 <p className="text-xs text-blue-700">
-                  <strong>Pro tip:</strong> If you use Git, you can save the exported database file to your repository
-                  (e.g., <code className="bg-blue-100 px-1 rounded">public/database/marathon-tracker-db.json</code>)
-                  and sync across computers by committing and pulling the file.
+                  <strong>{t('help.localStorage.proTip')}</strong>
                 </p>
               </div>
             </div>

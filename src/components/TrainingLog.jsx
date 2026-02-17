@@ -5,8 +5,10 @@ import { formatDate, formatDateISO } from '../utils/dateHelpers';
 import { intervalsApi } from '../services/intervalsApi';
 import { db } from '../services/database';
 import { downloadDatabaseExport } from '../services/databaseSync';
+import { useTranslation } from '../i18n/LanguageContext';
 
 function TrainingLog() {
+  const { t } = useTranslation();
   const { activities, loading, error, refetch, sync } = useActivities(90);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [syncing, setSyncing] = useState(false);
@@ -35,7 +37,7 @@ function TrainingLog() {
 
   const handleSyncNew = async () => {
     setSyncing(true);
-    setSyncProgress('Checking last sync date...');
+    setSyncProgress(t('trainingLog.syncProgress.checkingLastSync') || 'Checking last sync date...');
 
     try {
       // Get the last sync date from database
@@ -62,7 +64,7 @@ function TrainingLog() {
   const confirmForceSync = async () => {
     setShowForceSyncDialog(false);
     setSyncing(true);
-    setSyncProgress('Starting force sync...');
+    setSyncProgress(t('trainingLog.syncProgress.startingForceSync') || 'Starting force sync...');
 
     try {
       const today = formatDateISO(new Date());
@@ -83,7 +85,7 @@ function TrainingLog() {
 
     try {
       // Step 1: Sync activities
-      setSyncProgress('Step 1/4: Syncing activities...');
+      setSyncProgress(t('trainingLog.syncProgress.step1'));
       console.log('🔄 Step 1/4: Syncing activities from API...');
 
       const activitiesBeforeSync = await intervalsApi.getActivities(startDate, endDate);
@@ -106,7 +108,7 @@ function TrainingLog() {
       console.log(`📊 Total running activities in range: ${runningActivities.length}`);
 
       // Step 2: Sync activity details and intervals
-      setSyncProgress(`Step 2/4: Syncing intervals for ${runningActivities.length} activities...`);
+      setSyncProgress(`${t('trainingLog.syncProgress.step2')} ${t('common.for')} ${runningActivities.length} ${t('common.activities')}...` || `Step 2/4: Syncing intervals for ${runningActivities.length} activities...`);
       console.log(`🔄 Step 2/4: Syncing activity intervals...`);
 
       const activitiesNeedingIntervals = [];
@@ -124,7 +126,7 @@ function TrainingLog() {
         const batchSize = 5;
         for (let i = 0; i < activitiesNeedingIntervals.length; i += batchSize) {
           const batch = activitiesNeedingIntervals.slice(i, i + batchSize);
-          setSyncProgress(`Step 2/4: Syncing intervals ${i + 1}-${Math.min(i + batchSize, activitiesNeedingIntervals.length)} of ${activitiesNeedingIntervals.length}...`);
+          setSyncProgress(`${t('trainingLog.syncProgress.step2')} ${i + 1}-${Math.min(i + batchSize, activitiesNeedingIntervals.length)} ${t('common.of')} ${activitiesNeedingIntervals.length}...` || `Step 2/4: Syncing intervals ${i + 1}-${Math.min(i + batchSize, activitiesNeedingIntervals.length)} of ${activitiesNeedingIntervals.length}...`);
 
           await Promise.all(
             batch.map(async (activity) => {
@@ -144,7 +146,7 @@ function TrainingLog() {
       }
 
       // Step 3: Sync messages
-      setSyncProgress(`Step 3/4: Syncing messages...`);
+      setSyncProgress(t('trainingLog.syncProgress.step3'));
       console.log('🔄 Step 3/4: Syncing activity messages...');
 
       const messagesCountBefore = await db.activityMessages.count();
@@ -157,7 +159,7 @@ function TrainingLog() {
       }
 
       // Step 4: Sync wellness
-      setSyncProgress('Step 4/4: Syncing wellness data...');
+      setSyncProgress(t('trainingLog.syncProgress.step4'));
       console.log('🔄 Step 4/4: Syncing wellness data...');
 
       const wellnessCountBefore = await db.wellness.count();
@@ -171,7 +173,7 @@ function TrainingLog() {
 
       // Step 5: Save database if new data was synced
       if (newDataSynced) {
-        setSyncProgress('Sync complete! Preparing database export...');
+        setSyncProgress(t('trainingLog.syncProgress.complete'));
         console.log('💾 New data synced - triggering database export...');
 
         // Small delay to let user see the message
@@ -185,8 +187,8 @@ function TrainingLog() {
               `Database file has been downloaded. Save it to:\n` +
               `public/database/marathon-tracker-db.json`);
       } else {
-        alert(`✅ Sync completed - no new data found.\n\n` +
-              `All data is up to date for ${startDate} to ${endDate}`);
+        alert(`✅ ${t('trainingLog.syncProgress.noNewData')}\n\n` +
+              `${t('trainingLog.syncProgress.allUpToDate')} ${startDate} to ${endDate}`);
       }
 
       // Reload activities in the UI
@@ -204,7 +206,7 @@ function TrainingLog() {
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading activities...</p>
+          <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -213,10 +215,10 @@ function TrainingLog() {
   if (error) {
     return (
       <div className="card bg-red-50 border-red-200">
-        <p className="text-red-700 font-medium mb-2">Error loading activities</p>
+        <p className="text-red-700 font-medium mb-2">{t('common.error')}</p>
         <p className="text-sm text-red-600 mb-4">{error}</p>
         <button onClick={refetch} className="btn-primary">
-          Retry
+          {t('common.retry') || 'Retry'}
         </button>
       </div>
     );
@@ -229,23 +231,23 @@ function TrainingLog() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Training Log</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{t('trainingLog.title')}</h2>
         <div className="flex gap-2">
           <button
             onClick={handleSyncNew}
             disabled={syncing}
             className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Sync only new data since last sync"
+            title={t('trainingLog.syncNewTooltip')}
           >
-            {syncing && !showForceSyncDialog ? '⏳ Syncing...' : '🔄 Sync New'}
+            {syncing && !showForceSyncDialog ? `⏳ ${t('common.syncing')}` : `🔄 ${t('common.syncNew')}`}
           </button>
           <button
             onClick={handleForceSync}
             disabled={syncing}
             className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Force sync from a specific start date"
+            title={t('trainingLog.forceSyncTooltip')}
           >
-            {syncing && showForceSyncDialog ? '⏳ Syncing...' : '🔄 Force Sync'}
+            {syncing && showForceSyncDialog ? `⏳ ${t('common.syncing')}` : `🔄 ${t('common.forceSync')}`}
           </button>
         </div>
       </div>
@@ -264,14 +266,14 @@ function TrainingLog() {
       {showForceSyncDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Force Sync</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{t('trainingLog.forceSyncDialog.title')}</h3>
             <p className="text-sm text-gray-600 mb-4">
-              This will sync all data (activities, intervals, messages, wellness) from the selected start date to today.
+              {t('trainingLog.forceSyncDialog.description')}
             </p>
 
             <div className="mb-6">
               <label htmlFor="forceSyncStartDate" className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
+                {t('common.startDate')}
               </label>
               <input
                 type="date"
@@ -281,7 +283,7 @@ function TrainingLog() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Recommended: 2025-01-01 for full history
+                {t('trainingLog.forceSyncDialog.recommended')}
               </p>
             </div>
 
@@ -290,13 +292,13 @@ function TrainingLog() {
                 onClick={() => setShowForceSyncDialog(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={confirmForceSync}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
               >
-                Start Sync
+                {t('trainingLog.forceSyncDialog.startSync')}
               </button>
             </div>
           </div>
@@ -305,9 +307,9 @@ function TrainingLog() {
 
       {activities.length === 0 ? (
         <div className="card text-center py-12">
-          <p className="text-gray-500 mb-4">No activities found</p>
+          <p className="text-gray-500 mb-4">{t('trainingLog.noActivities')}</p>
           <p className="text-sm text-gray-400">
-            Make sure your Intervals.icu API is configured in Settings
+            {t('trainingLog.checkSettings')}
           </p>
         </div>
       ) : (
@@ -334,20 +336,20 @@ function TrainingLog() {
 
               <div className="grid grid-cols-3 gap-4 mt-3">
                 <div>
-                  <p className="text-xs text-gray-600">Distance</p>
+                  <p className="text-xs text-gray-600">{t('common.distance')}</p>
                   <p className="text-sm font-bold text-gray-900">
                     {((activity.distance || 0) / 1000).toFixed(1)} km
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Pace</p>
+                  <p className="text-xs text-gray-600">{t('common.pace')}</p>
                   <p className="text-sm font-bold text-gray-900">
                     {activity.average_speed ?
                       metersPerSecondToPace(activity.average_speed) : 'N/A'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Load</p>
+                  <p className="text-xs text-gray-600">{t('common.load')}</p>
                   <p className="text-sm font-bold text-gray-900">
                     {activity.icu_training_load || activity.training_load || 0}
                   </p>
@@ -385,6 +387,7 @@ function TrainingLog() {
 }
 
 function ActivityDetail({ activity, onBack }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
 
@@ -413,7 +416,7 @@ function ActivityDetail({ activity, onBack }) {
         onClick={onBack}
         className="text-primary-600 hover:text-primary-700 font-medium flex items-center"
       >
-        ← Back to Log
+        ← {t('trainingLog.backToLog')}
       </button>
 
       <div className="card">
@@ -426,13 +429,13 @@ function ActivityDetail({ activity, onBack }) {
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="metric-card">
-            <p className="text-xs text-gray-600">Distance</p>
+            <p className="text-xs text-gray-600">{t('common.distance')}</p>
             <p className="text-2xl font-bold text-gray-900">
               {((activity.distance || 0) / 1000).toFixed(2)} km
             </p>
           </div>
           <div className="metric-card">
-            <p className="text-xs text-gray-600">Duration</p>
+            <p className="text-xs text-gray-600">{t('common.duration')}</p>
             <p className="text-2xl font-bold text-gray-900">
               {formatDuration(activity.moving_time || activity.elapsed_time)}
             </p>
@@ -440,12 +443,12 @@ function ActivityDetail({ activity, onBack }) {
         </div>
 
         <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900">Metrics</h3>
+          <h3 className="font-semibold text-gray-900">{t('trainingLog.metrics')}</h3>
 
           <div className="grid grid-cols-2 gap-3">
             {activity.average_speed && (
               <div>
-                <p className="text-xs text-gray-600">Avg Pace</p>
+                <p className="text-xs text-gray-600">{t('common.avgPace')}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {metersPerSecondToPace(activity.average_speed)}
                 </p>
@@ -453,7 +456,7 @@ function ActivityDetail({ activity, onBack }) {
             )}
             {activity.average_watts && (
               <div>
-                <p className="text-xs text-gray-600">Avg Power</p>
+                <p className="text-xs text-gray-600">{t('common.avgPower')}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {activity.average_watts}W
                 </p>
@@ -461,7 +464,7 @@ function ActivityDetail({ activity, onBack }) {
             )}
             {activity.average_heartrate && (
               <div>
-                <p className="text-xs text-gray-600">Avg HR</p>
+                <p className="text-xs text-gray-600">{t('common.avgHR')}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {activity.average_heartrate} bpm
                 </p>
@@ -469,7 +472,7 @@ function ActivityDetail({ activity, onBack }) {
             )}
             {activity.average_cadence && (
               <div>
-                <p className="text-xs text-gray-600">Avg Cadence</p>
+                <p className="text-xs text-gray-600">{t('common.avgCadence') || 'Avg Cadence'}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {activity.average_cadence} spm
                 </p>
@@ -477,7 +480,7 @@ function ActivityDetail({ activity, onBack }) {
             )}
             {activity.training_load && (
               <div>
-                <p className="text-xs text-gray-600">Training Load</p>
+                <p className="text-xs text-gray-600">{t('dashboard.trainingLoad')}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {activity.training_load}
                 </p>
@@ -485,7 +488,7 @@ function ActivityDetail({ activity, onBack }) {
             )}
             {activity.icu_training_load && (
               <div>
-                <p className="text-xs text-gray-600">ICU Load</p>
+                <p className="text-xs text-gray-600">{t('common.icuLoad') || 'ICU Load'}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {activity.icu_training_load}
                 </p>
@@ -498,7 +501,7 @@ function ActivityDetail({ activity, onBack }) {
           <div className="mt-4 pt-4 border-t border-gray-200">
             <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
               <span>💬</span>
-              <span>Comments</span>
+              <span>{t('trainingLog.comments')}</span>
             </h3>
             <div className="bg-gray-50 p-3 rounded-lg">
               <p className="text-sm text-gray-700 whitespace-pre-wrap">
@@ -511,13 +514,13 @@ function ActivityDetail({ activity, onBack }) {
         {/* Activity Messages/Notes */}
         {loadingMessages ? (
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500">Loading messages...</p>
+            <p className="text-xs text-gray-500">{t('common.loading')}</p>
           </div>
         ) : messages.length > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <span>💬</span>
-              <span>Notes ({messages.length})</span>
+              <span>{t('trainingLog.notes')} ({messages.length})</span>
             </h3>
             <div className="space-y-3">
               {messages.map((message, idx) => {

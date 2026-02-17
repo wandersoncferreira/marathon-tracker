@@ -7,8 +7,37 @@ import { getCycleStats, getWeeklyMPTarget } from '../utils/trainingCycle';
 import { intervalsApi } from '../services/intervalsApi';
 import { analyzeWellnessReadiness, calculateWellnessBaseline } from '../utils/wellnessAnalysis';
 import { db } from '../services/database';
+import { useTranslation } from '../i18n/LanguageContext';
+
+// Helper function to get localized content
+const getLocalizedContent = (content, language) => {
+  if (!content) return '';
+  if (typeof content === 'string' || typeof content === 'number') return content;
+  if (Array.isArray(content)) {
+    if (content.length > 0 && typeof content[0] === 'string') return content;
+    return [];
+  }
+  if (typeof content === 'object' && content !== null) {
+    // Check if this is a nested array structure: {en_US: [...], pt_BR: [...]}
+    if (content[language] && Array.isArray(content[language])) {
+      return content[language];
+    }
+    if (content['en_US'] && Array.isArray(content['en_US'])) {
+      return content['en_US'];
+    }
+    if (content['pt_BR'] && Array.isArray(content['pt_BR'])) {
+      return content['pt_BR'];
+    }
+    // Standard bilingual object: {en_US: "string", pt_BR: "string"}
+    if (content[language]) return content[language];
+    if (content['en_US']) return content['en_US'];
+    if (content['pt_BR']) return content['pt_BR'];
+  }
+  return '';
+};
 
 function Dashboard() {
+  const { t, language } = useTranslation();
   const { activities, loading: activitiesLoading, sync } = useActivities(90, true, true);
   const { analyses, getLatest } = useAnalyses();
   const [weeklyStats, setWeeklyStats] = useState(null);
@@ -177,7 +206,7 @@ function Dashboard() {
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading training data...</p>
+          <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -187,23 +216,23 @@ function Dashboard() {
     <div className="space-y-6">
       {/* Hero Section */}
       <div className="card bg-gradient-to-br from-primary-600 to-primary-700 text-white">
-        <h2 className="text-2xl font-bold mb-2">Porto Alegre 2026</h2>
-        <p className="text-primary-100 mb-4">Goal: 2h50min (4:02/km)</p>
+        <h2 className="text-2xl font-bold mb-2">{t('dashboard.title')}</h2>
+        <p className="text-primary-100 mb-4">{t('dashboard.goal')}</p>
         {cycleStats && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-primary-100">Training Week</p>
+                <p className="text-sm text-primary-100">{t('dashboard.trainingWeek')}</p>
                 <p className="text-3xl font-bold">{cycleStats.currentWeek}/{cycleStats.totalWeeks}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-primary-100">Phase</p>
+                <p className="text-sm text-primary-100">{t('dashboard.phase')}</p>
                 <p className="text-lg font-semibold">{cycleStats.phase}</p>
               </div>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-primary-100">{cycleStats.weeksToRace} weeks to race</span>
-              <span className="text-primary-100">{cycleStats.daysToRace} days</span>
+              <span className="text-primary-100">{cycleStats.weeksToRace} {t('dashboard.weeksToRace')}</span>
+              <span className="text-primary-100">{cycleStats.daysToRace} {t('dashboard.days')}</span>
             </div>
             <div className="w-full bg-primary-800 rounded-full h-2">
               <div
@@ -360,31 +389,31 @@ function Dashboard() {
 
       {/* This Week Stats */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">This Week</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('dashboard.thisWeek')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="metric-card">
-            <p className="text-sm text-gray-600 mb-1">Total Distance</p>
+            <p className="text-sm text-gray-600 mb-1">{t('dashboard.totalDistance')}</p>
             <p className="text-2xl font-bold text-gray-900">
               {weeklyStats?.totalKm.toFixed(1) || '0.0'} km
             </p>
           </div>
           <div className="metric-card">
-            <p className="text-sm text-gray-600 mb-1">Sessions</p>
+            <p className="text-sm text-gray-600 mb-1">{t('dashboard.sessions')}</p>
             <p className="text-2xl font-bold text-gray-900">
               {weeklyStats?.sessions || 0}
             </p>
           </div>
           <div className="metric-card">
-            <p className="text-sm text-gray-600 mb-1">KM at Marathon Pace</p>
+            <p className="text-sm text-gray-600 mb-1">{t('dashboard.kmAtMP')}</p>
             <p className="text-2xl font-bold text-primary-600">
               {weeklyStats?.kmAtMP.toFixed(1) || '0.0'} km
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              Target: {weeklyStats?.mpMin || 10}-{weeklyStats?.mpMax || 20} km/week
+              {t('dashboard.target')}: {weeklyStats?.mpMin || 10}-{weeklyStats?.mpMax || 20} km/week
             </p>
           </div>
           <div className="metric-card">
-            <p className="text-sm text-gray-600 mb-1">Training Load</p>
+            <p className="text-sm text-gray-600 mb-1">{t('dashboard.trainingLoad')}</p>
             <p className="text-2xl font-bold text-gray-900">
               {weeklyStats?.avgLoad.toFixed(0) || '0'}
             </p>
@@ -393,14 +422,14 @@ function Dashboard() {
         {weeklyStats && weeklyStats.sessions === 0 && (
           <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800 mb-2">
-              No activities found this week. Missing today's workout?
+              {t('dashboard.noActivities')}
             </p>
             <button
               onClick={handleSync}
               disabled={syncing}
               className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
             >
-              {syncing ? '⏳ Syncing...' : '🔄 Sync from API'}
+              {syncing ? `⏳ ${t('common.syncing')}` : `🔄 ${t('dashboard.syncFromAPI')}`}
             </button>
           </div>
         )}
@@ -409,11 +438,11 @@ function Dashboard() {
       {/* Latest Coach Analysis */}
       {latestAnalysis && (
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Latest Coach Analysis</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('dashboard.latestCoachAnalysis')}</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">
-                {latestAnalysis.metadata.activityName}
+                {getLocalizedContent(latestAnalysis.metadata.activityName, language)}
               </span>
               <span className={`px-2 py-1 rounded text-xs font-medium ${
                 latestAnalysis.verdict.rating === 'excellent' ? 'bg-green-100 text-green-800' :
@@ -424,7 +453,7 @@ function Dashboard() {
               </span>
             </div>
             <p className="text-sm text-gray-700">
-              {latestAnalysis.verdict.summary}
+              {getLocalizedContent(latestAnalysis.verdict.summary, language)}
             </p>
 
             {/* Next Session(s) with Adaptive Guidance */}
@@ -474,7 +503,7 @@ function Dashboard() {
                           ? 'text-blue-800'
                           : 'text-primary-800'
                       }`}>
-                        {session.workout}
+                        {getLocalizedContent(session.workout, language)}
                       </p>
                       {session.rationale && (
                         <p className={`text-xs mt-2 pt-2 border-t ${
@@ -482,7 +511,7 @@ function Dashboard() {
                             ? 'text-blue-700 border-blue-200'
                             : 'text-primary-700 border-primary-200'
                         }`}>
-                          💡 {session.rationale}
+                          💡 {getLocalizedContent(session.rationale, language)}
                         </p>
                       )}
                     </div>
@@ -496,9 +525,9 @@ function Dashboard() {
 
       {/* Recent Activities */}
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Recent Activities</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('dashboard.recentActivities')}</h3>
         {activities.length === 0 ? (
-          <p className="text-gray-500 text-sm">No activities found. Check your settings.</p>
+          <p className="text-gray-500 text-sm">{t('dashboard.noActivitiesFound')}</p>
         ) : (
           <div className="space-y-2">
             {activities.slice(0, 5).map((activity) => (

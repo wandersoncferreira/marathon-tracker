@@ -7,14 +7,27 @@ import Settings from './components/Settings';
 import Help from './components/Help';
 import { loadInitialAnalyses } from './utils/loadInitialAnalyses';
 import { autoImportIfEmpty } from './services/databaseSync';
+import { useTranslation } from './i18n/LanguageContext';
+import { analysisLoader } from './services/analysisLoader';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [appReady, setAppReady] = useState(false);
+  const { t, language, changeLanguage } = useTranslation();
 
   // Auto-import database and load initial analyses on first mount
   useEffect(() => {
     const initializeApp = async () => {
       console.log('🚀 App initializing...');
+
+      // FIRST: Force migration check for old schema analyses
+      try {
+        console.log('🔄 Checking for schema migration...');
+        await analysisLoader.migrateOldSchema();
+        console.log('✅ Schema migration check complete');
+      } catch (error) {
+        console.error('❌ Error during schema migration:', error);
+      }
 
       try {
         // Auto-import database from public/database/marathon-tracker-db.json
@@ -40,10 +53,25 @@ function App() {
       } catch (error) {
         console.error('❌ Error loading coach analyses:', error);
       }
+
+      // Mark app as ready to render
+      setAppReady(true);
     };
 
     initializeApp();
   }, []);
+
+  // Show loading state until app is ready
+  if (!appReady) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -65,10 +93,10 @@ function App() {
   };
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'log', label: 'Log', icon: '📝' },
-    { id: 'analysis', label: 'Coach', icon: '🏃' },
-    { id: 'progress', label: 'Progress', icon: '📈' },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: '📊' },
+    { id: 'log', label: t('nav.trainingLog'), icon: '📝' },
+    { id: 'analysis', label: t('nav.coachAnalysis'), icon: '🏃' },
+    { id: 'progress', label: t('nav.progress'), icon: '📈' },
   ];
 
   return (
@@ -84,15 +112,26 @@ function App() {
               onClick={() => setActiveTab('help')}
               className="text-xs text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap"
             >
-              Learn how to use
+              {t('help.title')}
             </button>
           </div>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ⚙️
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Language Selector */}
+            <select
+              value={language}
+              onChange={(e) => changeLanguage(e.target.value)}
+              className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="en_US">🇺🇸 English</option>
+              <option value="pt_BR">🇧🇷 Português</option>
+            </select>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ⚙️
+            </button>
+          </div>
         </div>
       </header>
 
