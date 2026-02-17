@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import useActivities from '../hooks/useActivities';
 import { metersPerSecondToPace, formatDuration } from '../utils/trainingCalculations';
-import { formatDate } from '../utils/dateHelpers';
+import { formatDate, formatDateISO } from '../utils/dateHelpers';
 import { intervalsApi } from '../services/intervalsApi';
+import { db } from '../services/database';
+import { downloadDatabaseExport } from '../services/databaseSync';
 
 function TrainingLog() {
   const { activities, loading, error, refetch, sync } = useActivities(90);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [activityMessageCounts, setActivityMessageCounts] = useState({});
+  const [showForceSyncDialog, setShowForceSyncDialog] = useState(false);
+  const [forceSyncStartDate, setForceSyncStartDate] = useState('2025-01-01');
+  const [syncProgress, setSyncProgress] = useState(null);
 
   // Load message counts for all activities
   useEffect(() => {
@@ -28,10 +33,170 @@ function TrainingLog() {
     }
   }, [activities]);
 
-  const handleSync = async (forceFullSync = false) => {
+  const handleSyncNew = async () => {
     setSyncing(true);
-    await sync(forceFullSync); // sync() now also syncs messages
-    setSyncing(false);
+    setSyncProgress('Checking last sync date...');
+
+    try {
+      // Get the last sync date from database
+      const latestDate = await db.getLatestActivityDate();
+      const startDate = latestDate || '2025-01-01';
+      const today = formatDateISO(new Date());
+
+      console.log(`🔄 Sync New: Starting from ${startDate} to ${today}`);
+
+      await performComprehensiveSync(startDate, today, false);
+    } catch (error) {
+      console.error('Error in Sync New:', error);
+      alert('Error syncing: ' + error.message);
+    } finally {
+      setSyncing(false);
+      setSyncProgress(null);
+    }
+  };
+
+  const handleForceSync = () => {
+    setShowForceSyncDialog(true);
+  };
+
+  const confirmForceSync = async () => {
+    setShowForceSyncDialog(false);
+    setSyncing(true);
+    setSyncProgress('Starting force sync...');
+
+    try {
+      const today = formatDateISO(new Date());
+      console.log(`🔄 Force Sync: Starting from ${forceSyncStartDate} to ${today}`);
+
+      await performComprehensiveSync(forceSyncStartDate, today, true);
+    } catch (error) {
+      console.error('Error in Force Sync:', error);
+      alert('Error syncing: ' + error.message);
+    } finally {
+      setSyncing(false);
+      setSyncProgress(null);
+    }
+  };
+
+  const performComprehensiveSync = async (startDate, endDate, isForceSync) => {
+    let newDataSynced = false;
+
+    try {
+      // Step 1: Sync activities
+      setSyncProgress('Step 1/4: Syncing activities...');
+      console.log('🔄 Step 1/4: Syncing activities from API...');
+
+      const activitiesBeforeSync = await intervalsApi.getActivities(startDate, endDate);
+      const countBefore = activitiesBeforeSync.length;
+
+      await intervalsApi.syncActivities(startDate, endDate, isForceSync);
+
+      const activitiesAfterSync = await intervalsApi.getActivities(startDate, endDate);
+      const countAfter = activitiesAfterSync.length;
+
+      if (countAfter > countBefore) {
+        newDataSynced = true;
+        console.log(`✅ Synced ${countAfter - countBefore} new activities`);
+      }
+
+      const runningActivities = activitiesAfterSync
+        .filter(a => a.type === 'Run')
+        .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+
+      console.log(`📊 Total running activities in range: ${runningActivities.length}`);
+
+      // Step 2: Sync activity details and intervals
+      setSyncProgress(`Step 2/4: Syncing intervals for ${runningActivities.length} activities...`);
+      console.log(`🔄 Step 2/4: Syncing activity intervals...`);
+
+      const activitiesNeedingIntervals = [];
+      for (const activity of runningActivities) {
+        const details = await db.getActivityDetails(activity.id);
+        if (!details || !details.intervals || !details.intervals.icu_intervals || details.intervals.icu_intervals.length === 0) {
+          activitiesNeedingIntervals.push(activity);
+        }
+      }
+
+      console.log(`  ... ${activitiesNeedingIntervals.length} activities need intervals`);
+
+      if (activitiesNeedingIntervals.length > 0) {
+        newDataSynced = true;
+        const batchSize = 5;
+        for (let i = 0; i < activitiesNeedingIntervals.length; i += batchSize) {
+          const batch = activitiesNeedingIntervals.slice(i, i + batchSize);
+          setSyncProgress(`Step 2/4: Syncing intervals ${i + 1}-${Math.min(i + batchSize, activitiesNeedingIntervals.length)} of ${activitiesNeedingIntervals.length}...`);
+
+          await Promise.all(
+            batch.map(async (activity) => {
+              try {
+                await intervalsApi.getActivityIntervals(activity.id, false);
+              } catch (error) {
+                console.error(`Failed to fetch intervals for activity ${activity.id}:`, error);
+              }
+            })
+          );
+
+          if (i + batchSize < activitiesNeedingIntervals.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+        console.log(`✅ Synced intervals for ${activitiesNeedingIntervals.length} activities`);
+      }
+
+      // Step 3: Sync messages
+      setSyncProgress(`Step 3/4: Syncing messages...`);
+      console.log('🔄 Step 3/4: Syncing activity messages...');
+
+      const messagesCountBefore = await db.activityMessages.count();
+      await intervalsApi.syncActivityMessages(runningActivities, false);
+      const messagesCountAfter = await db.activityMessages.count();
+
+      if (messagesCountAfter > messagesCountBefore) {
+        newDataSynced = true;
+        console.log(`✅ Synced ${messagesCountAfter - messagesCountBefore} new messages`);
+      }
+
+      // Step 4: Sync wellness
+      setSyncProgress('Step 4/4: Syncing wellness data...');
+      console.log('🔄 Step 4/4: Syncing wellness data...');
+
+      const wellnessCountBefore = await db.wellness.count();
+      await intervalsApi.getWellnessData(startDate, endDate, false, true); // forceRefresh=true
+      const wellnessCountAfter = await db.wellness.count();
+
+      if (wellnessCountAfter > wellnessCountBefore) {
+        newDataSynced = true;
+        console.log(`✅ Synced ${wellnessCountAfter - wellnessCountBefore} new wellness records`);
+      }
+
+      // Step 5: Save database if new data was synced
+      if (newDataSynced) {
+        setSyncProgress('Sync complete! Preparing database export...');
+        console.log('💾 New data synced - triggering database export...');
+
+        // Small delay to let user see the message
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        await downloadDatabaseExport();
+
+        alert(`✅ Sync completed successfully!\n\n` +
+              `Activities: ${runningActivities.length}\n` +
+              `Date range: ${startDate} to ${endDate}\n\n` +
+              `Database file has been downloaded. Save it to:\n` +
+              `public/database/marathon-tracker-db.json`);
+      } else {
+        alert(`✅ Sync completed - no new data found.\n\n` +
+              `All data is up to date for ${startDate} to ${endDate}`);
+      }
+
+      // Reload activities in the UI
+      refetch();
+
+      console.log('✅ Comprehensive sync completed!');
+    } catch (error) {
+      console.error('❌ Error during comprehensive sync:', error);
+      throw error;
+    }
   };
 
   if (loading && activities.length === 0) {
@@ -67,23 +232,76 @@ function TrainingLog() {
         <h2 className="text-2xl font-bold text-gray-900">Training Log</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => handleSync(false)}
+            onClick={handleSyncNew}
             disabled={syncing}
-            className="text-green-600 hover:text-green-700 text-sm font-medium disabled:opacity-50"
-            title="Sync only new activities since last sync"
+            className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Sync only new data since last sync"
           >
-            {syncing ? '⏳ Syncing...' : '🔄 Sync New'}
+            {syncing && !showForceSyncDialog ? '⏳ Syncing...' : '🔄 Sync New'}
           </button>
           <button
-            onClick={() => handleSync(true)}
+            onClick={handleForceSync}
             disabled={syncing}
-            className="text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
-            title="Force full sync of all activities in date range"
+            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Force sync from a specific start date"
           >
-            {syncing ? '⏳ Syncing...' : '🔄 Force Full Sync'}
+            {syncing && showForceSyncDialog ? '⏳ Syncing...' : '🔄 Force Sync'}
           </button>
         </div>
       </div>
+
+      {/* Sync Progress Indicator */}
+      {syncProgress && (
+        <div className="card bg-blue-50 border-blue-200">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p className="text-sm text-blue-800 font-medium">{syncProgress}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Force Sync Dialog */}
+      {showForceSyncDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Force Sync</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This will sync all data (activities, intervals, messages, wellness) from the selected start date to today.
+            </p>
+
+            <div className="mb-6">
+              <label htmlFor="forceSyncStartDate" className="block text-sm font-medium text-gray-700 mb-2">
+                Start Date
+              </label>
+              <input
+                type="date"
+                id="forceSyncStartDate"
+                value={forceSyncStartDate}
+                onChange={(e) => setForceSyncStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Recommended: 2025-01-01 for full history
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowForceSyncDialog(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmForceSync}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+              >
+                Start Sync
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activities.length === 0 ? (
         <div className="card text-center py-12">

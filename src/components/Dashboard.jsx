@@ -15,18 +15,11 @@ function Dashboard() {
   const [cycleStats, setCycleStats] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [todayReadiness, setTodayReadiness] = useState(null);
-  const [syncingWellness, setSyncingWellness] = useState(false);
 
   const handleSync = async () => {
     setSyncing(true);
     await sync();
     setSyncing(false);
-  };
-
-  const handleWellnessSync = async () => {
-    setSyncingWellness(true);
-    await fetchTodayWellness(false); // Force fetch from API
-    setSyncingWellness(false);
   };
 
   const fetchTodayWellness = async (useCache = true) => {
@@ -59,7 +52,8 @@ function Dashboard() {
       console.log('📅 Fetching wellness from', startDate, 'to', today);
 
       // Fetch wellness data for last 7 days (for baseline) + today
-      const wellnessData = await intervalsApi.getWellnessData(startDate, today, true);
+      // When useCache=false (user clicked sync), force refresh from API
+      const wellnessData = await intervalsApi.getWellnessData(startDate, today, false, !useCache);
 
       console.log('📊 Wellness data received:', wellnessData?.length || 0, 'records');
 
@@ -254,13 +248,6 @@ function Dashboard() {
                 </span>
               )}
             </div>
-            <button
-              onClick={handleWellnessSync}
-              disabled={syncingWellness}
-              className="text-xs text-primary-600 hover:text-primary-700 disabled:opacity-50"
-            >
-              {syncingWellness ? '⏳' : '🔄'}
-            </button>
           </div>
 
           {/* Compact Wellness Metrics */}

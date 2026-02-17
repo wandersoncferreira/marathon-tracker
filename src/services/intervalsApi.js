@@ -285,9 +285,34 @@ class IntervalsAPI {
    * @param {string} startDate - ISO date string (YYYY-MM-DD)
    * @param {string} endDate - ISO date string (YYYY-MM-DD)
    * @param {boolean} dbOnly - If true, only read from database (no API fallback)
+   * @param {boolean} forceRefresh - If true, always fetch from API and bypass cache
    * @returns {Promise<Array>}
    */
-  async getWellnessData(startDate, endDate, dbOnly = true) {
+  async getWellnessData(startDate, endDate, dbOnly = true, forceRefresh = false) {
+    // If forcing refresh, skip database check and go straight to API
+    if (forceRefresh) {
+      const configured = await this.isConfigured();
+      if (!configured) {
+        return [];
+      }
+
+      console.log('🔄 Force refreshing wellness data from API');
+      await this.loadConfig();
+      const endpoint = `/athlete/${this.config.athleteId}/wellness`;
+      const params = new URLSearchParams({
+        oldest: startDate,
+        newest: endDate,
+      });
+      const data = await this.request(`${endpoint}?${params}`);
+
+      // Store in database
+      if (data && data.length > 0) {
+        await db.storeWellness(data);
+      }
+
+      return data;
+    }
+
     // Get from database
     const dbWellness = await db.getWellness(startDate, endDate);
 

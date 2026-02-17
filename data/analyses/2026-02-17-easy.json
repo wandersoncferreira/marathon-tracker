@@ -1,0 +1,80 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "date": "2026-02-17",
+    "activityId": "i125799639",
+    "activityName": "Morning Run",
+    "analysisDate": "2026-02-17T12:00:00Z",
+    "coach": "Claude-2h50-Marathon"
+  },
+  "session": {
+    "type": "easy",
+    "distance": 20016,
+    "duration": 5934,
+    "avgPace": "4:58/km",
+    "avgPower": 272,
+    "avgHR": 148,
+    "trainingLoad": 95
+  },
+  "marathonContext": {
+    "goalPace": "4:02/km",
+    "goalTime": "2:50:00",
+    "weeksToRace": 15,
+    "currentPhase": "Build (Weeks 5-8)"
+  },
+  "analysis": {
+    "strengths": [
+      "Excellent aerobic efficiency with only 2.01% decoupling over 20km, demonstrating strong cardiovascular adaptation",
+      "Maintained controlled heart rate at 148 bpm (83% LTHR), staying solidly in Zone 2 throughout the session",
+      "Completed 20km distance which builds solid aerobic base and enhances fat oxidation capacity",
+      "Good cadence average of 87 spm indicates efficient running mechanics",
+      "Sleep duration of 7.4 hours provides adequate recovery foundation despite moderate sleep quality"
+    ],
+    "concerns": [
+      "Training load of 95 TSS is very high for an easy/recovery day - typically recovery runs should be 40-60 TSS maximum",
+      "Current TSB of -26 indicates significant fatigue accumulation, suggesting inadequate recovery between quality sessions",
+      "The 20km distance is excessive for a recovery run between quality workouts - should be 8-12km maximum",
+      "Sleep quality of 3/5 combined with elevated fatigue (TSB -26) suggests recovery is compromised",
+      "Pace of 4:58/km is appropriately easy, but the volume at this intensity is counterproductive when fatigued"
+    ],
+    "keyFindings": [
+      "This session demonstrates a critical training error: confusing volume with quality on a recovery day",
+      "With TSB at -26, the body needs genuine recovery (short, easy runs) not a 20km volume builder",
+      "The high TSS (95) from this 'easy' run will further deepen the fatigue hole rather than allow adaptation",
+      "Current CTL of 68.8 is appropriate for Week 5 of the build phase, but ATL of 95 is dangerously high",
+      "The athlete is at risk of overtraining if recovery days continue to accumulate excessive volume and TSS"
+    ]
+  },
+  "metrics": {
+    "kmAtMarathonPace": 0,
+    "kmAtThresholdPace": 0,
+    "kmAtEasyPace": 20.02,
+    "totalKm": 20.02
+  },
+  "recommendations": {
+    "nextSession": {
+      "date": "2026-02-18",
+      "type": "easy",
+      "workout": "COMPLETE REST DAY - ADAPTATIONS: Mandatory rest. No running. Current TSB of -26 requires immediate recovery intervention. Use this day for sleep (aim 9+ hours), hydration, and light mobility work only.",
+      "rationale": "With TSB at -26 and yesterday's 95 TSS 'easy' run adding to fatigue rather than recovery, continuing to train would be counterproductive and risks injury or illness. The body needs actual rest to absorb recent training stress. Resume training Wednesday with a true recovery run (6-8km @ 5:10-5:20/km, <40 TSS)."
+    },
+    "weeklyFocus": [
+      "Tuesday (Feb 18): COMPLETE REST - no running, focus on sleep and recovery",
+      "Wednesday (Feb 19): Easy recovery 6-8km @ 5:10-5:20/km, <40 TSS maximum",
+      "Thursday (Feb 20): If TSB improves to -15 or better: Threshold session - 3 x 3km @ 3:50-3:55/km with 3min jog recovery",
+      "Friday (Feb 21): Easy 8km @ 5:00-5:10/km",
+      "Saturday (Feb 22): Long run 22km - first 18km @ 4:40-4:50/km, final 4km @ 4:10-4:15/km (progressive to near MP)",
+      "Sunday (Feb 23): Easy 10km @ 5:00-5:10/km OR complete rest if TSB still below -10"
+    ],
+    "progressionNotes": "CRITICAL INTERVENTION NEEDED: You are confusing 'easy pace' with 'easy training'. Running 20km at an easy pace still accumulates massive training stress (95 TSS) which defeats the purpose of recovery. Recovery days must be SHORT (6-10km maximum) regardless of how easy they feel. Your current Week 5 build phase requires 2-3 quality sessions per week with true recovery days between - not long aerobic runs every day. The goal is to be fresh enough to execute quality work (threshold, speed, MP sessions) at the prescribed intensities. If you continue accumulating fatigue with long 'easy' runs, you will not be able to hit your targets on quality days. IMMEDIATE CHANGES: (1) Cap all recovery runs at 10km maximum, (2) Monitor TSB daily - take rest day if below -20, (3) Recovery runs should be <50 TSS, not 95 TSS, (4) Quality over quantity - better to be slightly undertrained than overtrained at this phase."
+  },
+  "verdict": {
+    "rating": "poor",
+    "summary": "While the aerobic execution was excellent (controlled HR, low decoupling), this session represents a fundamental training error: excessive volume on what should be a recovery day has pushed TSB to -26, severely compromising adaptation and increasing injury/illness risk.",
+    "goalViability": {
+      "2h50": "possible",
+      "confidence": "moderate",
+      "notes": "The underlying fitness (CTL 68.8, strong aerobic efficiency) supports the 2h50 goal, but current training execution is problematic. Accumulating excessive fatigue from long 'easy' runs prevents quality session execution and risks overtraining. With 15 weeks remaining and immediate correction to recovery day volume/TSS, the goal remains achievable. However, if this pattern continues, performance will deteriorate rather than improve. The path forward requires disciplined recovery (short, truly easy runs <50 TSS) between quality sessions, not daily volume accumulation."
+    }
+  }
+}

@@ -118,9 +118,17 @@ class MarathonTrackerDB extends Dexie {
    */
   async getActivities(startDate, endDate) {
     try {
+      // Ensure endDate includes the entire day by adding time component if needed
+      // This handles cases where activities have timestamps (e.g., "2026-02-17T05:43:06")
+      let adjustedEndDate = endDate;
+      if (!endDate.includes('T')) {
+        // If endDate is just a date (YYYY-MM-DD), make it inclusive by adding end-of-day time
+        adjustedEndDate = endDate + 'T23:59:59';
+      }
+
       return await this.activities
         .where('start_date_local')
-        .between(startDate, endDate, true, true)
+        .between(startDate, adjustedEndDate, true, true)
         .toArray();
     } catch (error) {
       console.error('Error getting activities:', error);
@@ -148,6 +156,7 @@ class MarathonTrackerDB extends Dexie {
 
   /**
    * Get the most recent activity date in the database
+   * Returns date in YYYY-MM-DD format
    */
   async getLatestActivityDate() {
     try {
@@ -155,7 +164,14 @@ class MarathonTrackerDB extends Dexie {
         .orderBy('start_date_local')
         .reverse()
         .first();
-      return latest ? latest.start_date_local : null;
+      if (!latest) return null;
+
+      // Extract date portion only (YYYY-MM-DD) from ISO timestamp
+      const dateStr = latest.start_date_local;
+      if (dateStr.includes('T')) {
+        return dateStr.split('T')[0];
+      }
+      return dateStr;
     } catch (error) {
       console.error('Error getting latest activity date:', error);
       return null;

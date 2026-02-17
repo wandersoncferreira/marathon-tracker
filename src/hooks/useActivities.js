@@ -64,7 +64,7 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
     fetchActivities();
   };
 
-  const sync = async (forceFullSync = false) => {
+  const sync = async (forceFullSync = false, customStartDate = null) => {
     setLoading(true);
     setError(null);
 
@@ -75,13 +75,16 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
         throw new Error('Intervals.icu API not configured - cannot sync from API');
       }
 
-      const syncType = forceFullSync ? 'Full sync' : 'Incremental sync';
-      console.log(`🔄 ${syncType} started...`);
+      const syncType = forceFullSync ? 'Force sync' : 'Sync new';
+      const startDate = customStartDate || dateRange.startDate;
+      const endDate = dateRange.endDate;
+
+      console.log(`🔄 ${syncType} started from ${startDate} to ${endDate}...`);
 
       // Sync activities (incremental by default, full if forced)
       await intervalsApi.syncActivities(
-        dateRange.startDate,
-        dateRange.endDate,
+        startDate,
+        endDate,
         forceFullSync
       );
 
@@ -98,16 +101,16 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
 
       console.log(`✅ ${syncType} completed: ${runningActivities.length} running activities in date range`);
 
-      // Only sync messages during Force Full Sync (not incremental)
-      if (forceFullSync) {
-        console.log('🔄 Syncing messages (force full sync mode)...');
-        intervalsApi.syncActivityMessages(runningActivities, false).catch(err => {
-          console.error('Error syncing messages:', err);
-        });
-      }
+      // Return statistics for the caller
+      return {
+        activities: runningActivities.length,
+        startDate,
+        endDate
+      };
     } catch (err) {
       setError(err.message);
       console.error('Error syncing activities:', err);
+      throw err;
     } finally {
       setLoading(false);
     }
