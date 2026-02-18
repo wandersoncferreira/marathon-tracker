@@ -1,0 +1,152 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "date": "2026-02-18",
+    "activityId": "i126056496",
+    "activityName": {
+      "en_US": "Potencia - VO2max Intervals",
+      "pt_BR": "Potência - Intervalos VO2max"
+    },
+    "analysisDate": "2026-02-18T12:00:00Z",
+    "coach": "Claude-2h50-Marathon"
+  },
+  "session": {
+    "type": "speed",
+    "distance": 10615,
+    "duration": 3177,
+    "avgPace": "4:58/km",
+    "avgPower": 270,
+    "avgHR": 146,
+    "trainingLoad": 59
+  },
+  "marathonContext": {
+    "goalPace": "4:02/km",
+    "goalTime": "2:50:00",
+    "weeksToRace": 15,
+    "currentPhase": {
+      "en_US": "Build (Week 5 of 20)",
+      "pt_BR": "Construção (Semana 5 de 20)"
+    }
+  },
+  "analysis": {
+    "strengths": {
+      "en_US": [
+        "Excellent interval consistency: 8 work intervals at 331W avg (92% FTP) with minimal power drift - shows strong VO2max capacity and mental discipline",
+        "Outstanding HR control: Work intervals at 153 bpm avg (86% LTHR) with only 4.3% decoupling - exceptional coupling for high-intensity work",
+        "Perfect pacing discipline: All 8x ~2:20 work intervals clustered at 320-331W, demonstrating mature self-regulation despite accumulated fatigue (TSB -12)",
+        "Strong power:HR ratio of 1.85 indicates good neuromuscular efficiency even under fatigue - work capacity is high",
+        "Optimal cadence at 90 rpm during work intervals - mechanically efficient for power production at VO2max intensity"
+      ],
+      "pt_BR": [
+        "Excelente consistência de intervalos: 8 intervalos de trabalho a 331W em média (92% FTP) com deriva mínima de potência - mostra forte capacidade VO2max e disciplina mental",
+        "Controle de FC excepcional: Intervalos de trabalho a 153 bpm em média (86% LTHR) com apenas 4,3% de desacoplamento - acoplamento excepcional para trabalho de alta intensidade",
+        "Disciplina de ritmo perfeita: Todos os 8x ~2:20 intervalos de trabalho agrupados em 320-331W, demonstrando autorregulação madura apesar da fadiga acumulada (TSB -12)",
+        "Forte relação potência:FC de 1,85 indica boa eficiência neuromuscular mesmo sob fadiga - capacidade de trabalho está alta",
+        "Cadência ótima de 90 rpm durante intervalos de trabalho - mecanicamente eficiente para produção de potência em intensidade VO2max"
+      ]
+    },
+    "concerns": {
+      "en_US": [
+        "Current TSB at -12.2 indicates moderate functional overreach - approaching the point where recovery becomes critical before next quality session",
+        "Recovery intervals averaged 150W (42% FTP) which may be too passive - consider 60-65% FTP (~220-235W) for better lactate clearance between efforts",
+        "Warmup duration of 15 minutes was slightly long before high-intensity VO2max work when starting with negative TSB - consider 10-12 minutes to preserve energy",
+        "Resting HR elevated to 51 bpm (vs baseline 47-50) and HRV at 49 suggests accumulated training stress - monitor closely over next 48 hours"
+      ],
+      "pt_BR": [
+        "TSB atual de -12,2 indica sobrecarga funcional moderada - aproximando-se do ponto onde a recuperação se torna crítica antes da próxima sessão de qualidade",
+        "Intervalos de recuperação com média de 150W (42% FTP) podem ser muito passivos - considere 60-65% FTP (~220-235W) para melhor remoção de lactato entre esforços",
+        "Duração de aquecimento de 15 minutos foi ligeiramente longa antes de trabalho VO2max de alta intensidade ao iniciar com TSB negativo - considere 10-12 minutos para preservar energia",
+        "FC de repouso elevada para 51 bpm (vs linha de base 47-50) e HRV em 49 sugere estresse de treino acumulado - monitorar de perto nas próximas 48 horas"
+      ]
+    },
+    "keyFindings": {
+      "en_US": [
+        "VO2max capacity is race-ready: sustained 331W (92% FTP) for 8 intervals demonstrates the aerobic power needed for 2h50 marathon",
+        "Work intervals executed at 3:56-4:00/km pace - significantly faster than goal marathon pace, building critical speed reserve",
+        "Negative cardiac drift during 2km cooldown indicates good intra-session recovery capacity",
+        "Training load of 59 TSS in 53 minutes is highly efficient stimulus:fatigue ratio for VO2max development",
+        "Peak interval #14 at 357W (99% FTP) and #16 at 351W (97% FTP) show ability to push near threshold even late in workout - mental toughness evident"
+      ],
+      "pt_BR": [
+        "Capacidade VO2max está pronta para corrida: sustentação de 331W (92% FTP) por 8 intervalos demonstra a potência aeróbica necessária para maratona de 2h50",
+        "Intervalos de trabalho executados a 3:56-4:00/km - significativamente mais rápido que o ritmo de maratona objetivo, construindo reserva crítica de velocidade",
+        "Deriva cardíaca negativa durante 2km de desaquecimento indica boa capacidade de recuperação intra-sessão",
+        "Carga de treino de 59 TSS em 53 minutos é uma relação estímulo:fadiga altamente eficiente para desenvolvimento VO2max",
+        "Intervalo de pico #14 a 357W (99% FTP) e #16 a 351W (97% FTP) mostram capacidade de empurrar perto do limiar mesmo no final do treino - resistência mental evidente"
+      ]
+    }
+  },
+  "metrics": {
+    "kmAtMarathonPace": 0,
+    "kmAtThresholdPace": 4.8,
+    "kmAtEasyPace": 5.0,
+    "totalKm": 10.6
+  },
+  "recommendations": {
+    "nextSession": [
+      {
+        "date": "2026-02-19",
+        "timeOfDay": "AM",
+        "type": "easy",
+        "workout": {
+          "en_US": "Easy Run: 10km @ 65-67% Pace (5:10-5:25/km) - ADAPTATIONS: Execute as planned. Keep HR <140 bpm and effort truly conversational. This is critical recovery after yesterday's high-quality VO2max session. Monitor leg feel in first 15 minutes - if heavy/sluggish, reduce to 8km.",
+          "pt_BR": "Corrida Leve: 10km @ 65-67% Ritmo (5:10-5:25/km) - ADAPTAÇÕES: Execute conforme planejado. Mantenha FC <140 bpm e esforço verdadeiramente conversacional. Esta é recuperação crítica após a sessão VO2max de alta qualidade de ontem. Monitore a sensação das pernas nos primeiros 15 minutos - se pesadas/lentas, reduza para 8km."
+        },
+        "rationale": {
+          "en_US": "Standard recovery protocol after 59 TSS VO2max session. Current TSB -12.2 requires genuine easy pace to allow physiological adaptation. HRV at 49 and RHR at 51 suggest accumulated stress - easy volume today will aid recovery without compromising adaptation from yesterday's stimulus.",
+          "pt_BR": "Protocolo de recuperação padrão após sessão VO2max de 59 TSS. TSB atual de -12,2 requer ritmo genuinamente leve para permitir adaptação fisiológica. HRV em 49 e FCR em 51 sugerem estresse acumulado - volume leve hoje ajudará na recuperação sem comprometer a adaptação do estímulo de ontem."
+        },
+        "optional": false
+      },
+      {
+        "date": "2026-02-19",
+        "timeOfDay": "PM",
+        "type": "easy",
+        "workout": {
+          "en_US": "Hill Cruise: 15km with embedded quality (10km easy + 2x 500m surges + 5km hills) - ADAPTATIONS: SKIP THIS SESSION. Given TSB -12.2 and elevated recovery markers after yesterday's VO2max work, attempting embedded quality today creates injury/overtraining risk. Focus on single easy AM run only.",
+          "pt_BR": "Hill Cruise: 15km com qualidade embutida (10km leve + 2x 500m acelerações + 5km subidas) - ADAPTAÇÕES: PULE ESTA SESSÃO. Dado TSB -12,2 e marcadores de recuperação elevados após trabalho VO2max de ontem, tentar qualidade embutida hoje cria risco de lesão/overtraining. Foque apenas na corrida leve AM."
+        },
+        "rationale": {
+          "en_US": "Hill Cruise contains embedded quality (surges and hill efforts) which is contraindicated at current fatigue level. With TSB -12.2, you need 1-2 days of genuine easy volume before any quality work. This session should be postponed to later in week when TSB improves to -8 or better.",
+          "pt_BR": "Hill Cruise contém qualidade embutida (acelerações e esforços de subida) que é contraindicada no nível atual de fadiga. Com TSB -12,2, você precisa de 1-2 dias de volume genuinamente leve antes de qualquer trabalho de qualidade. Esta sessão deve ser adiada para mais tarde na semana quando TSB melhorar para -8 ou melhor."
+        },
+        "optional": true
+      }
+    ],
+    "weeklyAdjustments": {
+      "en_US": [
+        "Prioritize 2 full easy days (Feb 19-20) before next quality session - allow TSB to recover to -8 or better",
+        "If Thursday's plan includes quality work, be prepared to move it to Friday if TSB remains below -10 and RHR stays elevated >51",
+        "Weekend long run should be truly aerobic (75-80% effort) - resist urge to push pace given current accumulated fatigue",
+        "Monitor morning HRV and RHR: if HRV drops below 45 or RHR climbs to 53+, take additional rest day before next quality session",
+        "Consider light cross-training (cycling, swimming) if legs feel heavy but you need movement - avoid impact stress while maintaining fitness"
+      ],
+      "pt_BR": [
+        "Priorize 2 dias totalmente leves (19-20 fev) antes da próxima sessão de qualidade - permita que TSB se recupere para -8 ou melhor",
+        "Se o plano de quinta inclui trabalho de qualidade, esteja preparado para mover para sexta se TSB permanecer abaixo de -10 e FCR continuar elevada >51",
+        "Longão de fim de semana deve ser verdadeiramente aeróbico (75-80% esforço) - resista ao impulso de empurrar o ritmo dada a fadiga acumulada atual",
+        "Monitore HRV e FCR matinais: se HRV cair abaixo de 45 ou FCR subir para 53+, tome dia adicional de descanso antes da próxima sessão de qualidade",
+        "Considere treino cruzado leve (ciclismo, natação) se as pernas estiverem pesadas mas você precisar de movimento - evite estresse de impacto enquanto mantém fitness"
+      ]
+    },
+    "progressionNotes": {
+      "en_US": "Week 5 VO2max session executed at championship level - power targets hit with precision despite moderate fatigue. You're building the speed reserve needed for 2h50 marathon. Current CTL 66.2 trending upward appropriately. Next Build phase focus: maintain this VO2max capacity while increasing threshold endurance (longer tempo intervals). Watch for overreach signals - you're in productive stress zone but approaching need for recovery week (likely week 7-8).",
+      "pt_BR": "Sessão VO2max da semana 5 executada em nível de campeonato - alvos de potência atingidos com precisão apesar de fadiga moderada. Você está construindo a reserva de velocidade necessária para maratona de 2h50. CTL atual 66,2 tendendo para cima apropriadamente. Próximo foco da fase de Construção: manter esta capacidade VO2max enquanto aumenta resistência de limiar (intervalos de tempo mais longos). Observe sinais de sobrecarga - você está em zona de estresse produtivo mas aproximando-se da necessidade de semana de recuperação (provavelmente semana 7-8)."
+    }
+  },
+  "verdict": {
+    "rating": "excellent",
+    "summary": {
+      "en_US": "Championship-quality VO2max session executed with exceptional discipline at TSB -12. Power consistency, HR coupling, and pacing maturity demonstrate elite-level fitness. Critical recovery period ahead - prioritize easy volume next 48 hours.",
+      "pt_BR": "Sessão VO2max de qualidade de campeonato executada com disciplina excepcional em TSB -12. Consistência de potência, acoplamento de FC e maturidade de ritmo demonstram fitness de nível elite. Período crítico de recuperação à frente - priorize volume leve nas próximas 48 horas."
+    },
+    "goalViability": {
+      "2h50": "on_track",
+      "confidence": "high",
+      "notes": {
+        "en_US": "VO2max capacity at 331W (92% FTP) for 8 intervals confirms the aerobic power foundation for 2h50 marathon is solidly in place. Speed reserve well above race pace. Current CTL 66.2 in week 5 positions you perfectly for peak training phase. Maintain smart recovery management to absorb this quality work.",
+        "pt_BR": "Capacidade VO2max de 331W (92% FTP) por 8 intervalos confirma que a base de potência aeróbica para maratona de 2h50 está solidamente estabelecida. Reserva de velocidade bem acima do ritmo de corrida. CTL atual de 66,2 na semana 5 posiciona você perfeitamente para fase de pico de treino. Mantenha gestão inteligente de recuperação para absorver este trabalho de qualidade."
+      }
+    }
+  }
+}
