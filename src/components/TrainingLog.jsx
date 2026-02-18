@@ -86,7 +86,7 @@ function TrainingLog() {
     try {
       // Step 1: Sync activities
       setSyncProgress(t('trainingLog.syncProgress.step1'));
-      console.log('🔄 Step 1/4: Syncing activities from API...');
+      console.log('🔄 Step 1/5: Syncing activities from API...');
 
       const activitiesBeforeSync = await intervalsApi.getActivities(startDate, endDate);
       const countBefore = activitiesBeforeSync.length;
@@ -108,8 +108,8 @@ function TrainingLog() {
       console.log(`📊 Total running activities in range: ${runningActivities.length}`);
 
       // Step 2: Sync activity details and intervals
-      setSyncProgress(`${t('trainingLog.syncProgress.step2')} ${t('common.for')} ${runningActivities.length} ${t('common.activities')}...` || `Step 2/4: Syncing intervals for ${runningActivities.length} activities...`);
-      console.log(`🔄 Step 2/4: Syncing activity intervals...`);
+      setSyncProgress(`${t('trainingLog.syncProgress.step2')} ${t('common.for')} ${runningActivities.length} ${t('common.activities')}...` || `Step 2/5: Syncing intervals for ${runningActivities.length} activities...`);
+      console.log(`🔄 Step 2/5: Syncing activity intervals...`);
 
       const activitiesNeedingIntervals = [];
       for (const activity of runningActivities) {
@@ -126,7 +126,7 @@ function TrainingLog() {
         const batchSize = 5;
         for (let i = 0; i < activitiesNeedingIntervals.length; i += batchSize) {
           const batch = activitiesNeedingIntervals.slice(i, i + batchSize);
-          setSyncProgress(`${t('trainingLog.syncProgress.step2')} ${i + 1}-${Math.min(i + batchSize, activitiesNeedingIntervals.length)} ${t('common.of')} ${activitiesNeedingIntervals.length}...` || `Step 2/4: Syncing intervals ${i + 1}-${Math.min(i + batchSize, activitiesNeedingIntervals.length)} of ${activitiesNeedingIntervals.length}...`);
+          setSyncProgress(`${t('trainingLog.syncProgress.step2')} ${i + 1}-${Math.min(i + batchSize, activitiesNeedingIntervals.length)} ${t('common.of')} ${activitiesNeedingIntervals.length}...` || `Step 2/5: Syncing intervals ${i + 1}-${Math.min(i + batchSize, activitiesNeedingIntervals.length)} of ${activitiesNeedingIntervals.length}...`);
 
           await Promise.all(
             batch.map(async (activity) => {
@@ -147,7 +147,7 @@ function TrainingLog() {
 
       // Step 3: Sync messages
       setSyncProgress(t('trainingLog.syncProgress.step3'));
-      console.log('🔄 Step 3/4: Syncing activity messages...');
+      console.log('🔄 Step 3/5: Syncing activity messages...');
 
       const messagesCountBefore = await db.activityMessages.count();
       await intervalsApi.syncActivityMessages(runningActivities, false);
@@ -160,7 +160,7 @@ function TrainingLog() {
 
       // Step 4: Sync wellness
       setSyncProgress(t('trainingLog.syncProgress.step4'));
-      console.log('🔄 Step 4/4: Syncing wellness data...');
+      console.log('🔄 Step 4/5: Syncing wellness data...');
 
       const wellnessCountBefore = await db.wellness.count();
       await intervalsApi.getWellnessData(startDate, endDate, false, true); // forceRefresh=true
@@ -171,7 +171,28 @@ function TrainingLog() {
         console.log(`✅ Synced ${wellnessCountAfter - wellnessCountBefore} new wellness records`);
       }
 
-      // Step 5: Save database if new data was synced
+      // Step 5: Sync cross training (cycling + strength)
+      setSyncProgress('Step 5/5: Syncing cross training activities...');
+      console.log('🔄 Step 5/5: Syncing cross training activities...');
+
+      const crossTrainingCountBefore = await db.crossTraining.count();
+
+      // Import the cross training service dynamically
+      const { getCrossTrainingActivities } = await import('../services/crossTrainingService');
+
+      // Fetch cross training incrementally from Intervals.icu (includes Strava-synced activities)
+      await getCrossTrainingActivities(startDate, endDate, true);
+
+      const crossTrainingCountAfter = await db.crossTraining.count();
+
+      if (crossTrainingCountAfter > crossTrainingCountBefore) {
+        newDataSynced = true;
+        console.log(`✅ Synced ${crossTrainingCountAfter - crossTrainingCountBefore} new cross training activities (total: ${crossTrainingCountAfter})`);
+      } else if (crossTrainingCountAfter > 0) {
+        console.log(`✅ Cross training up to date (${crossTrainingCountAfter} activities)`);
+      }
+
+      // Step 6: Save database if new data was synced
       if (newDataSynced) {
         setSyncProgress(t('trainingLog.syncProgress.complete'));
         console.log('💾 New data synced - triggering database export...');

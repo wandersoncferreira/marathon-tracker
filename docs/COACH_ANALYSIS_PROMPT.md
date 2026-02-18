@@ -74,6 +74,19 @@ Analyze the following training session from Intervals.icu and generate a structu
 - USE the latest wellness API response for current TSB/CTL/ATL values
 - Current TSB is critical for accurate recommendations
 
+**Cross Training History (Current Week):**
+[Fetch recent cross training activities to inform alternative workout recommendations:]
+- Cycling activities: mcp__Intervals_icu__get_activities with activity types Ride/VirtualRide
+- Strength training: mcp__Intervals_icu__get_activities with activity type WeightTraining
+- Look at current week (Monday to today) to see what cross training has been done
+- Consider cross training as alternatives when recommending rest or skipping sessions
+- Examples of cross training alternatives:
+  - Instead of skipping PM session → suggest 30-45min easy cycling (Z2)
+  - Instead of full rest day → suggest light 20-30min cycling or mobility work
+  - After hard running sessions → consider suggesting strength training for upper body/core
+- Cross training benefits: maintains fitness, reduces running-specific fatigue, prevents injury
+- Include distance, duration, and avg power for cycling when available
+
 **Tomorrow's Plan:**
 - Get tomorrow's planned workout: mcp__Intervals_icu__get_events (fetch events for tomorrow's date)
 
@@ -177,6 +190,17 @@ The athlete is implementing doubles (two-a-days) on easy/recovery days to accumu
    - Good readiness (TSB >-5): Execute both AM and PM
    - Moderate (TSB -5 to -15): Execute AM, PM optional or reduced
    - Poor (TSB <-15): AM easy only, skip PM
+
+7. **Cross Training Alternatives:**
+   When recommending to skip or reduce running sessions, consider suggesting cross training alternatives:
+   - **Easy cycling** (30-45min @ 100-130W): Maintains aerobic fitness without running impact
+   - **Short cycling** (20-30min @ easy effort): Better than complete rest, aids active recovery
+   - **Strength training** (30-40min): Core/upper body work that doesn't compromise running recovery
+   - Check athlete's recent cross training history to see patterns and preferences
+   - Examples:
+     - "Skip PM run → Consider 30min easy cycling instead to maintain movement"
+     - "Rest day → Option: 20min easy cycling or mobility work if feeling good"
+     - "Reduce AM volume → Alternative: 40min cycling at easy effort"
 
 **IMPORTANT - Weekly Adjustments (NOT Weekly Plan):**
 The athlete already has their real weekly plan in Intervals.icu. DO NOT generate a new weekly plan.

@@ -8,6 +8,7 @@ import { intervalsApi } from '../services/intervalsApi';
 import { analyzeWellnessReadiness, calculateWellnessBaseline } from '../utils/wellnessAnalysis';
 import { db } from '../services/database';
 import { useTranslation } from '../i18n/LanguageContext';
+import { getCyclingStats, getCrossTrainingActivities } from '../services/crossTrainingService';
 
 // Helper function to get localized content
 const getLocalizedContent = (content, language) => {
@@ -36,6 +37,51 @@ const getLocalizedContent = (content, language) => {
   return '';
 };
 
+// Helper function to highlight ADAPTATIONS and ALTERNATIVE keywords
+const HighlightedWorkout = ({ text }) => {
+  if (!text || typeof text !== 'string') {
+    return <span>{text}</span>;
+  }
+
+  // Create a regex that matches both keywords in either language
+  const keywords = /(ADAPTATIONS:|ADAPTAÇÕES:|ALTERNATIVE:|ALTERNATIVA:)/gi;
+  const parts = text.split(keywords);
+
+  // If no keywords found, return as-is
+  if (parts.length === 1) {
+    return <span>{text}</span>;
+  }
+
+  // Map parts to JSX, highlighting keywords
+  return (
+    <span>
+      {parts.map((part, index) => {
+        const upperPart = part.toUpperCase();
+        if (upperPart === 'ADAPTATIONS:' || upperPart === 'ADAPTAÇÕES:') {
+          return (
+            <span
+              key={index}
+              className="font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded mx-0.5"
+            >
+              {part}
+            </span>
+          );
+        } else if (upperPart === 'ALTERNATIVE:' || upperPart === 'ALTERNATIVA:') {
+          return (
+            <span
+              key={index}
+              className="font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded mx-0.5"
+            >
+              {part}
+            </span>
+          );
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </span>
+  );
+};
+
 function Dashboard() {
   const { t, language } = useTranslation();
   const { activities, loading: activitiesLoading, sync } = useActivities(90, true, true);
@@ -44,6 +90,7 @@ function Dashboard() {
   const [cycleStats, setCycleStats] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [todayReadiness, setTodayReadiness] = useState(null);
+  const [allActivities, setAllActivities] = useState([]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -180,6 +227,19 @@ function Dashboard() {
       // Get weekly MP target based on current phase
       const mpTarget = getWeeklyMPTarget(stats.currentWeek);
 
+      // Get cycling stats for current week
+      let cyclingEquivKm = 0;
+      let cyclingTSS = 0;
+      try {
+        const cyclingStats = await getCyclingStats(weekRange.startDate, weekRange.endDate);
+        if (cyclingStats?.totals?.runningEquivalent) {
+          cyclingEquivKm = parseFloat(cyclingStats.totals.runningEquivalent.km) || 0;
+          cyclingTSS = parseFloat(cyclingStats.totals.cycling.tss) || 0;
+        }
+      } catch (error) {
+        console.error('Error fetching cycling stats:', error);
+      }
+
       setWeeklyStats({
         totalKm: weeklyVolume[0]?.totalKm || 0,
         kmAtMP: kmAtMP || 0,
@@ -188,6 +248,8 @@ function Dashboard() {
         mpMax: mpTarget.max,
         sessions: thisWeekActivities.length,
         avgLoad: weeklyVolume[0]?.totalLoad || 0,
+        cyclingEquivKm,
+        cyclingTSS,
       });
     };
 
@@ -198,6 +260,31 @@ function Dashboard() {
   useEffect(() => {
     fetchTodayWellness();
   }, []);
+
+  // Combine running activities with cross training (cycling + strength)
+  useEffect(() => {
+    const fetchAllActivities = async () => {
+      try {
+        // Get last 90 days for recent activities display
+        const endDate = formatDateISO(new Date());
+        const startDate = formatDateISO(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
+
+        const crossTraining = await getCrossTrainingActivities(startDate, endDate);
+
+        // Combine and sort by date (most recent first)
+        const combined = [...activities, ...crossTraining].sort((a, b) =>
+          new Date(b.start_date_local) - new Date(a.start_date_local)
+        );
+
+        setAllActivities(combined);
+      } catch (error) {
+        console.error('Error fetching all activities:', error);
+        setAllActivities(activities);
+      }
+    };
+
+    fetchAllActivities();
+  }, [activities]);
 
   const latestAnalysis = getLatest();
 
@@ -403,6 +490,11 @@ function Dashboard() {
             <p className="text-2xl font-bold text-gray-900">
               {weeklyStats?.totalKm.toFixed(1) || '0.0'} km
             </p>
+            {weeklyStats && weeklyStats.cyclingEquivKm > 0 && (
+              <p className="text-xs text-blue-600 mt-1">
+                +~{weeklyStats.cyclingEquivKm.toFixed(1)} km {t('dashboard.cyclingEquiv')}
+              </p>
+            )}
           </div>
           <div className="metric-card">
             <p className="text-sm text-gray-600 mb-1">{t('dashboard.sessions')}</p>
@@ -424,6 +516,11 @@ function Dashboard() {
             <p className="text-2xl font-bold text-gray-900">
               {weeklyStats?.avgLoad.toFixed(0) || '0'}
             </p>
+            {weeklyStats && weeklyStats.cyclingTSS > 0 && (
+              <p className="text-xs text-blue-600 mt-1">
+                +{weeklyStats.cyclingTSS.toFixed(0)} {t('dashboard.cyclingTSS')}
+              </p>
+            )}
           </div>
         </div>
         {weeklyStats && weeklyStats.sessions === 0 && (
@@ -510,7 +607,7 @@ function Dashboard() {
                           ? 'text-blue-800'
                           : 'text-primary-800'
                       }`}>
-                        {getLocalizedContent(session.workout, language)}
+                        <HighlightedWorkout text={getLocalizedContent(session.workout, language)} />
                       </p>
                       {session.rationale && (
                         <p className={`text-xs mt-2 pt-2 border-t ${
@@ -518,7 +615,7 @@ function Dashboard() {
                             ? 'text-blue-700 border-blue-200'
                             : 'text-primary-700 border-primary-200'
                         }`}>
-                          💡 {getLocalizedContent(session.rationale, language)}
+                          💡 <HighlightedWorkout text={getLocalizedContent(session.rationale, language)} />
                         </p>
                       )}
                     </div>
@@ -533,28 +630,46 @@ function Dashboard() {
       {/* Recent Activities */}
       <div className="card">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('dashboard.recentActivities')}</h3>
-        {activities.length === 0 ? (
+        {allActivities.length === 0 ? (
           <p className="text-gray-500 text-sm">{t('dashboard.noActivitiesFound')}</p>
         ) : (
           <div className="space-y-2">
-            {activities.slice(0, 5).map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{activity.name || 'Run'}</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(activity.start_date_local).toLocaleDateString()}
-                  </p>
+            {allActivities.slice(0, 5).map((activity) => {
+              const isRun = activity.type === 'Run';
+              const isCycling = activity.type === 'Ride' || activity.type === 'VirtualRide';
+              const isStrength = activity.type === 'Other' &&
+                (activity.name?.toLowerCase().includes('strength') ||
+                 activity.name?.toLowerCase().includes('gym') ||
+                 activity.name?.toLowerCase().includes('weights') ||
+                 activity.name?.toLowerCase().includes('musculação'));
+
+              const activityIcon = isRun ? '🏃' : isCycling ? '🚴' : isStrength ? '💪' : '🏋️';
+              const activityLabel = isRun ? 'Run' : isCycling ? 'Cycling' : isStrength ? 'Strength' : activity.type;
+
+              return (
+                <div key={activity.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{activityIcon}</span>
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {activity.name || activityLabel}
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {new Date(activity.start_date_local).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-2">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {((activity.distance || 0) / 1000).toFixed(1)} km
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {activity.icu_training_load || activity.training_load || 0} TSS
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {((activity.distance || 0) / 1000).toFixed(1)} km
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {activity.icu_training_load || activity.training_load || 0} TSS
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

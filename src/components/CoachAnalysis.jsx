@@ -55,6 +55,51 @@ const getLocalizedContent = (content, language) => {
   return '';
 };
 
+// Helper function to highlight ADAPTATIONS and ALTERNATIVE keywords
+const HighlightedWorkout = ({ text }) => {
+  if (!text || typeof text !== 'string') {
+    return <span>{text}</span>;
+  }
+
+  // Create a regex that matches both keywords in either language
+  const keywords = /(ADAPTATIONS:|ADAPTAÇÕES:|ALTERNATIVE:|ALTERNATIVA:)/gi;
+  const parts = text.split(keywords);
+
+  // If no keywords found, return as-is
+  if (parts.length === 1) {
+    return <span>{text}</span>;
+  }
+
+  // Map parts to JSX, highlighting keywords
+  return (
+    <span>
+      {parts.map((part, index) => {
+        const upperPart = part.toUpperCase();
+        if (upperPart === 'ADAPTATIONS:' || upperPart === 'ADAPTAÇÕES:') {
+          return (
+            <span
+              key={index}
+              className="font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded mx-0.5"
+            >
+              {part}
+            </span>
+          );
+        } else if (upperPart === 'ALTERNATIVE:' || upperPart === 'ALTERNATIVA:') {
+          return (
+            <span
+              key={index}
+              className="font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded mx-0.5"
+            >
+              {part}
+            </span>
+          );
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </span>
+  );
+};
+
 function CoachAnalysis() {
   const { t, language } = useTranslation();
   const { analyses, loading, error, importFromFile, reload } = useAnalyses();
@@ -500,14 +545,14 @@ function AnalysisDetail({ analysis, onBack }) {
                           ? 'text-blue-800'
                           : 'text-primary-800'
                       }`}>
-                        {getLocalizedContent(session.workout, language)}
+                        <HighlightedWorkout text={getLocalizedContent(session.workout, language)} />
                       </p>
                       <p className={`text-xs ${
                         session.timeOfDay === 'PM' || session.optional
                           ? 'text-blue-700'
                           : 'text-primary-700'
                       }`}>
-                        {getLocalizedContent(session.rationale, language)}
+                        <HighlightedWorkout text={getLocalizedContent(session.rationale, language)} />
                       </p>
                     </div>
                   ));
@@ -521,7 +566,7 @@ function AnalysisDetail({ analysis, onBack }) {
                 {getLocalizedContent(analysis.recommendations.weeklyAdjustments || analysis.recommendations.weeklyFocus, language).map((item, idx) => (
                   <li key={idx} className="text-sm text-gray-700 flex items-start">
                     <span className="text-primary-600 mr-2">•</span>
-                    <span>{item}</span>
+                    <span><HighlightedWorkout text={item} /></span>
                   </li>
                 ))}
               </ul>

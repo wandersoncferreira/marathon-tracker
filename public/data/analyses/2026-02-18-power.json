@@ -1,0 +1,206 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "date": "2026-02-18",
+    "activityId": "i126056496",
+    "activityName": {
+      "en_US": "Potencia - Power Intervals",
+      "pt_BR": "Potencia - Intervalos de Potência"
+    },
+    "analysisDate": "2026-02-18T12:00:00Z",
+    "coach": "Claude-2h50-Marathon"
+  },
+  "session": {
+    "type": "speed",
+    "distance": 10615,
+    "duration": 3177,
+    "avgPace": "4:58/km",
+    "avgPower": 270,
+    "avgHR": 146,
+    "trainingLoad": 59
+  },
+  "marathonContext": {
+    "goalPace": "4:02/km",
+    "goalTime": "2:50:00",
+    "weeksToRace": 14,
+    "currentPhase": {
+      "en_US": "Build Phase (Week 5 of 20)",
+      "pt_BR": "Fase de Construção (Semana 5 de 20)"
+    }
+  },
+  "analysis": {
+    "strengths": {
+      "en_US": [
+        "Excellent interval consistency: 8x600m @ 331W avg power (92% FTP) with HR 153 avg - strong neuromuscular response",
+        "Controlled recovery intervals: HR dropped to 139 avg during 100m recoveries, showing good cardiac recovery capacity",
+        "Pace discipline: Intervals averaged 4:15-4:20/km (13-18s faster than goal MP), appropriate for power development",
+        "Low HR drift during intervals: <3% decoupling across the 8 reps indicates excellent muscular endurance at intensity",
+        "Managed total training load: 59 TSS keeps session productive without excessive fatigue accumulation"
+      ],
+      "pt_BR": [
+        "Excelente consistência nos intervalos: 8x600m @ 331W potência média (92% FTP) com FC 153 média - forte resposta neuromuscular",
+        "Intervalos de recuperação controlados: FC caiu para 139 média durante recuperações de 100m, mostrando boa capacidade de recuperação cardíaca",
+        "Disciplina de ritmo: Intervalos em média 4:15-4:20/km (13-18s mais rápido que ritmo de maratona), apropriado para desenvolvimento de potência",
+        "Baixa deriva de FC durante intervalos: <3% desacoplamento ao longo das 8 repetições indica excelente resistência muscular em intensidade",
+        "Carga de treino total gerenciada: 59 TSS mantém sessão produtiva sem acúmulo excessivo de fadiga"
+      ]
+    },
+    "concerns": {
+      "en_US": [
+        "TSB at -12.2 indicates moderate fatigue: ATL (78.4) significantly higher than CTL (66.2), suggesting accumulated stress from recent training block",
+        "Resting HR elevated to 51 bpm (from typical 49-50): minor stress signal, monitor if it continues rising",
+        "No cross training this week: Last cycling session was Feb 13 (5 days ago) - missing opportunity for active recovery between quality running sessions",
+        "Low motivation reported (3/10): May indicate early signs of mental fatigue, despite good physical readiness markers"
+      ],
+      "pt_BR": [
+        "TSB em -12.2 indica fadiga moderada: ATL (78.4) significativamente maior que CTL (66.2), sugerindo estresse acumulado do bloco recente de treino",
+        "FC de repouso elevada para 51 bpm (típico 49-50): sinal menor de estresse, monitorar se continuar subindo",
+        "Sem treino cruzado esta semana: Última sessão de ciclismo foi 13 de fev (5 dias atrás) - perdendo oportunidade de recuperação ativa entre sessões de corrida de qualidade",
+        "Baixa motivação relatada (3/10): Pode indicar sinais precoces de fadiga mental, apesar de bons marcadores de prontidão física"
+      ]
+    },
+    "keyFindings": {
+      "en_US": [
+        "Power-based intervals executed well: 331W average (92% FTP) across 8 reps demonstrates strong sustainable power at VO2max intensity",
+        "Current fitness trending positive: CTL 66.2 up from 64.9 two weeks ago, showing steady adaptation to training load",
+        "Recovery capacity adequate: 7h sleep, HRV 49ms, low soreness (2/10) and fatigue (2/10) support continued quality training",
+        "Training balance needs attention: 154 TSS accumulated Sunday-Tuesday (long run + doubles) followed by today's 59 TSS = 213 TSS in 4 days",
+        "Cross training gap: Zero cycling sessions Mon-Tue despite being ideal days for active recovery between quality runs"
+      ],
+      "pt_BR": [
+        "Intervalos baseados em potência executados bem: 331W média (92% FTP) ao longo de 8 repetições demonstra forte potência sustentável em intensidade VO2max",
+        "Condicionamento atual em tendência positiva: CTL 66.2 acima de 64.9 há duas semanas, mostrando adaptação constante à carga de treino",
+        "Capacidade de recuperação adequada: 7h sono, HRV 49ms, baixa dor muscular (2/10) e fadiga (2/10) suportam treinamento de qualidade contínuo",
+        "Equilíbrio de treino precisa atenção: 154 TSS acumulados dom-ter (longão + doubles) seguido de 59 TSS hoje = 213 TSS em 4 dias",
+        "Lacuna no treino cruzado: Zero sessões de ciclismo seg-ter apesar de serem dias ideais para recuperação ativa entre corridas de qualidade"
+      ]
+    }
+  },
+  "metrics": {
+    "kmAtMarathonPace": 0.0,
+    "kmAtThresholdPace": 0.0,
+    "kmAtSpeedWork": 4.8,
+    "kmAtEasyPace": 5.8,
+    "totalKm": 10.6
+  },
+  "recommendations": {
+    "nextSession": [
+      {
+        "date": "2026-02-19",
+        "timeOfDay": "AM",
+        "type": "easy",
+        "workout": {
+          "en_US": "Easy 10km @ 4:50-5:00/km - ADAPTATIONS: Execute as planned. Keep HR <140 bpm throughout. Focus on full recovery - this is not a workout, it's active recovery. Add easy 500m segments only if legs feel completely fresh after 8km.",
+          "pt_BR": "Fácil 10km @ 4:50-5:00/km - ADAPTAÇÕES: Execute conforme planejado. Mantenha FC <140 bpm ao longo. Foco em recuperação total - não é treino, é recuperação ativa. Adicione segmentos fáceis de 500m apenas se as pernas estiverem completamente frescas após 8km."
+        },
+        "rationale": {
+          "en_US": "TSB -12 with 213 TSS accumulated Mon-Tue indicates moderate fatigue. Easy running maintains aerobic base without stress. Good wellness markers (7h sleep, HRV 49, low soreness) support execution. Skip the planned 2x500m @ 77-78% if legs feel heavy.",
+          "pt_BR": "TSB -12 com 213 TSS acumulados seg-ter indica fadiga moderada. Corrida leve mantém base aeróbica sem estresse. Bons marcadores de bem-estar (7h sono, HRV 49, baixa dor) permitem execução. Pule os 2x500m @ 77-78% planejados se pernas estiverem pesadas."
+        },
+        "optional": false
+      },
+      {
+        "date": "2026-02-19",
+        "timeOfDay": "PM",
+        "type": "alternative",
+        "workout": {
+          "en_US": "SKIP planned PM session - ALTERNATIVE: Consider 30-40min easy cycling @ 100-130W (Z2) if feeling fresh after AM run. You've done ZERO cycling this week (last session Feb 13). Easy cycling provides active recovery without running-specific impact and helps maintain aerobic stimulus.",
+          "pt_BR": "PULE sessão PM planejada - ALTERNATIVA: Considere 30-40min ciclismo leve @ 100-130W (Z2) se estiver fresco após corrida AM. Você fez ZERO ciclismo esta semana (última sessão 13 fev). Ciclismo leve proporciona recuperação ativa sem impacto específico da corrida e ajuda manter estímulo aeróbico."
+        },
+        "rationale": {
+          "en_US": "With TSB -12 and today's 59 TSS power session, skip any additional running. However, you've avoided cycling all week despite having ideal opportunities Mon-Tue for active recovery. Easy cycling (HR 110-120) maintains movement and aids recovery better than complete rest, while banking aerobic volume without running fatigue. Optional - only if AM run feels easy and HR stays controlled.",
+          "pt_BR": "Com TSB -12 e sessão de potência de 59 TSS hoje, pule qualquer corrida adicional. Porém, você evitou ciclismo toda semana apesar de ter oportunidades ideais seg-ter para recuperação ativa. Ciclismo leve (FC 110-120) mantém movimento e ajuda recuperação melhor que descanso completo, enquanto acumula volume aeróbico sem fadiga da corrida. Opcional - apenas se corrida AM parecer fácil e FC permanecer controlada."
+        },
+        "optional": true
+      }
+    ],
+    "weeklyAdjustments": {
+      "en_US": [
+        "Integrate cycling for active recovery: Schedule 2-3 easy cycling sessions (30-40min @ Z2) on easy running days to aid recovery between quality sessions without adding running-specific fatigue",
+        "Monitor TSB trajectory: Currently -12 and trending down. If TSB drops below -15 by Friday, reduce weekend long run volume by 2-3km or extend recovery periods",
+        "Watch resting HR trend: If RHR stays elevated above 51-52 for 3+ consecutive days, add extra rest day before weekend quality work",
+        "Adjust Saturday workout based on Friday readiness: If TSB still below -10 on Friday evening, consider swapping Saturday's tempo for extended easy run with 3-4km @ MP finish",
+        "Prioritize sleep this week: Target 7.5-8h per night to support recovery with current training load. Sleep quality matters more than quantity when fatigued"
+      ],
+      "pt_BR": [
+        "Integre ciclismo para recuperação ativa: Agende 2-3 sessões de ciclismo leve (30-40min @ Z2) em dias de corrida leve para ajudar recuperação entre sessões de qualidade sem adicionar fadiga específica da corrida",
+        "Monitore trajetória do TSB: Atualmente -12 e tendendo para baixo. Se TSB cair abaixo de -15 até sexta, reduza volume do longão do fim de semana em 2-3km ou estenda períodos de recuperação",
+        "Observe tendência da FC de repouso: Se FCR permanecer elevada acima de 51-52 por 3+ dias consecutivos, adicione dia extra de descanso antes do trabalho de qualidade do fim de semana",
+        "Ajuste treino de sábado baseado na prontidão de sexta: Se TSB ainda abaixo de -10 na sexta à noite, considere trocar tempo de sábado por corrida leve estendida com 3-4km @ ritmo de maratona no final",
+        "Priorize sono esta semana: Alvo de 7.5-8h por noite para suportar recuperação com carga atual de treino. Qualidade do sono importa mais que quantidade quando fatigado"
+      ]
+    }
+  },
+  "trainingZones": {
+    "heartRate": {
+      "zone1": "< 133 bpm (Recovery)",
+      "zone2": "133-151 bpm (Easy/Aerobic)",
+      "zone3": "151-160 bpm (Tempo)",
+      "zone4": "160-169 bpm (Threshold)",
+      "zone5": "> 169 bpm (VO2max)"
+    },
+    "power": {
+      "zone1": "< 252W (Easy)",
+      "zone2": "252-288W (Aerobic)",
+      "zone3": "288-324W (Tempo)",
+      "zone4": "324-360W (Threshold)",
+      "zone5": "> 360W (VO2max)"
+    },
+    "pace": {
+      "easy": "4:50-5:10/km",
+      "marathonPace": "3:56-4:08/km (goal 4:02)",
+      "threshold": "3:40-3:55/km",
+      "interval": "3:30-3:45/km",
+      "repetition": "< 3:30/km"
+    }
+  },
+  "wellness": {
+    "current": {
+      "ctl": 66.25,
+      "atl": 78.45,
+      "tsb": -12.2,
+      "restingHR": 51,
+      "hrv": 49,
+      "sleep": 7.0,
+      "sleepQuality": "Average (3/5)",
+      "soreness": 2,
+      "fatigue": 2,
+      "motivation": 3
+    },
+    "interpretation": {
+      "en_US": "Moderate fatigue with TSB -12.2. Physical markers adequate (good HRV, low soreness) but low motivation suggests mental freshness needs attention. Continue training but avoid intensity stacking. Add active recovery modalities.",
+      "pt_BR": "Fadiga moderada com TSB -12.2. Marcadores físicos adequados (boa HRV, baixa dor) mas baixa motivação sugere que frescor mental precisa atenção. Continue treinando mas evite empilhar intensidade. Adicione modalidades de recuperação ativa."
+    }
+  },
+  "performanceIndicators": {
+    "sessionQuality": "good",
+    "goalViability": "on_track",
+    "trainingDirection": {
+      "en_US": "Positive - Fitness building steadily (CTL 66→66.2), but fatigue accumulating faster (ATL 78→78.4). Need to integrate more active recovery to manage TSB. Power intervals show strong VO2max capacity for marathon goal.",
+      "pt_BR": "Positivo - Condicionamento crescendo constantemente (CTL 66→66.2), mas fadiga acumulando mais rápido (ATL 78→78.4). Precisa integrar mais recuperação ativa para gerenciar TSB. Intervalos de potência mostram forte capacidade VO2max para meta de maratona."
+    }
+  },
+  "coachNotes": {
+    "en_US": [
+      "Strong power session execution - 8x600m @ 331W demonstrates excellent sustainable VO2max power",
+      "Cross training integration needed: No cycling since Feb 13 despite having ideal recovery opportunities Mon-Tue between quality runs",
+      "TSB management: At -12 trending down, need to balance intensity with active recovery to avoid overreaching",
+      "Consider cycling alternative for PM sessions: 30-40min easy cycling (100-130W) provides aerobic stimulus without running impact",
+      "Mental freshness: Low motivation (3/10) despite good physical markers - may benefit from workout variety (cycling, strength, mobility)"
+    ],
+    "pt_BR": [
+      "Execução forte da sessão de potência - 8x600m @ 331W demonstra excelente potência sustentável em VO2max",
+      "Integração de treino cruzado necessária: Sem ciclismo desde 13 fev apesar de ter oportunidades ideais de recuperação seg-ter entre corridas de qualidade",
+      "Gestão do TSB: Em -12 tendendo para baixo, precisa equilibrar intensidade com recuperação ativa para evitar overreaching",
+      "Considere alternativa de ciclismo para sessões PM: 30-40min ciclismo leve (100-130W) proporciona estímulo aeróbico sem impacto da corrida",
+      "Frescor mental: Baixa motivação (3/10) apesar de bons marcadores físicos - pode se beneficiar de variedade no treino (ciclismo, força, mobilidade)"
+    ]
+  },
+  "verdict": {
+    "rating": "good",
+    "summary": {
+      "en_US": "Strong power session with 8x600m @ 331W (92% FTP) executed consistently. TSB at -12 indicates moderate fatigue - balance intensity with active recovery. Consider integrating easy cycling for cross-training variety. On track for 2h50 marathon goal.",
+      "pt_BR": "Sessão forte de potência com 8x600m @ 331W (92% FTP) executada consistentemente. TSB em -12 indica fadiga moderada - equilibre intensidade com recuperação ativa. Considere integrar ciclismo leve para variedade no treino cruzado. No caminho certo para meta de maratona 2h50."
+    }
+  }
+}
