@@ -52,6 +52,11 @@ class MarathonTrackerDB extends Dexie {
       events: 'id, start_date_local, category', // Primary key: event id, indexed by start date and category
     });
 
+    // Version 7 - Add cross training table (cycling, strength)
+    this.version(7).stores({
+      crossTraining: 'id, date, type, start_date_local, *tags', // Primary key: activity id, indexed by date, type, start_date_local
+    });
+
     // Access tables
     this.config = this.table('config');
     this.activities = this.table('activities');
@@ -61,6 +66,7 @@ class MarathonTrackerDB extends Dexie {
     this.analyses = this.table('analyses');
     this.activityMessages = this.table('activityMessages');
     this.events = this.table('events');
+    this.crossTraining = this.table('crossTraining');
   }
 
   /**
@@ -477,17 +483,86 @@ class MarathonTrackerDB extends Dexie {
   }
 
   /**
+   * Store cross training activities (bulk)
+   */
+  async storeCrossTraining(activities) {
+    try {
+      await this.crossTraining.bulkPut(activities);
+      return true;
+    } catch (error) {
+      console.error('Error storing cross training:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get cross training by date range
+   */
+  async getCrossTraining(startDate, endDate) {
+    try {
+      let adjustedEndDate = endDate;
+      if (!endDate.includes('T')) {
+        adjustedEndDate = endDate + 'T23:59:59';
+      }
+
+      return await this.crossTraining
+        .where('start_date_local')
+        .between(startDate, adjustedEndDate, true, true)
+        .toArray();
+    } catch (error) {
+      console.error('Error getting cross training:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get cross training by type
+   */
+  async getCrossTrainingByType(type, startDate, endDate) {
+    try {
+      const all = await this.getCrossTraining(startDate, endDate);
+      return all.filter(a => a.type === type);
+    } catch (error) {
+      console.error('Error getting cross training by type:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get latest cross training activity date
+   */
+  async getLatestCrossTrainingDate() {
+    try {
+      const latest = await this.crossTraining
+        .orderBy('start_date_local')
+        .reverse()
+        .first();
+      if (!latest) return null;
+
+      const dateStr = latest.start_date_local;
+      if (dateStr.includes('T')) {
+        return dateStr.split('T')[0];
+      }
+      return dateStr;
+    } catch (error) {
+      console.error('Error getting latest cross training date:', error);
+      return null;
+    }
+  }
+
+  /**
    * Get database statistics
    */
   async getStats() {
     try {
-      const [activitiesCount, detailsCount, wellnessCount, analysesCount, messagesCount, eventsCount, cacheCount] = await Promise.all([
+      const [activitiesCount, detailsCount, wellnessCount, analysesCount, messagesCount, eventsCount, crossTrainingCount, cacheCount] = await Promise.all([
         this.activities.count(),
         this.activityDetails.count(),
         this.wellness.count(),
         this.analyses.count(),
         this.activityMessages.count(),
         this.events.count(),
+        this.crossTraining.count(),
         this.cache.count(),
       ]);
 
@@ -498,6 +573,7 @@ class MarathonTrackerDB extends Dexie {
         analyses: analysesCount,
         activityMessages: messagesCount,
         events: eventsCount,
+        crossTraining: crossTrainingCount,
         cache: cacheCount,
       };
     } catch (error) {
@@ -509,6 +585,7 @@ class MarathonTrackerDB extends Dexie {
         analyses: 0,
         activityMessages: 0,
         events: 0,
+        crossTraining: 0,
         cache: 0,
       };
     }

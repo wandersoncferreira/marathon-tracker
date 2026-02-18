@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import TrainingLog from './components/TrainingLog';
 import CoachAnalysis from './components/CoachAnalysis';
 import ProgressTracker from './components/ProgressTracker';
+import CrossTraining from './components/CrossTraining';
 import Settings from './components/Settings';
 import Help from './components/Help';
 import { loadInitialAnalyses } from './utils/loadInitialAnalyses';
@@ -83,6 +84,8 @@ function App() {
         return <CoachAnalysis />;
       case 'progress':
         return <ProgressTracker />;
+      case 'crosstraining':
+        return <CrossTraining />;
       case 'settings':
         return <Settings />;
       case 'help':
@@ -97,6 +100,7 @@ function App() {
     { id: 'log', label: t('nav.trainingLog'), icon: '📝' },
     { id: 'analysis', label: t('nav.coachAnalysis'), icon: '🏃' },
     { id: 'progress', label: t('nav.progress'), icon: '📈' },
+    { id: 'crosstraining', label: 'Cross Training', icon: '🚴' },
   ];
 
   return (

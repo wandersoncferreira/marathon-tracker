@@ -17,7 +17,7 @@ export async function exportDatabaseToFiles() {
   try {
     const exports = {
       timestamp: new Date().toISOString(),
-      version: 4,
+      version: 7,
       tables: {}
     };
 
@@ -54,6 +54,13 @@ export async function exportDatabaseToFiles() {
     exports.tables.events = {
       count: events.length,
       data: events
+    };
+
+    // Export cross training (cycling, strength)
+    const crossTraining = await db.crossTraining.toArray();
+    exports.tables.crossTraining = {
+      count: crossTraining.length,
+      data: crossTraining
     };
 
     // Don't export cache or config (those are temporary/sensitive)
@@ -100,7 +107,8 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       activityDetails: 0,
       wellness: 0,
       analyses: 0,
-      events: 0
+      events: 0,
+      crossTraining: 0
     };
 
     // Import activities
@@ -164,6 +172,19 @@ export async function importDatabaseFromData(data, clearExisting = false) {
         console.log(`✅ Imported ${imported.events} events`);
       } catch (error) {
         console.error('❌ Error importing events:', error);
+        throw error;
+      }
+    }
+
+    // Import cross training (cycling, strength)
+    if (data.tables.crossTraining?.data) {
+      try {
+        console.log(`📥 Importing ${data.tables.crossTraining.data.length} cross training activities...`);
+        await db.crossTraining.bulkPut(data.tables.crossTraining.data);
+        imported.crossTraining = data.tables.crossTraining.data.length;
+        console.log(`✅ Imported ${imported.crossTraining} cross training activities`);
+      } catch (error) {
+        console.error('❌ Error importing cross training:', error);
         throw error;
       }
     }
@@ -387,7 +408,7 @@ export async function autoImportIfEmpty() {
       // Store import timestamp
       await db.setConfig('last_db_import_timestamp', fileTimestamp || new Date().toISOString());
 
-      console.log(`✅ Import complete: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses`);
+      console.log(`✅ Import complete: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses, ${imported.crossTraining} cross training`);
 
       return {
         imported: true,
