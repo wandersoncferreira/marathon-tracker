@@ -51,7 +51,9 @@ class IntervalsAPI {
   async getAuthHeaders() {
     await this.loadConfig();
     if (!this.config.apiKey) {
-      throw new Error('API key not configured');
+      const error = new Error('API key not configured');
+      error.code = 'NO_API_KEY';
+      throw error;
     }
     return {
       'Authorization': `Basic ${btoa(`API_KEY:${this.config.apiKey}`)}`,
@@ -87,6 +89,12 @@ class IntervalsAPI {
 
       return await response.json();
     } catch (error) {
+      // Don't log configuration errors as errors - they're expected in some environments
+      if (error.code === 'NO_API_KEY') {
+        // Silent - let the caller handle this gracefully
+        throw error;
+      }
+      // Log other errors normally
       console.error('API request error:', error);
       throw error;
     }

@@ -148,10 +148,26 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 
     return crossTraining;
   } catch (error) {
-    console.error('Error fetching cross training:', error);
+    // Try to return cached data as fallback
+    const cached = await db.getCrossTraining(startDate, endDate);
 
-    // 6. On error, return cached data
-    return await db.getCrossTraining(startDate, endDate);
+    if (cached && cached.length > 0) {
+      // We have cached data - log info instead of error
+      if (error.code === 'NO_API_KEY') {
+        console.log(`ℹ️ Using ${cached.length} cached cross training activities (API not configured)`);
+      } else {
+        console.log(`ℹ️ API error, using ${cached.length} cached cross training activities`);
+      }
+      return cached;
+    }
+
+    // No cached data available - this is a real error
+    if (error.code === 'NO_API_KEY') {
+      console.warn('⚠️ API key not configured and no cached cross training data available');
+    } else {
+      console.error('❌ Error fetching cross training and no cached data available:', error.message);
+    }
+    return [];
   }
 }
 
