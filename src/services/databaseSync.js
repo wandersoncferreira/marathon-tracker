@@ -198,24 +198,44 @@ export async function importDatabaseFromData(data, clearExisting = false) {
 }
 
 /**
- * Download database export as JSON file
+ * Download database export as compressed JSON file
+ * Uses gzip compression to significantly reduce file size
  */
 export async function downloadDatabaseExport() {
   try {
     const data = await exportDatabaseToFiles();
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+
+    // Minify JSON (no pretty-printing) for better compression
+    const json = JSON.stringify(data);
+
+    // Compress using browser's native gzip compression
+    const stream = new Blob([json]).stream();
+    const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+    const compressedBlob = await new Response(compressedStream).blob();
+
+    // Calculate compression ratio
+    const originalSize = new Blob([json]).size;
+    const compressedSize = compressedBlob.size;
+    const ratio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+
+    console.log(`📦 Compressed: ${formatBytes(originalSize)} → ${formatBytes(compressedSize)} (${ratio}% reduction)`);
+
+    const url = URL.createObjectURL(compressedBlob);
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = `marathon-tracker-db-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `marathon-tracker-db-${new Date().toISOString().split('T')[0]}.json.gz`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    return true;
+    return {
+      success: true,
+      originalSize,
+      compressedSize,
+      ratio: `${ratio}%`
+    };
   } catch (error) {
     console.error('Error downloading database:', error);
     throw error;
@@ -223,27 +243,39 @@ export async function downloadDatabaseExport() {
 }
 
 /**
- * Upload and import database from JSON file
- * @param {File} file - JSON file to import
+ * Upload and import database from JSON file (supports both .json and .json.gz)
+ * @param {File} file - JSON or gzipped JSON file to import
  * @param {boolean} clearExisting - Clear existing data before import
  */
 export async function uploadDatabaseImport(file, clearExisting = false) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  try {
+    let jsonText;
 
-    reader.onload = async (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        const imported = await importDatabaseFromData(data, clearExisting);
-        resolve(imported);
-      } catch (error) {
-        reject(error);
-      }
-    };
+    // Check if file is compressed (ends with .gz)
+    if (file.name.endsWith('.gz')) {
+      console.log('📦 Decompressing gzip file...');
 
-    reader.onerror = () => reject(new Error('File read error'));
-    reader.readAsText(file);
-  });
+      // Decompress using browser's native gzip decompression
+      const arrayBuffer = await file.arrayBuffer();
+      const stream = new Blob([arrayBuffer]).stream();
+      const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+      const decompressedBlob = await new Response(decompressedStream).blob();
+      jsonText = await decompressedBlob.text();
+
+      console.log(`✅ Decompressed: ${formatBytes(file.size)} → ${formatBytes(decompressedBlob.size)}`);
+    } else {
+      // Read as plain text
+      jsonText = await file.text();
+    }
+
+    // Parse and import
+    const data = JSON.parse(jsonText);
+    const imported = await importDatabaseFromData(data, clearExisting);
+    return imported;
+  } catch (error) {
+    console.error('Error importing database:', error);
+    throw error;
+  }
 }
 
 /**
@@ -337,12 +369,27 @@ export async function autoImportIfEmpty() {
     if (!baseUrl.endsWith('/')) {
       baseUrl += '/';
     }
-    const dbUrl = `${baseUrl}database/${DEFAULT_DB_FILENAME}`;
 
-    console.log('🔍 Fetching database from:', dbUrl);
+    // Try compressed file first, then fallback to uncompressed
+    const compressedUrl = `${baseUrl}database/${DEFAULT_DB_FILENAME}.gz`;
+    const uncompressedUrl = `${baseUrl}database/${DEFAULT_DB_FILENAME}`;
+
+    console.log('🔍 Fetching database...');
+
+    let response;
+    let isCompressed = false;
 
     try {
-      const response = await fetch(dbUrl);
+      // Try compressed version first
+      response = await fetch(compressedUrl);
+      if (response.ok) {
+        console.log('✅ Found compressed database file');
+        isCompressed = true;
+      } else {
+        // Fallback to uncompressed
+        console.log('📄 Trying uncompressed database file...');
+        response = await fetch(uncompressedUrl);
+      }
 
       if (!response.ok) {
         console.log(`❌ No database file found (HTTP ${response.status})`);
@@ -364,8 +411,22 @@ export async function autoImportIfEmpty() {
         }
       }
 
-      console.log('✅ Database file found, parsing JSON...');
-      const data = await response.json();
+      // Parse the response (decompress if needed)
+      let data;
+      if (isCompressed) {
+        console.log('📦 Decompressing database...');
+        const arrayBuffer = await response.arrayBuffer();
+        const stream = new Blob([arrayBuffer]).stream();
+        const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+        const decompressedBlob = await new Response(decompressedStream).blob();
+        const jsonText = await decompressedBlob.text();
+        data = JSON.parse(jsonText);
+        console.log(`✅ Decompressed: ${formatBytes(arrayBuffer.byteLength)} → ${formatBytes(decompressedBlob.size)}`);
+      } else {
+        console.log('✅ Parsing JSON...');
+        data = await response.json();
+      }
+
       const fileTimestamp = data.timestamp;
 
       console.log('📊 File timestamp:', fileTimestamp);
@@ -412,9 +473,10 @@ export async function autoImportIfEmpty() {
 
       return {
         imported: true,
-        source: dbUrl,
+        source: isCompressed ? compressedUrl : uncompressedUrl,
         stats: imported,
         fileTimestamp: fileTimestamp,
+        compressed: isCompressed,
         message: `Loaded database: ${imported.activities} activities, ${imported.activityDetails} details`
       };
     } catch (fetchError) {

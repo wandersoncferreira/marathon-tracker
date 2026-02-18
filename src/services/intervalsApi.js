@@ -278,13 +278,6 @@ class IntervalsAPI {
       }
     }
 
-    if (skippedCount > 0) {
-      console.log(`Skipped ${skippedCount} activities with cached messages`);
-    }
-    if (syncedCount > 0) {
-      console.log(`Fetched messages for ${syncedCount} activities`);
-    }
-
     return syncedCount;
   }
 
@@ -304,7 +297,6 @@ class IntervalsAPI {
         return [];
       }
 
-      console.log('🔄 Force refreshing wellness data from API');
       await this.loadConfig();
       const endpoint = `/athlete/${this.config.athleteId}/wellness`;
       const params = new URLSearchParams({
@@ -373,7 +365,6 @@ class IntervalsAPI {
         throw new Error('Intervals.icu not configured');
       }
 
-      console.log('🔄 Force refreshing events from API');
       await this.loadConfig();
       const endpoint = `/athlete/${this.config.athleteId}/events`;
       const params = new URLSearchParams({
@@ -498,12 +489,7 @@ class IntervalsAPI {
       if (latestDate) {
         // Start syncing from the day of the latest activity (to catch any updates)
         syncStartDate = latestDate;
-        console.log(`Incremental sync: starting from ${syncStartDate} (latest activity in DB)`);
-      } else {
-        console.log('No activities in database, performing full sync');
       }
-    } else {
-      console.log('Force full sync requested');
     }
 
     await this.loadConfig();

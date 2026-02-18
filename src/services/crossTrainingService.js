@@ -23,14 +23,11 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
       const cached = await db.getCrossTraining(startDate, endDate);
 
       if (cached && cached.length > 0) {
-        console.log(`✅ Loaded ${cached.length} cross training activities from database (Cycling: ${cached.filter(a => a.type === 'Ride' || a.type === 'VirtualRide').length}, Strength: ${cached.filter(a => a.type === 'WeightTraining').length})`);
         return cached;
       }
     }
 
     // 2. Fetch from Intervals.icu API (includes Strava-synced activities)
-    console.log(forceRefresh ? '🔄 Force refreshing cross training from Intervals.icu API...' : '📡 Fetching cross training from Intervals.icu API...');
-
     await intervalsApi.loadConfig();
     const { athleteId } = intervalsApi.config;
 
@@ -38,15 +35,6 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
     const activities = await intervalsApi.request(
       `/athlete/${athleteId}/activities?oldest=${startDate}&newest=${endDate}`
     );
-
-    console.log(`📊 Fetched ${activities.length} total activities from Intervals.icu API`);
-
-    // Log sample of activity types
-    const activityTypes = {};
-    activities.forEach(a => {
-      activityTypes[a.type] = (activityTypes[a.type] || 0) + 1;
-    });
-    console.log('📊 Activity types:', activityTypes);
 
     // Filter for cross training activities (basic filter)
     const potentialCrossTraining = activities.filter(a => {
@@ -56,8 +44,6 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 
       return isCycling || isStrength || isUndefined;
     });
-
-    console.log(`📡 Fetching details for ${potentialCrossTraining.length} potential cross training activities...`);
 
     // Helper to delay between requests (rate limiting)
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -87,16 +73,6 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 
         detailsFetched++;
 
-        // Debug first few activities
-        if (detailsFetched <= 3) {
-          console.log(`📋 Activity ${activity.id} details:`, {
-            id: details.id,
-            type: details.type,
-            name: details.name,
-            distance: details.distance
-          });
-        }
-
         // Check if it's cycling or strength training
         const isCycling = details.type === 'Ride' || details.type === 'VirtualRide';
         const isStrength = details.type === 'WeightTraining' ||
@@ -109,22 +85,12 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 
         if (isCycling || isStrength) {
           crossTraining.push(details);
-        } else if (detailsFetched <= 3) {
-          console.log(`⏭️ Skipping activity ${activity.id} - not cycling or strength (type: ${details.type})`);
-        }
-
-        // Progress indicator every 5 activities
-        if ((i + 1) % 5 === 0) {
-          console.log(`⏳ Progress: ${i + 1}/${potentialCrossTraining.length} activities checked...`);
         }
       } catch (error) {
         console.error(`❌ Failed to fetch details for activity ${activity.id}:`, error);
         detailsSkipped++;
       }
     }
-
-    console.log(`📊 Details fetch summary: ${detailsFetched} fetched, ${detailsSkipped} skipped`);
-    console.log(`✅ Filtered to ${crossTraining.length} cross training activities (Cycling: ${crossTraining.filter(a => a.type === 'Ride' || a.type === 'VirtualRide').length}, Strength: ${crossTraining.filter(a => a.type === 'WeightTraining').length})`);
 
     // 3. Store in database incrementally (merge with existing data)
     if (crossTraining.length > 0) {
@@ -136,10 +102,7 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
       const newActivities = crossTraining.filter(a => !existingIds.has(a.id));
 
       if (newActivities.length > 0) {
-        console.log(`➕ Adding ${newActivities.length} new cross training activities to database`);
         await db.storeCrossTraining([...existing, ...newActivities]);
-      } else {
-        console.log(`✅ No new activities to add (all ${crossTraining.length} already in database)`);
       }
 
       // Return merged data
