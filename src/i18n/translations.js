@@ -40,7 +40,8 @@ export const translations = {
       retry: 'Retry',
       for: 'for',
       of: 'of',
-      activities: 'activities'
+      activities: 'activities',
+      details: 'more details'
     },
 
     // Dashboard
@@ -469,6 +470,107 @@ export const translations = {
         },
         proTip: 'Pro tip: If you use Git, you can save the exported database file to your repository (e.g., public/database/marathon-tracker-db.json) and sync across computers by committing and pulling the file.'
       }
+    },
+
+    // Cross Training
+    crossTraining: {
+      title: 'Cross Training',
+      subtitle: 'Track strength training and cycling with running equivalency calculations',
+      strengthTraining: 'Strength Training',
+      cycling: 'Cycling',
+      loadingData: 'Loading cross training data...',
+
+      // Strength tab
+      currentPhase: 'Current Phase',
+      weekOf: 'Week {week} of {total}',
+      thisWeek: 'This Week',
+      recommended: 'Recommended',
+      totalCycle: 'Total (Cycle)',
+      sessions: 'sessions',
+      perWeek: 'per week',
+      weeklyProgress: 'Weekly Progress',
+      ofMax: 'of max',
+      recommendedExercises: 'Recommended Exercises',
+      whyThisMatters: 'Why This Matters',
+      researchReferences: 'Research References:',
+      monthlyBreakdown: 'Monthly Breakdown',
+      month: 'Month',
+      totalTime: 'Total Time',
+      hrs: 'hrs',
+      noStrengthData: 'No strength training sessions recorded yet. Start tracking your gym workouts by uploading them to Intervals.icu with "Strength", "Gym", or "Weights" in the activity name.',
+
+      // Cycling tab
+      cyclingTotals: 'Cycling Totals',
+      runningEquivalent: 'Running Equivalent',
+      time: 'Time',
+      hours: 'hours',
+      basedOn: 'Based on intensity-adjusted conversion factors from Millet et al. (2009)',
+      cyclingSessions: 'Cycling Sessions',
+      name: 'Name',
+      avgPower: 'Avg Power',
+      runningEquiv: 'Running Equiv.',
+      noCyclingData: 'No cycling activities recorded yet. Your cycling sessions from Intervals.icu will appear here automatically.',
+
+      // Formula explanation
+      howItWorks: 'How Running Equivalency Works',
+      conversionFactors: 'Conversion factors based on intensity:',
+      easyRecovery: 'Easy/Recovery (<75% FTP): 0.25-0.30 × cycling distance',
+      tempo: 'Tempo (75-85% FTP): 0.30-0.35 × cycling distance',
+      threshold: 'Threshold (85-95% FTP): 0.35-0.40 × cycling distance',
+      vo2max: 'VO2max (>95% FTP): 0.40-0.45 × cycling distance',
+      tssAdjustment: 'TSS adjustment: Running TSS ≈ Cycling TSS × 1.15 (accounts for higher impact stress)',
+      researchBasis: 'Research basis: Millet et al. (2009) - Comparative analysis of physiological responses during cycling and running at matched intensities.',
+
+      // Info modal
+      infoTitle: 'Running Equivalency Calculation Method',
+      infoIntro: 'The cycling-to-running conversion uses evidence-based formulas that account for intensity, biomechanical differences, and metabolic demands.',
+
+      distanceConversion: 'Distance Conversion',
+      distanceFormula: 'Running Distance = Cycling Distance × Intensity Factor',
+      intensityFactors: 'Intensity Factors (based on % FTP):',
+      factor1: 'Easy/Recovery (<75% FTP): 0.275× multiplier',
+      factor2: 'Tempo (75-85% FTP): 0.325× multiplier',
+      factor3: 'Threshold (85-95% FTP): 0.375× multiplier',
+      factor4: 'VO2max (>95% FTP): 0.425× multiplier',
+
+      timeConversion: 'Time-Based Conversion',
+      timeFormula: 'Running Time ≈ 70% of Cycling Time',
+      timeRationale: 'Accounts for lower mechanical efficiency and higher metabolic cost of running per unit time.',
+
+      tssConversion: 'Training Stress Score (TSS) Adjustment',
+      tssFormula: 'Running TSS ≈ Cycling TSS × 1.15',
+      tssRationale: 'Running has higher impact stress and muscular damage per TSS point. A 50 TSS cycling session creates similar cardiovascular stress but less muscular fatigue than a 50 TSS run.',
+
+      exampleTitle: 'Example Calculation',
+      exampleScenario: 'Scenario: 40km cycling ride @ 82% FTP (Tempo zone)',
+      exampleSteps: 'Calculation steps:',
+      step1: '1. Determine intensity zone: 82% FTP = Tempo zone',
+      step2: '2. Select conversion factor: 0.325 (Tempo range)',
+      step3: '3. Calculate distance: 40km × 0.325 = 13km running equivalent',
+      step4: '4. If ride took 90 minutes: 90 × 0.70 = 63 minutes running equivalent',
+      step5: '5. If cycling TSS was 65: 65 × 1.15 = 75 running TSS equivalent',
+
+      researchTitle: 'Research Foundation',
+      researchPrimary: 'Primary Source:',
+      researchMilletTitle: 'Millet, G.P., Vleck, V.E., & Bentley, D.J. (2009)',
+      researchMilletDetails: '"Physiological differences between cycling and running: Lessons from triathletes." Sports Medicine, 39(3), 179-206.',
+      researchFindings: 'Key findings that inform these calculations:',
+      finding1: '• Running has 2-3× higher ground reaction forces than cycling',
+      finding2: '• Oxygen cost per meter is ~4× higher for running vs cycling',
+      finding3: '• Muscular damage markers are significantly higher post-running',
+      finding4: '• Perceived exertion matches at different absolute intensities',
+
+      limitations: 'Limitations & Considerations',
+      limitation1: '• Individual variability exists - some athletes are relatively stronger cyclists or runners',
+      limitation2: '• Terrain impacts both sports differently (hills affect running more)',
+      limitation3: '• These are estimates for training planning, not perfect 1:1 equivalencies',
+      limitation4: '• Use as guidance for weekly volume balancing, not race performance prediction',
+
+      practicalUse: 'Practical Application',
+      useCase1: '• Weekly volume planning: Count cycling toward your total aerobic training load',
+      useCase2: '• Recovery management: A long bike ride is less fatiguing than an equivalent run',
+      useCase3: '• Injury prevention: Cycling provides aerobic stimulus with reduced impact',
+      useCase4: '• Cross-training strategy: Mix cycling and running to maintain fitness while managing fatigue'
     }
   },
 
@@ -513,7 +615,8 @@ export const translations = {
       retry: 'Tentar Novamente',
       for: 'para',
       of: 'de',
-      activities: 'atividades'
+      activities: 'atividades',
+      details: 'mais detalhes'
     },
 
     // Painel
@@ -942,6 +1045,107 @@ export const translations = {
         },
         proTip: 'Dica profissional: Se você usa Git, pode salvar o arquivo de banco de dados exportado no seu repositório (ex: public/database/marathon-tracker-db.json) e sincronizar entre computadores fazendo commit e pull do arquivo.'
       }
+    },
+
+    // Cross Training
+    crossTraining: {
+      title: 'Treino Cruzado',
+      subtitle: 'Monitore musculação e ciclismo com cálculos de equivalência para corrida',
+      strengthTraining: 'Musculação',
+      cycling: 'Ciclismo',
+      loadingData: 'Carregando dados de treino cruzado...',
+
+      // Aba de musculação
+      currentPhase: 'Fase Atual',
+      weekOf: 'Semana {week} de {total}',
+      thisWeek: 'Esta Semana',
+      recommended: 'Recomendado',
+      totalCycle: 'Total (Ciclo)',
+      sessions: 'sessões',
+      perWeek: 'por semana',
+      weeklyProgress: 'Progresso Semanal',
+      ofMax: 'do máximo',
+      recommendedExercises: 'Exercícios Recomendados',
+      whyThisMatters: 'Por Que Isso Importa',
+      researchReferences: 'Referências de Pesquisa:',
+      monthlyBreakdown: 'Detalhamento Mensal',
+      month: 'Mês',
+      totalTime: 'Tempo Total',
+      hrs: 'hrs',
+      noStrengthData: 'Nenhuma sessão de musculação registrada ainda. Comece a rastrear seus treinos na academia fazendo upload para o Intervals.icu com "Strength", "Gym", "Weights" ou "Musculação" no nome da atividade.',
+
+      // Aba de ciclismo
+      cyclingTotals: 'Totais de Ciclismo',
+      runningEquivalent: 'Equivalente de Corrida',
+      time: 'Tempo',
+      hours: 'horas',
+      basedOn: 'Baseado em fatores de conversão ajustados por intensidade de Millet et al. (2009)',
+      cyclingSessions: 'Sessões de Ciclismo',
+      name: 'Nome',
+      avgPower: 'Potência Média',
+      runningEquiv: 'Equiv. Corrida',
+      noCyclingData: 'Nenhuma atividade de ciclismo registrada ainda. Suas sessões de ciclismo do Intervals.icu aparecerão aqui automaticamente.',
+
+      // Explicação da fórmula
+      howItWorks: 'Como Funciona a Equivalência de Corrida',
+      conversionFactors: 'Fatores de conversão baseados em intensidade:',
+      easyRecovery: 'Leve/Recuperação (<75% FTP): 0,25-0,30 × distância de ciclismo',
+      tempo: 'Tempo (75-85% FTP): 0,30-0,35 × distância de ciclismo',
+      threshold: 'Limiar (85-95% FTP): 0,35-0,40 × distância de ciclismo',
+      vo2max: 'VO2max (>95% FTP): 0,40-0,45 × distância de ciclismo',
+      tssAdjustment: 'Ajuste de TSS: TSS de Corrida ≈ TSS de Ciclismo × 1,15 (considera maior estresse de impacto)',
+      researchBasis: 'Base de pesquisa: Millet et al. (2009) - Análise comparativa das respostas fisiológicas durante ciclismo e corrida em intensidades equivalentes.',
+
+      // Modal de informações
+      infoTitle: 'Método de Cálculo de Equivalência de Corrida',
+      infoIntro: 'A conversão ciclismo-para-corrida usa fórmulas baseadas em evidências que consideram intensidade, diferenças biomecânicas e demandas metabólicas.',
+
+      distanceConversion: 'Conversão de Distância',
+      distanceFormula: 'Distância de Corrida = Distância de Ciclismo × Fator de Intensidade',
+      intensityFactors: 'Fatores de Intensidade (baseados em % FTP):',
+      factor1: 'Leve/Recuperação (<75% FTP): multiplicador 0,275×',
+      factor2: 'Tempo (75-85% FTP): multiplicador 0,325×',
+      factor3: 'Limiar (85-95% FTP): multiplicador 0,375×',
+      factor4: 'VO2max (>95% FTP): multiplicador 0,425×',
+
+      timeConversion: 'Conversão Baseada em Tempo',
+      timeFormula: 'Tempo de Corrida ≈ 70% do Tempo de Ciclismo',
+      timeRationale: 'Considera menor eficiência mecânica e maior custo metabólico da corrida por unidade de tempo.',
+
+      tssConversion: 'Ajuste do Training Stress Score (TSS)',
+      tssFormula: 'TSS de Corrida ≈ TSS de Ciclismo × 1,15',
+      tssRationale: 'Corrida tem maior estresse de impacto e dano muscular por ponto de TSS. Uma sessão de 50 TSS de ciclismo cria estresse cardiovascular similar, mas menos fadiga muscular que uma corrida de 50 TSS.',
+
+      exampleTitle: 'Exemplo de Cálculo',
+      exampleScenario: 'Cenário: Pedal de 40km @ 82% FTP (zona Tempo)',
+      exampleSteps: 'Passos de cálculo:',
+      step1: '1. Determinar zona de intensidade: 82% FTP = zona Tempo',
+      step2: '2. Selecionar fator de conversão: 0,325 (faixa Tempo)',
+      step3: '3. Calcular distância: 40km × 0,325 = 13km equivalente de corrida',
+      step4: '4. Se o pedal levou 90 minutos: 90 × 0,70 = 63 minutos equivalente de corrida',
+      step5: '5. Se o TSS de ciclismo foi 65: 65 × 1,15 = 75 TSS equivalente de corrida',
+
+      researchTitle: 'Fundamento de Pesquisa',
+      researchPrimary: 'Fonte Principal:',
+      researchMilletTitle: 'Millet, G.P., Vleck, V.E., & Bentley, D.J. (2009)',
+      researchMilletDetails: '"Diferenças fisiológicas entre ciclismo e corrida: Lições de triatletas." Sports Medicine, 39(3), 179-206.',
+      researchFindings: 'Principais descobertas que informam estes cálculos:',
+      finding1: '• Corrida tem 2-3× mais força de reação do solo que ciclismo',
+      finding2: '• Custo de oxigênio por metro é ~4× maior para corrida vs ciclismo',
+      finding3: '• Marcadores de dano muscular são significativamente maiores pós-corrida',
+      finding4: '• Percepção de esforço coincide em diferentes intensidades absolutas',
+
+      limitations: 'Limitações e Considerações',
+      limitation1: '• Variabilidade individual existe - alguns atletas são relativamente mais fortes no ciclismo ou na corrida',
+      limitation2: '• Terreno impacta ambos os esportes de forma diferente (subidas afetam mais a corrida)',
+      limitation3: '• Estas são estimativas para planejamento de treino, não equivalências perfeitas 1:1',
+      limitation4: '• Use como orientação para balanceamento de volume semanal, não para previsão de desempenho de prova',
+
+      practicalUse: 'Aplicação Prática',
+      useCase1: '• Planejamento de volume semanal: Conte ciclismo na sua carga aeróbica total de treino',
+      useCase2: '• Gerenciamento de recuperação: Um pedal longo é menos fatigante que uma corrida equivalente',
+      useCase3: '• Prevenção de lesões: Ciclismo fornece estímulo aeróbico com redução de impacto',
+      useCase4: '• Estratégia de treino cruzado: Misture ciclismo e corrida para manter fitness enquanto gerencia fadiga'
     }
   }
 };

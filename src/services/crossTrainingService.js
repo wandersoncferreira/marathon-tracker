@@ -125,7 +125,7 @@ export function calculateRunningEquivalent(cyclingActivity) {
   const runningMinutes = (duration / 60) * timeConversionFactor;
 
   // TSS comparison (running TSS is ~1.15x cycling TSS for same perceived effort)
-  const cyclingTSS = cyclingActivity.training_load || 0;
+  const cyclingTSS = cyclingActivity.icu_training_load || 0;
   const equivalentRunningTSS = cyclingTSS * 1.15;
 
   return {
@@ -292,14 +292,14 @@ export async function getCyclingStats(startDate, endDate) {
       duration: Math.floor(activity.moving_time / 60),
       avgPower: activity.average_watts,
       avgHR: activity.average_hr,
-      tss: activity.training_load,
+      tss: activity.icu_training_load,
       runningEquivalent: equivalent
     };
   });
 
   const totalCyclingKm = activities.reduce((sum, a) => sum + (a.distance || 0), 0) / 1000;
   const totalCyclingMinutes = activities.reduce((sum, a) => sum + (a.moving_time || 0), 0) / 60;
-  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.training_load || 0), 0);
+  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.icu_training_load || 0), 0);
 
   const totalRunningEquivalentKm = stats.reduce((sum, s) =>
     sum + parseFloat(s.runningEquivalent.runningDistanceKm), 0
