@@ -13,9 +13,81 @@ import { useTranslation } from './i18n/LanguageContext';
 import { analysisLoader } from './services/analysisLoader';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [appReady, setAppReady] = useState(false);
   const { t, language, changeLanguage } = useTranslation();
+
+  // Read initial state from URL params
+  const getInitialTab = () => {
+    const params = new URLSearchParams(window.location.search);
+    const tabFromUrl = params.get('tab');
+    const validTabs = ['dashboard', 'log', 'analysis', 'progress', 'crosstraining', 'nutrition', 'settings', 'help'];
+    return validTabs.includes(tabFromUrl) ? tabFromUrl : 'dashboard';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
+  const [appReady, setAppReady] = useState(false);
+
+  // Initialize language from URL on mount and set initial URL state
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const langFromUrl = params.get('lang');
+
+    // Set language from URL if present
+    if (langFromUrl && (langFromUrl === 'en_US' || langFromUrl === 'pt_BR')) {
+      if (langFromUrl !== language) {
+        changeLanguage(langFromUrl);
+      }
+    }
+
+    // Set initial URL state if not present
+    if (!params.has('tab') || !params.has('lang')) {
+      updateURL(activeTab, language);
+    }
+  }, []);
+
+  // Update URL when tab changes
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    updateURL(newTab, language);
+  };
+
+  // Update URL when language changes
+  const handleLanguageChange = (newLang) => {
+    changeLanguage(newLang);
+    updateURL(activeTab, newLang);
+  };
+
+  // Update URL with tab and language
+  const updateURL = (tab, lang) => {
+    const params = new URLSearchParams();
+    params.set('tab', tab);
+    params.set('lang', lang);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({ tab, lang }, '', newUrl);
+  };
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (event.state && event.state.tab) {
+        setActiveTab(event.state.tab);
+        if (event.state.lang && event.state.lang !== language) {
+          changeLanguage(event.state.lang);
+        }
+      } else {
+        // If no state, read from URL
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab') || 'dashboard';
+        const lang = params.get('lang');
+        setActiveTab(tab);
+        if (lang && lang !== language) {
+          changeLanguage(lang);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [language, changeLanguage]);
 
   // Auto-import database and load initial analyses on first mount
   useEffect(() => {
@@ -117,7 +189,7 @@ function App() {
               Marathon Tracker
             </h1>
             <button
-              onClick={() => setActiveTab('help')}
+              onClick={() => handleTabChange('help')}
               className="text-xs text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap"
             >
               {t('help.title')}
@@ -127,14 +199,14 @@ function App() {
             {/* Language Selector */}
             <select
               value={language}
-              onChange={(e) => changeLanguage(e.target.value)}
+              onChange={(e) => handleLanguageChange(e.target.value)}
               className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="en_US">🇺🇸 English</option>
               <option value="pt_BR">🇧🇷 Português</option>
             </select>
             <button
-              onClick={() => setActiveTab('settings')}
+              onClick={() => handleTabChange('settings')}
               className="text-gray-500 hover:text-gray-700"
             >
               ⚙️
@@ -154,7 +226,7 @@ function App() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 activeTab === tab.id
                   ? 'text-primary-600'
