@@ -1,0 +1,132 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "date": "2026-02-19",
+    "activityId": "i126345898",
+    "activityName": {
+      "en_US": "Rodagem - Hill Cruise",
+      "pt_BR": "Rodagem - Hill Cruise"
+    },
+    "analysisDate": "2026-02-19T18:30:00Z",
+    "coach": "Claude-2h50-Marathon"
+  },
+  "session": {
+    "type": "easy",
+    "distance": 12034,
+    "duration": 3674,
+    "avgPace": "5:05/km",
+    "avgPower": 263,
+    "avgHR": 139,
+    "trainingLoad": 54
+  },
+  "marathonContext": {
+    "goalPace": "4:02/km",
+    "goalTime": "2:50:00",
+    "weeksToRace": 15,
+    "currentPhase": {
+      "en_US": "Build (Week 5 of 20)",
+      "pt_BR": "Construção (Semana 5 de 20)"
+    }
+  },
+  "analysis": {
+    "strengths": {
+      "en_US": [
+        "Excellent heart rate discipline: 139 bpm average (78% LTHR) demonstrates true easy pace execution despite 35°C heat",
+        "Smart double session strategy: Easy cycling AM (45min @ 120W/48% FTP, 19 TSS) followed by easy run PM kept daily load manageable at 73 TSS combined",
+        "Consistent pacing: Main 10km interval at 5:06/km followed by 2x1km at 5:02/km shows excellent control without drift",
+        "Low cardiac decoupling (1.23%): Heart rate remained stable relative to power throughout 61-minute effort",
+        "Appropriate recovery execution: 5:05/km average is significantly slower than easy zone threshold (4:45/km), allowing proper recovery from previous hard week"
+      ],
+      "pt_BR": [
+        "Excelente disciplina de frequência cardíaca: 139 bpm média (78% LTHR) demonstra execução de ritmo fácil verdadeiro apesar dos 35°C de calor",
+        "Estratégia inteligente de sessão dupla: Ciclismo fácil AM (45min @ 120W/48% FTP, 19 TSS) seguido de corrida fácil PM manteve carga diária gerenciável em 73 TSS combinados",
+        "Ritmo consistente: Intervalo principal de 10km a 5:06/km seguido de 2x1km a 5:02/km mostra excelente controle sem deriva",
+        "Baixo desacoplamento cardíaco (1,23%): Frequência cardíaca permaneceu estável em relação à potência durante esforço de 61 minutos",
+        "Execução apropriada de recuperação: 5:05/km média é significativamente mais lento que limiar de zona fácil (4:45/km), permitindo recuperação adequada da semana dura anterior"
+      ]
+    },
+    "concerns": {
+      "en_US": [
+        "Sleep quality crisis: 6.0 hours with quality score of 2.1/100 is severely compromised. Poor sleep directly impairs recovery, glycogen resynthesis, and neuromuscular repair",
+        "Elevated resting heart rate: 60 bpm this morning vs. typical 47-51 bpm baseline indicates incomplete recovery and possible heat stress accumulation",
+        "Cumulative fatigue building: TSB of -15.6 (CTL 67.3, ATL 82.9) combined with poor sleep and elevated RHR suggests recovery capacity is being challenged",
+        "Heat stress accumulation: Training in 35°C temperatures increases cardiovascular strain and requires additional recovery time beyond normal metrics"
+      ],
+      "pt_BR": [
+        "Crise de qualidade do sono: 6,0 horas com pontuação de qualidade de 2,1/100 está severamente comprometida. Sono ruim prejudica diretamente a recuperação, ressíntese de glicogênio e reparo neuromuscular",
+        "Frequência cardíaca de repouso elevada: 60 bpm esta manhã vs. linha de base típica de 47-51 bpm indica recuperação incompleta e possível acumulação de estresse térmico",
+        "Fadiga cumulativa crescente: TSB de -15,6 (CTL 67,3, ATL 82,9) combinado com sono ruim e FCR elevada sugere que capacidade de recuperação está sendo desafiada",
+        "Acumulação de estresse térmico: Treinar em temperaturas de 35°C aumenta tensão cardiovascular e requer tempo de recuperação adicional além das métricas normais"
+      ]
+    },
+    "keyFindings": {
+      "en_US": [
+        "Cross-training integration working well: 20.3km cycling at easy intensity (48% FTP) provided aerobic stimulus without running impact stress",
+        "Recovery day execution was appropriate: Combined cycling + easy run totaled 73 TSS (19 + 54), which is manageable given current fatigue state",
+        "Coming off intense training block: Past 5 days included 22km long run (114 TSS), double threshold sessions, and 20km easy run (95 TSS) - total weekly TSS likely exceeding 500",
+        "Heat adaptation ongoing: Consistent training in 35°C requires acknowledging increased recovery demands in planning"
+      ],
+      "pt_BR": [
+        "Integração de treinamento cruzado funcionando bem: 20,3km de ciclismo em intensidade fácil (48% FTP) forneceu estímulo aeróbico sem estresse de impacto da corrida",
+        "Execução do dia de recuperação foi apropriada: Ciclismo + corrida fácil combinados totalizaram 73 TSS (19 + 54), o que é gerenciável dado o estado de fadiga atual",
+        "Saindo de bloco de treinamento intenso: Últimos 5 dias incluíram corrida longa de 22km (114 TSS), sessões duplas de limiar e corrida fácil de 20km (95 TSS) - TSS semanal total provavelmente excedendo 500",
+        "Adaptação ao calor em andamento: Treinamento consistente em 35°C requer reconhecer demandas aumentadas de recuperação no planejamento"
+      ]
+    }
+  },
+  "metrics": {
+    "kmAtMarathonPace": 0,
+    "kmAtThresholdPace": 0,
+    "kmAtEasyPace": 12.0,
+    "totalKm": 12.0
+  },
+  "recommendations": {
+    "nextSession": {
+      "date": "2026-02-20",
+      "type": "easy",
+      "workout": {
+        "en_US": "10km @ 70-71% pace (Easy Run) - ADAPTATIONS: Execute as planned but prioritize sleep tonight. Given elevated RHR (60 vs 49-51 baseline) and poor sleep quality (2.1/100), keep HR below 140 bpm throughout. If RHR remains above 55 bpm tomorrow morning, reduce to 8km. Consider morning execution before heat builds.",
+        "pt_BR": "10km @ 70-71% do ritmo (Corrida Fácil) - ADAPTAÇÕES: Execute conforme planejado, mas priorize o sono esta noite. Dado FCR elevada (60 vs 49-51 base) e qualidade de sono ruim (2,1/100), mantenha FC abaixo de 140 bpm durante todo o treino. Se FCR permanecer acima de 55 bpm amanhã de manhã, reduza para 8km. Considere execução matinal antes do calor aumentar."
+      },
+      "rationale": {
+        "en_US": "Today's easy run (54 TSS) was appropriate recovery after the intense training block. Current TSB of -15.6 is manageable for Build phase, but elevated RHR and poor sleep are red flags. Tomorrow's easy 10km should proceed as planned ONLY if sleep improves and RHR normalizes. The key adaptation is HR constraint (<140 bpm) rather than pace target to ensure true recovery. Week 5 of Build phase allows for this moderate fatigue, but must not let it deepen further.",
+        "pt_BR": "A corrida fácil de hoje (54 TSS) foi recuperação apropriada após o bloco de treinamento intenso. TSB atual de -15,6 é gerenciável para fase de Construção, mas FCR elevada e sono ruim são sinais de alerta. Os 10km fáceis de amanhã devem prosseguir conforme planejado SOMENTE se o sono melhorar e FCR normalizar. A adaptação-chave é restrição de FC (<140 bpm) em vez de meta de ritmo para garantir recuperação verdadeira. Semana 5 da fase de Construção permite esta fadiga moderada, mas não deve deixá-la aprofundar mais."
+      }
+    },
+    "weeklyAdjustments": {
+      "en_US": [
+        "SLEEP PRIORITY: Target 7.5-8 hours tonight and tomorrow. Poor sleep (6h @ 2.1/100 quality) is the primary recovery limiter right now, not training load",
+        "Monitor morning RHR: If it stays above 55 bpm for 2+ consecutive days, insert a complete rest day or 30-minute easy cycling instead of running",
+        "Heat management: With consistent 35°C temperatures, consider AM training execution before 8:00 AM or late evening (after 7:00 PM) for quality sessions",
+        "Continue smart doubles: Easy cycling (30-45min @ 45-50% FTP) on recovery days is working well to maintain aerobic stimulus without running impact",
+        "Next quality session readiness: Given TSB -15.6 and elevated RHR, delay next threshold/speed session until Saturday/Sunday if RHR hasn't normalized by Thursday morning"
+      ],
+      "pt_BR": [
+        "PRIORIDADE NO SONO: Alvo de 7,5-8 horas esta noite e amanhã. Sono ruim (6h @ 2,1/100 qualidade) é o principal limitador de recuperação agora, não a carga de treino",
+        "Monitorar FCR matinal: Se permanecer acima de 55 bpm por 2+ dias consecutivos, insira dia de descanso completo ou 30 minutos de ciclismo fácil em vez de correr",
+        "Gestão de calor: Com temperaturas consistentes de 35°C, considere execução de treino AM antes das 8h ou final da noite (após 19h) para sessões de qualidade",
+        "Continue sessões duplas inteligentes: Ciclismo fácil (30-45min @ 45-50% FTP) em dias de recuperação está funcionando bem para manter estímulo aeróbico sem impacto da corrida",
+        "Prontidão para próxima sessão de qualidade: Dado TSB -15,6 e FCR elevada, adie próxima sessão de limiar/velocidade até sábado/domingo se FCR não normalizar até quinta de manhã"
+      ]
+    },
+    "progressionNotes": {
+      "en_US": "Week 5 of Build phase is proceeding appropriately with manageable fatigue (TSB -15.6). The integration of easy cycling for active recovery is smart and should continue. However, sleep quality has become the critical limiter. Elite-level recovery requires elite-level sleep - 6 hours at 2.1/100 quality will eventually compromise adaptations regardless of training execution quality. The body is handling training load well (good HR control, consistent pacing), but recovery inputs (sleep) must match training outputs. Next micro-cycle should maintain current volume but ensure recovery markers (RHR, sleep, subjective fatigue) stabilize before increasing intensity or volume further.",
+      "pt_BR": "Semana 5 da fase de Construção está progredindo apropriadamente com fadiga gerenciável (TSB -15,6). A integração de ciclismo fácil para recuperação ativa é inteligente e deve continuar. No entanto, qualidade do sono tornou-se o limitador crítico. Recuperação de nível elite requer sono de nível elite - 6 horas a 2,1/100 de qualidade eventualmente comprometerá adaptações independentemente da qualidade de execução do treino. O corpo está lidando bem com a carga de treino (bom controle de FC, ritmo consistente), mas entradas de recuperação (sono) devem corresponder às saídas de treino. Próximo micro-ciclo deve manter volume atual mas garantir que marcadores de recuperação (FCR, sono, fadiga subjetiva) se estabilizem antes de aumentar intensidade ou volume ainda mais."
+    }
+  },
+  "verdict": {
+    "rating": "good",
+    "summary": {
+      "en_US": "Smart recovery execution with excellent HR discipline (139 bpm/78% LTHR) and appropriate pace (5:05/km) despite 35°C heat. Cross-training integration is working. Primary concern is sleep quality (6h @ 2.1/100) and elevated RHR (60 vs 49-51), which must improve for continued progression.",
+      "pt_BR": "Execução de recuperação inteligente com excelente disciplina de FC (139 bpm/78% LTHR) e ritmo apropriado (5:05/km) apesar de calor de 35°C. Integração de treinamento cruzado está funcionando. Preocupação primária é qualidade do sono (6h @ 2,1/100) e FCR elevada (60 vs 49-51), que devem melhorar para progressão contínua."
+    },
+    "goalViability": {
+      "2h50": "on_track",
+      "confidence": "moderate",
+      "notes": {
+        "en_US": "2h50 goal remains on track - Build phase execution is solid with appropriate fatigue management (TSB -15.6 is normal for week 5). Training quality is excellent when considering heat stress (35°C). However, confidence is moderate rather than high due to sleep quality concerns. Elite performance requires elite recovery - current 6h sleep @ 2.1/100 quality is insufficient for sustained Build phase progression. If sleep improves to 7.5-8h with better quality, confidence returns to high. Physical training execution is excellent; recovery inputs need improvement.",
+        "pt_BR": "Meta de 2h50 permanece no caminho - execução da fase de Construção é sólida com gestão apropriada de fadiga (TSB -15,6 é normal para semana 5). Qualidade do treino é excelente considerando estresse térmico (35°C). No entanto, confiança é moderada em vez de alta devido a preocupações com qualidade do sono. Performance elite requer recuperação elite - atual 6h de sono @ 2,1/100 de qualidade é insuficiente para progressão sustentada da fase de Construção. Se sono melhorar para 7,5-8h com melhor qualidade, confiança retorna a alta. Execução física do treino é excelente; entradas de recuperação precisam de melhoria."
+      }
+    }
+  }
+}
