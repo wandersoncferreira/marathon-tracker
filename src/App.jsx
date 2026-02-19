@@ -4,6 +4,7 @@ import TrainingLog from './components/TrainingLog';
 import CoachAnalysis from './components/CoachAnalysis';
 import ProgressTracker from './components/ProgressTracker';
 import CrossTraining from './components/CrossTraining';
+import Nutrition from './components/Nutrition';
 import Settings from './components/Settings';
 import Help from './components/Help';
 import { loadInitialAnalyses } from './utils/loadInitialAnalyses';
@@ -86,6 +87,8 @@ function App() {
         return <ProgressTracker />;
       case 'crosstraining':
         return <CrossTraining />;
+      case 'nutrition':
+        return <Nutrition />;
       case 'settings':
         return <Settings />;
       case 'help':
@@ -101,6 +104,7 @@ function App() {
     { id: 'analysis', label: t('nav.coachAnalysis'), icon: '🏃' },
     { id: 'progress', label: t('nav.progress'), icon: '📈' },
     { id: 'crosstraining', label: 'Cross Training', icon: '🚴' },
+    { id: 'nutrition', label: t('nav.nutrition'), icon: '🥗' },
   ];
 
   return (

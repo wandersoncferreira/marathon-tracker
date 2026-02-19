@@ -556,7 +556,7 @@ function CyclingTab({ stats, onShowInfo }) {
 
         {/* Running Equivalent */}
         <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
-          <h4 className="font-semibold text-blue-900 mb-4 flex items-center">
+          <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
             <span className="mr-2">🏃</span> {t('crossTraining.runningEquivalent')}
             <button
               onClick={onShowInfo}
@@ -566,6 +566,22 @@ function CyclingTab({ stats, onShowInfo }) {
               ℹ️
             </button>
           </h4>
+
+          {/* Personalization Badge */}
+          {stats.personalizedInfo && (
+            <div className="mb-3 px-2 py-1 bg-indigo-100 border border-indigo-300 rounded text-xs">
+              <span className="font-semibold text-indigo-900">
+                🎯 {t('crossTraining.personalizedFor', 'Personalized for')}:
+              </span>
+              <span className="text-indigo-700 ml-1">
+                {stats.personalizedInfo.level === 'advanced' && t('crossTraining.advancedCyclist', 'Advanced Cyclist')}
+                {stats.personalizedInfo.level === 'intermediate' && t('crossTraining.intermediateCyclist', 'Intermediate Cyclist')}
+                {stats.personalizedInfo.level === 'beginner' && t('crossTraining.beginnerCyclist', 'Beginner Cyclist')}
+                {' '}({stats.personalizedInfo.adjustment})
+              </span>
+            </div>
+          )}
+
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-blue-700">{t('common.distance')}:</span>
@@ -839,6 +855,35 @@ function InfoModal({ onClose }) {
               <li>• {t('crossTraining.factor3')}</li>
               <li>• {t('crossTraining.factor4')}</li>
             </ul>
+          </div>
+
+          {/* Personalized Adjustment */}
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <h3 className="font-semibold text-indigo-900 mb-2">
+              🎯 {t('crossTraining.personalizedAdjustment', 'Personalized Adjustment')}
+            </h3>
+            <p className="text-sm text-indigo-700 mb-2">
+              {t('crossTraining.personalizedIntro', 'Your conversion factors are automatically adjusted based on your cycling ability relative to your running ability:')}
+            </p>
+            <ul className="text-sm text-indigo-800 space-y-2 ml-4">
+              <li>
+                <strong>{t('crossTraining.advancedCyclist', 'Advanced Cyclist')}</strong> (Cycling FTP ≥ 85% of Running FTP):<br/>
+                <span className="text-indigo-700">{t('crossTraining.advancedDesc', 'Standard conversion applies - cycling provides full running benefit')}</span>
+              </li>
+              <li>
+                <strong>{t('crossTraining.intermediateCyclist', 'Intermediate Cyclist')}</strong> (Cycling FTP 70-85% of Running FTP):<br/>
+                <span className="text-indigo-700">{t('crossTraining.intermediateDesc', 'Conversion reduced by 25% - cycling provides 75% of standard running benefit')}</span>
+              </li>
+              <li>
+                <strong>{t('crossTraining.beginnerCyclist', 'Beginner Cyclist')}</strong> (Cycling FTP &lt; 70% of Running FTP):<br/>
+                <span className="text-indigo-700">{t('crossTraining.beginnerDesc', 'Conversion reduced by 40% - cycling provides 60% of standard running benefit')}</span>
+              </li>
+            </ul>
+            <div className="mt-3 pt-3 border-t border-indigo-200">
+              <p className="text-xs text-indigo-700">
+                <strong>{t('crossTraining.whyPersonalize', 'Why personalize?')}</strong> {t('crossTraining.personalizeReason', 'Athletes stronger in one discipline receive less cross-training benefit from the other. This adjustment provides a more accurate representation of the training stimulus for running adaptations.')}
+              </p>
+            </div>
           </div>
 
           {/* Time Conversion */}

@@ -57,6 +57,11 @@ class MarathonTrackerDB extends Dexie {
       crossTraining: 'id, date, type, start_date_local, *tags', // Primary key: activity id, indexed by date, type, start_date_local
     });
 
+    // Version 8 - Add nutrition tracking table
+    this.version(8).stores({
+      nutritionTracking: 'date, rating, adherence, dayType', // Primary key: date (YYYY-MM-DD), indexed by rating, adherence, dayType
+    });
+
     // Access tables
     this.config = this.table('config');
     this.activities = this.table('activities');
@@ -67,6 +72,7 @@ class MarathonTrackerDB extends Dexie {
     this.activityMessages = this.table('activityMessages');
     this.events = this.table('events');
     this.crossTraining = this.table('crossTraining');
+    this.nutritionTracking = this.table('nutritionTracking');
   }
 
   /**
@@ -555,7 +561,7 @@ class MarathonTrackerDB extends Dexie {
    */
   async getStats() {
     try {
-      const [activitiesCount, detailsCount, wellnessCount, analysesCount, messagesCount, eventsCount, crossTrainingCount, cacheCount] = await Promise.all([
+      const [activitiesCount, detailsCount, wellnessCount, analysesCount, messagesCount, eventsCount, crossTrainingCount, nutritionTrackingCount, cacheCount] = await Promise.all([
         this.activities.count(),
         this.activityDetails.count(),
         this.wellness.count(),
@@ -563,6 +569,7 @@ class MarathonTrackerDB extends Dexie {
         this.activityMessages.count(),
         this.events.count(),
         this.crossTraining.count(),
+        this.nutritionTracking.count(),
         this.cache.count(),
       ]);
 
@@ -574,6 +581,7 @@ class MarathonTrackerDB extends Dexie {
         activityMessages: messagesCount,
         events: eventsCount,
         crossTraining: crossTrainingCount,
+        nutritionTracking: nutritionTrackingCount,
         cache: cacheCount,
       };
     } catch (error) {
@@ -586,6 +594,7 @@ class MarathonTrackerDB extends Dexie {
         activityMessages: 0,
         events: 0,
         crossTraining: 0,
+        nutritionTracking: 0,
         cache: 0,
       };
     }

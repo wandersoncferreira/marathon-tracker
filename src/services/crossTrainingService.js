@@ -162,56 +162,116 @@ export async function getStrengthActivities(startDate, endDate, forceRefresh = f
  * Calculate running equivalency for cycling activity
  * Based on Millet et al. (2009) and comparative physiology research
  */
+/**
+ * Determine cyclist ability level and adjustment factor
+ * Based on cycling FTP relative to running FTP
+ * @param {number} cyclingFTP - Cyclist's FTP in watts
+ * @param {number} runningFTP - Runner's FTP in watts (default 360W for sub-2h50 marathoner)
+ * @returns {object} - Ability level and adjustment factor
+ */
+function getCyclistAbilityLevel(cyclingFTP, runningFTP = 360) {
+  const ratio = cyclingFTP / runningFTP;
+
+  // Elite runner (360W FTP) cycling ability categories:
+  // Advanced cyclist: FTP ratio > 0.85 (>305W) - cycling is strong
+  // Intermediate cyclist: FTP ratio 0.70-0.85 (250-305W) - balanced
+  // Beginner cyclist: FTP ratio < 0.70 (<250W) - cycling is weak
+
+  let level, adjustmentFactor, description;
+
+  if (ratio >= 0.85) {
+    level = 'advanced';
+    adjustmentFactor = 1.0; // No adjustment needed - use standard conversion
+    description = 'Strong cyclist - standard conversion applies';
+  } else if (ratio >= 0.70) {
+    level = 'intermediate';
+    adjustmentFactor = 0.75; // Reduce conversion by 25%
+    description = 'Intermediate cyclist - cycling provides 75% of standard running benefit';
+  } else {
+    level = 'beginner';
+    adjustmentFactor = 0.60; // Reduce conversion by 40%
+    description = 'Developing cyclist - cycling provides 60% of standard running benefit';
+  }
+
+  return {
+    level,
+    adjustmentFactor,
+    ratio: ratio.toFixed(2),
+    cyclingFTP,
+    runningFTP,
+    description
+  };
+}
+
 export function calculateRunningEquivalent(cyclingActivity) {
   const distance = cyclingActivity.distance || 0; // meters
   const avgPower = cyclingActivity.average_watts || 0;
-  const ftp = cyclingActivity.icu_ftp || 250; // Fallback FTP
+  const cyclingFTP = cyclingActivity.icu_ftp || 250; // Cycling FTP
+  const runningFTP = cyclingActivity.run_ftp || 360; // Running FTP (default for sub-2h50)
   const duration = cyclingActivity.moving_time || 0; // seconds
 
-  // Calculate intensity as % of FTP
-  const intensityPercent = avgPower / ftp;
+  // Get personalized ability level and adjustment
+  const abilityLevel = getCyclistAbilityLevel(cyclingFTP, runningFTP);
 
-  // Determine conversion factor based on intensity
-  let conversionFactor;
+  // Calculate intensity as % of FTP
+  const intensityPercent = avgPower / cyclingFTP;
+
+  // Determine BASE conversion factor based on intensity
+  // These are standard factors from research (Millet et al. 2009)
+  let baseConversionFactor;
   let intensityZone;
 
   if (intensityPercent < 0.75) {
-    conversionFactor = 0.275; // Easy/Recovery
+    baseConversionFactor = 0.275; // Easy/Recovery base
     intensityZone = 'Easy/Recovery';
   } else if (intensityPercent < 0.85) {
-    conversionFactor = 0.325; // Tempo
+    baseConversionFactor = 0.325; // Tempo base
     intensityZone = 'Tempo';
   } else if (intensityPercent < 0.95) {
-    conversionFactor = 0.375; // Threshold
+    baseConversionFactor = 0.375; // Threshold base
     intensityZone = 'Threshold';
   } else {
-    conversionFactor = 0.425; // VO2max
+    baseConversionFactor = 0.425; // VO2max base
     intensityZone = 'VO2max';
   }
+
+  // Apply personalized adjustment based on cyclist ability
+  const conversionFactor = baseConversionFactor * abilityLevel.adjustmentFactor;
 
   // Calculate running equivalent distance
   const runningDistanceMeters = distance * conversionFactor;
   const runningDistanceKm = runningDistanceMeters / 1000;
 
-  // Calculate time-based equivalent
-  const timeConversionFactor = 0.70; // Running minutes = 70% of cycling minutes
+  // Calculate time-based equivalent (also apply ability adjustment)
+  const baseTimeConversionFactor = 0.70; // Base: Running minutes = 70% of cycling minutes
+  const timeConversionFactor = baseTimeConversionFactor * abilityLevel.adjustmentFactor;
   const runningMinutes = (duration / 60) * timeConversionFactor;
 
-  // TSS comparison (running TSS is ~1.15x cycling TSS for same perceived effort)
+  // TSS comparison (running TSS is ~1.15x cycling TSS, also apply ability adjustment)
   const cyclingTSS = cyclingActivity.icu_training_load || 0;
-  const equivalentRunningTSS = cyclingTSS * 1.15;
+  const baseTSSMultiplier = 1.15;
+  const tssMultiplier = baseTSSMultiplier * abilityLevel.adjustmentFactor;
+  const equivalentRunningTSS = cyclingTSS * tssMultiplier;
 
   return {
     cyclingDistance: (distance / 1000).toFixed(2), // km
     cyclingDuration: (duration / 60).toFixed(0), // minutes
     intensityPercent: (intensityPercent * 100).toFixed(0),
     intensityZone,
-    conversionFactor,
+    conversionFactor: conversionFactor.toFixed(3),
+    baseConversionFactor: baseConversionFactor.toFixed(3),
     runningDistanceKm: runningDistanceKm.toFixed(2),
     runningMinutes: runningMinutes.toFixed(0),
     cyclingTSS,
     equivalentRunningTSS: equivalentRunningTSS.toFixed(0),
-    formula: `${(distance / 1000).toFixed(1)}km ride @ ${(intensityPercent * 100).toFixed(0)}% FTP ≈ ${runningDistanceKm.toFixed(1)}km run`
+    // Personalization info
+    cyclingAbility: abilityLevel.level,
+    abilityAdjustment: (abilityLevel.adjustmentFactor * 100).toFixed(0) + '%',
+    abilityDescription: abilityLevel.description,
+    cyclingFTP: cyclingFTP,
+    runningFTP: runningFTP,
+    ftpRatio: abilityLevel.ratio,
+    formula: `${(distance / 1000).toFixed(1)}km ride @ ${(intensityPercent * 100).toFixed(0)}% FTP ≈ ${runningDistanceKm.toFixed(1)}km run (${abilityLevel.level} cyclist)`
   };
 }
 
@@ -409,6 +469,20 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
     sum + parseFloat(s.runningEquivalent.equivalentRunningTSS), 0
   );
 
+  // Get personalized info from the first activity (all should have same level)
+  let personalizedInfo = null;
+  if (activities.length > 0 && stats.length > 0) {
+    const firstEquiv = stats[0].runningEquivalent;
+    personalizedInfo = {
+      level: firstEquiv.cyclingAbility,
+      adjustment: firstEquiv.abilityAdjustment,
+      description: firstEquiv.abilityDescription,
+      cyclingFTP: firstEquiv.cyclingFTP,
+      runningFTP: firstEquiv.runningFTP,
+      ftpRatio: firstEquiv.ftpRatio
+    };
+  }
+
   // Group by week (weeks start on Monday)
   const byWeek = {};
 
@@ -468,7 +542,8 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
         minutes: totalRunningEquivalentMinutes.toFixed(0),
         tss: totalRunningEquivalentTSS.toFixed(0)
       }
-    }
+    },
+    personalizedInfo: personalizedInfo
   };
 }
 

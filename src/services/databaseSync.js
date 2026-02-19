@@ -17,7 +17,7 @@ export async function exportDatabaseToFiles() {
   try {
     const exports = {
       timestamp: new Date().toISOString(),
-      version: 7,
+      version: 8,
       tables: {}
     };
 
@@ -63,6 +63,13 @@ export async function exportDatabaseToFiles() {
       data: crossTraining
     };
 
+    // Export nutrition tracking
+    const nutritionTracking = await db.nutritionTracking.toArray();
+    exports.tables.nutritionTracking = {
+      count: nutritionTracking.length,
+      data: nutritionTracking
+    };
+
     // Don't export cache or config (those are temporary/sensitive)
 
     return exports;
@@ -89,7 +96,9 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       activityDetails: data.tables.activityDetails?.count || 0,
       wellness: data.tables.wellness?.count || 0,
       analyses: data.tables.analyses?.count || 0,
-      events: data.tables.events?.count || 0
+      events: data.tables.events?.count || 0,
+      crossTraining: data.tables.crossTraining?.count || 0,
+      nutritionTracking: data.tables.nutritionTracking?.count || 0
     });
 
     // Clear existing data if requested
@@ -100,6 +109,8 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       await db.wellness.clear();
       await db.analyses.clear();
       await db.events.clear();
+      await db.crossTraining.clear();
+      await db.nutritionTracking.clear();
     }
 
     let imported = {
@@ -108,7 +119,8 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       wellness: 0,
       analyses: 0,
       events: 0,
-      crossTraining: 0
+      crossTraining: 0,
+      nutritionTracking: 0
     };
 
     // Import activities
@@ -185,6 +197,19 @@ export async function importDatabaseFromData(data, clearExisting = false) {
         console.log(`✅ Imported ${imported.crossTraining} cross training activities`);
       } catch (error) {
         console.error('❌ Error importing cross training:', error);
+        throw error;
+      }
+    }
+
+    // Import nutrition tracking
+    if (data.tables.nutritionTracking?.data) {
+      try {
+        console.log(`📥 Importing ${data.tables.nutritionTracking.data.length} nutrition tracking entries...`);
+        await db.nutritionTracking.bulkPut(data.tables.nutritionTracking.data);
+        imported.nutritionTracking = data.tables.nutritionTracking.data.length;
+        console.log(`✅ Imported ${imported.nutritionTracking} nutrition tracking entries`);
+      } catch (error) {
+        console.error('❌ Error importing nutrition tracking:', error);
         throw error;
       }
     }
@@ -469,7 +494,7 @@ export async function autoImportIfEmpty() {
       // Store import timestamp
       await db.setConfig('last_db_import_timestamp', fileTimestamp || new Date().toISOString());
 
-      console.log(`✅ Import complete: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses, ${imported.crossTraining} cross training`);
+      console.log(`✅ Import complete: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses, ${imported.crossTraining} cross training, ${imported.nutritionTracking} nutrition entries`);
 
       return {
         imported: true,
@@ -477,7 +502,7 @@ export async function autoImportIfEmpty() {
         stats: imported,
         fileTimestamp: fileTimestamp,
         compressed: isCompressed,
-        message: `Loaded database: ${imported.activities} activities, ${imported.activityDetails} details`
+        message: `Loaded database: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.nutritionTracking} nutrition entries`
       };
     } catch (fetchError) {
       console.log('❌ Error fetching database:', fetchError.message);

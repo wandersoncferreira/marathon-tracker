@@ -6,6 +6,7 @@ export const translations = {
       trainingLog: 'Training Log',
       progress: 'Progress',
       coachAnalysis: 'Coach Analysis',
+      nutrition: 'Nutrition',
       settings: 'Settings',
       help: 'Help'
     },
@@ -325,6 +326,91 @@ export const translations = {
       errorImporting: 'Error importing database:'
     },
 
+    // Nutrition
+    nutrition: {
+      title: 'Nutrition Plan',
+      subtitle: 'Personalized meal plans based on your training load and marathon goals',
+      selectDayType: 'Select Day Type',
+      trainingDay: 'Training Day',
+      trainingDayDesc: 'Regular workout day',
+      carbLoadDay: 'Friday (Pre-Long Run)',
+      carbLoadDesc: 'Glycogen loading',
+      restDay: 'Sunday (Rest Day)',
+      restDayDesc: 'Complete recovery',
+
+      dailyTargets: 'Daily Targets',
+      howCalculated: 'How is this calculated?',
+      totalCalories: 'Total Calories',
+      carbs: 'Carbs',
+      protein: 'Protein',
+      fats: 'Fats',
+
+      hydrationSupplements: 'Hydration & Supplements',
+      hydration: 'Hydration',
+      baseWater: 'Daily base',
+      duringTraining: 'During training',
+      supplements: 'Supplements',
+
+      mealPlan: 'Meal Plan',
+      target: 'Target',
+      food: 'Food',
+      amount: 'Amount',
+      calories: 'Calories',
+      total: 'Total',
+      note: 'Note',
+
+      dailySummary: 'Daily Summary',
+      tips: 'Nutrition Tips',
+
+      // Modal
+      energyCalculation: 'Energy Calculation',
+      bmr: 'BMR (Basal Metabolic Rate)',
+      bmrDesc: 'Energy needed for basic body functions at rest (Mifflin-St Jeor equation)',
+      tdee: 'TDEE (Total Daily Energy Expenditure)',
+      tdeeDesc: 'BMR × Activity Factor based on training load',
+      macrosRationale: 'Macronutrient Rationale',
+      proteinDesc: '• Essential for muscle repair and recovery\n• 1.6-1.8g/kg for endurance athletes',
+      carbsDesc: '• Primary fuel for high-intensity training\n• Varies by training load: 45-60% of calories',
+      fatsDesc: '• Hormone production and long-term energy\n• 20-30% of calories for optimal health',
+      researchReferences: 'Research References',
+      disclaimer: 'Disclaimer',
+      disclaimerText: 'This is a general nutrition plan based on scientific literature and typical athlete profiles. Individual needs vary. Consult a sports nutritionist or registered dietitian for personalized recommendations.',
+
+      // Weekly Tracking
+      yourGoal: 'Your Nutrition Goal',
+      strategy: 'Strategy',
+      expectedOutcome: 'Expected Outcome',
+      cycleOverview: 'Marathon Cycle Overview',
+      tracked: 'Tracked',
+      needsWork: 'Needs Work',
+      noCycleData: 'Loading training cycle data...',
+      cycleDataDesc: 'Your overall nutrition performance will appear here once you start tracking',
+      thisWeek: 'This Week\'s Progress',
+      avgRating: 'Avg Rating',
+      daysTracked: 'Days Tracked',
+      adherence: 'Adherence',
+      dailyTracking: 'Daily Tracking',
+      noData: 'No data',
+
+      // Tracking Modal
+      trackDay: 'Track Your Day',
+      rateYourDay: 'Rate Your Day',
+      terrible: 'Terrible',
+      okay: 'Okay',
+      perfect: 'Perfect',
+      adherenceLevel: 'Adherence Level',
+      excellent: 'Excellent',
+      good: 'Good',
+      poor: 'Poor',
+      failed: 'Failed',
+      actualCalories: 'Actual Calories Consumed',
+      optional: 'optional',
+      caloriesPlaceholder: 'e.g., 2800',
+      notes: 'Notes',
+      notesPlaceholder: 'What went well? What could be improved? Any challenges?',
+      saveTracking: 'Save Tracking'
+    },
+
     // Help
     help: {
       title: 'How to Use Marathon Tracker',
@@ -540,6 +626,18 @@ export const translations = {
       timeFormula: 'Running Time ≈ 70% of Cycling Time',
       timeRationale: 'Accounts for lower mechanical efficiency and higher metabolic cost of running per unit time.',
 
+      personalizedAdjustment: 'Personalized Adjustment',
+      personalizedIntro: 'Your conversion factors are automatically adjusted based on your cycling ability relative to your running ability:',
+      advancedCyclist: 'Advanced Cyclist',
+      advancedDesc: 'Standard conversion applies - cycling provides full running benefit',
+      intermediateCyclist: 'Intermediate Cyclist',
+      intermediateDesc: 'Conversion reduced by 25% - cycling provides 75% of standard running benefit',
+      beginnerCyclist: 'Beginner Cyclist',
+      beginnerDesc: 'Conversion reduced by 40% - cycling provides 60% of standard running benefit',
+      whyPersonalize: 'Why personalize?',
+      personalizeReason: 'Athletes stronger in one discipline receive less cross-training benefit from the other. This adjustment provides a more accurate representation of the training stimulus for running adaptations.',
+      personalizedFor: 'Personalized for',
+
       tssConversion: 'Training Stress Score (TSS) Adjustment',
       tssFormula: 'Running TSS ≈ Cycling TSS × 1.15',
       tssRationale: 'Running has higher impact stress and muscular damage per TSS point. A 50 TSS cycling session creates similar cardiovascular stress but less muscular fatigue than a 50 TSS run.',
@@ -584,6 +682,7 @@ export const translations = {
       trainingLog: 'Registro de Treinos',
       progress: 'Progresso',
       coachAnalysis: 'Análise do Treinador',
+      nutrition: 'Nutrição',
       settings: 'Configurações',
       help: 'Ajuda'
     },
@@ -903,6 +1002,91 @@ export const translations = {
       errorImporting: 'Erro ao importar banco de dados:'
     },
 
+    // Nutrição
+    nutrition: {
+      title: 'Plano de Nutrição',
+      subtitle: 'Planos alimentares personalizados baseados na sua carga de treino e objetivos de maratona',
+      selectDayType: 'Selecione o Tipo de Dia',
+      trainingDay: 'Dia de Treino',
+      trainingDayDesc: 'Dia de treino regular',
+      carbLoadDay: 'Sexta (Pré-Longão)',
+      carbLoadDesc: 'Carregamento de glicogênio',
+      restDay: 'Domingo (Descanso)',
+      restDayDesc: 'Recuperação completa',
+
+      dailyTargets: 'Metas Diárias',
+      howCalculated: 'Como isso é calculado?',
+      totalCalories: 'Calorias Totais',
+      carbs: 'Carboidratos',
+      protein: 'Proteína',
+      fats: 'Gorduras',
+
+      hydrationSupplements: 'Hidratação e Suplementos',
+      hydration: 'Hidratação',
+      baseWater: 'Base diária',
+      duringTraining: 'Durante treino',
+      supplements: 'Suplementos',
+
+      mealPlan: 'Plano Alimentar',
+      target: 'Meta',
+      food: 'Alimento',
+      amount: 'Quantidade',
+      calories: 'Calorias',
+      total: 'Total',
+      note: 'Observação',
+
+      dailySummary: 'Resumo Diário',
+      tips: 'Dicas de Nutrição',
+
+      // Modal
+      energyCalculation: 'Cálculo de Energia',
+      bmr: 'TMB (Taxa Metabólica Basal)',
+      bmrDesc: 'Energia necessária para funções corporais básicas em repouso (equação Mifflin-St Jeor)',
+      tdee: 'GECT (Gasto Energético Diário Total)',
+      tdeeDesc: 'TMB × Fator de Atividade baseado na carga de treino',
+      macrosRationale: 'Justificativa dos Macronutrientes',
+      proteinDesc: '• Essencial para reparo e recuperação muscular\n• 1,6-1,8g/kg para atletas de resistência',
+      carbsDesc: '• Combustível primário para treino de alta intensidade\n• Varia com a carga de treino: 45-60% das calorias',
+      fatsDesc: '• Produção hormonal e energia de longo prazo\n• 20-30% das calorias para saúde ideal',
+      researchReferences: 'Referências de Pesquisa',
+      disclaimer: 'Aviso Legal',
+      disclaimerText: 'Este é um plano de nutrição geral baseado em literatura científica e perfis típicos de atletas. As necessidades individuais variam. Consulte um nutricionista esportivo ou nutricionista registrado para recomendações personalizadas.',
+
+      // Acompanhamento Semanal
+      yourGoal: 'Seu Objetivo de Nutrição',
+      strategy: 'Estratégia',
+      expectedOutcome: 'Resultado Esperado',
+      cycleOverview: 'Visão Geral do Ciclo de Maratona',
+      tracked: 'Rastreado',
+      needsWork: 'Precisa Melhorar',
+      noCycleData: 'Carregando dados do ciclo de treino...',
+      cycleDataDesc: 'Seu desempenho geral de nutrição aparecerá aqui assim que você começar a rastrear',
+      thisWeek: 'Progresso desta Semana',
+      avgRating: 'Nota Média',
+      daysTracked: 'Dias Rastreados',
+      adherence: 'Aderência',
+      dailyTracking: 'Acompanhamento Diário',
+      noData: 'Sem dados',
+
+      // Modal de Acompanhamento
+      trackDay: 'Acompanhe seu Dia',
+      rateYourDay: 'Avalie seu Dia',
+      terrible: 'Péssimo',
+      okay: 'Razoável',
+      perfect: 'Perfeito',
+      adherenceLevel: 'Nível de Aderência',
+      excellent: 'Excelente',
+      good: 'Bom',
+      poor: 'Ruim',
+      failed: 'Falhou',
+      actualCalories: 'Calorias Consumidas de Fato',
+      optional: 'opcional',
+      caloriesPlaceholder: 'ex: 2800',
+      notes: 'Observações',
+      notesPlaceholder: 'O que deu certo? O que poderia melhorar? Algum desafio?',
+      saveTracking: 'Salvar Acompanhamento'
+    },
+
     // Ajuda
     help: {
       title: 'Como Usar o Marathon Tracker',
@@ -1117,6 +1301,18 @@ export const translations = {
       timeConversion: 'Conversão Baseada em Tempo',
       timeFormula: 'Tempo de Corrida ≈ 70% do Tempo de Ciclismo',
       timeRationale: 'Considera menor eficiência mecânica e maior custo metabólico da corrida por unidade de tempo.',
+
+      personalizedAdjustment: 'Ajuste Personalizado',
+      personalizedIntro: 'Seus fatores de conversão são ajustados automaticamente com base na sua habilidade de ciclismo em relação à sua habilidade de corrida:',
+      advancedCyclist: 'Ciclista Avançado',
+      advancedDesc: 'Conversão padrão se aplica - ciclismo fornece benefício completo para corrida',
+      intermediateCyclist: 'Ciclista Intermediário',
+      intermediateDesc: 'Conversão reduzida em 25% - ciclismo fornece 75% do benefício padrão para corrida',
+      beginnerCyclist: 'Ciclista Iniciante',
+      beginnerDesc: 'Conversão reduzida em 40% - ciclismo fornece 60% do benefício padrão para corrida',
+      whyPersonalize: 'Por que personalizar?',
+      personalizeReason: 'Atletas mais fortes em uma disciplina recebem menos benefício de treino cruzado da outra. Este ajuste fornece uma representação mais precisa do estímulo de treino para adaptações de corrida.',
+      personalizedFor: 'Personalizado para',
 
       tssConversion: 'Ajuste do Training Stress Score (TSS)',
       tssFormula: 'TSS de Corrida ≈ TSS de Ciclismo × 1,15',
