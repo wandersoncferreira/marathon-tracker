@@ -10,12 +10,22 @@ import {
   getDailyTracking,
   formatDateDisplay,
   getAdherenceColor,
-  calculateCycleStats
+  calculateCycleStats,
+  analyzeMealPatterns
 } from '../utils/nutritionTracking';
 import { TRAINING_CYCLE } from '../utils/trainingCycle';
 
 function Nutrition() {
   const { t, language } = useTranslation();
+
+  // Meal type labels for consistent translation
+  const mealLabels = {
+    breakfast: 'Breakfast',
+    lunch: 'Lunch',
+    dinner: 'Dinner',
+    snacks: 'Snacks'
+  };
+
   const [selectedDay, setSelectedDay] = useState('training');
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [nutritionGoals, setNutritionGoals] = useState({
@@ -55,8 +65,16 @@ function Nutrition() {
     rating: 5,
     notes: '',
     adherence: 'good',
-    actualCalories: 0
+    actualCalories: 0,
+    meals: {
+      breakfast: { rating: 0, notes: '' },
+      lunch: { rating: 0, notes: '' },
+      dinner: { rating: 0, notes: '' },
+      snacks: { rating: 0, notes: '' }
+    }
   });
+  const [mealAnalysis, setMealAnalysis] = useState(null);
+  const [activeView, setActiveView] = useState('analysis'); // 'analysis' or 'plan'
 
   // Load nutrition goals and weekly data
   useEffect(() => {
@@ -85,6 +103,14 @@ function Nutrition() {
           if (cycleData) {
             setCycleStats(cycleData);
           }
+
+          // Load meal pattern analysis
+          const mealData = await analyzeMealPatterns(
+            TRAINING_CYCLE.startDate,
+            TRAINING_CYCLE.raceDate
+          );
+          console.log('🍽️ Meal analysis:', mealData);
+          setMealAnalysis(mealData);
         } else {
           console.warn('⚠️ Training cycle data not available');
         }
@@ -132,14 +158,26 @@ function Nutrition() {
         rating: existing.rating,
         notes: existing.notes || '',
         adherence: existing.adherence || 'good',
-        actualCalories: existing.actualCalories || 0
+        actualCalories: existing.actualCalories || 0,
+        meals: existing.meals || {
+          breakfast: { rating: 0, notes: '' },
+          lunch: { rating: 0, notes: '' },
+          dinner: { rating: 0, notes: '' },
+          snacks: { rating: 0, notes: '' }
+        }
       });
     } else {
       setTrackingForm({
         rating: 5,
         notes: '',
         adherence: 'good',
-        actualCalories: 0
+        actualCalories: 0,
+        meals: {
+          breakfast: { rating: 0, notes: '' },
+          lunch: { rating: 0, notes: '' },
+          dinner: { rating: 0, notes: '' },
+          snacks: { rating: 0, notes: '' }
+        }
       });
     }
 
@@ -157,12 +195,18 @@ function Nutrition() {
 
     await loadWeeklyData(currentWeekStart);
 
-    // Reload cycle stats
+    // Reload cycle stats and meal analysis
     const cycleData = await calculateCycleStats(
       TRAINING_CYCLE.startDate,
       TRAINING_CYCLE.raceDate
     );
     setCycleStats(cycleData);
+
+    const mealData = await analyzeMealPatterns(
+      TRAINING_CYCLE.startDate,
+      TRAINING_CYCLE.raceDate
+    );
+    setMealAnalysis(mealData);
 
     setShowTrackingModal(false);
   };
@@ -174,209 +218,166 @@ function Nutrition() {
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          {t('nutrition.title', '🥗 Nutrition Plan')}
+        <h1 className="text-2xl font-bold text-gray-900">
+          {t('nutrition.title', '🥗 Nutrition')}
         </h1>
-        <p className="text-gray-600">
-          {t('nutrition.subtitle', 'Personalized meal plans based on your training load and marathon goals')}
-        </p>
       </div>
 
-      {/* Nutrition Goal Section */}
-      <div className="card mb-6 bg-gradient-to-r from-primary-50 to-blue-50 border-2 border-primary-200">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-bold text-primary-900 flex items-center gap-2">
-                🎯 {t('nutrition.yourGoal', 'Your Nutrition Goal')}
-              </h2>
-              <p className="text-sm text-primary-700 mt-1">
-                {nutritionGoals.description}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                📊 {t('nutrition.strategy', 'Strategy')}
-              </h3>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• {nutritionGoals.weeklyTarget}</li>
-                <li>• {nutritionGoals.calorieStrategy}</li>
-                <li>• Protein: {nutritionGoals.proteinTarget}</li>
-                <li>• Carbs: {nutritionGoals.carbTarget}</li>
-              </ul>
-            </div>
-
-            <div className="bg-white rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                ⭐ {t('nutrition.expectedOutcome', 'Expected Outcome')}
-              </h3>
-              <p className="text-sm text-gray-700">
-                {nutritionGoals.expectedOutcome}
-              </p>
-            </div>
-          </div>
-      </div>
-
-      {/* Marathon Cycle Overview - Compact */}
-      <div className="card mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-blue-900 flex items-center gap-2">
-            🏃 {t('nutrition.cycleOverview', 'Marathon Cycle Overview')}
-          </h2>
-          <span className="text-xs text-blue-700">
-            {TRAINING_CYCLE.marathonName}
-          </span>
+      {/* Tab Navigation */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => setActiveView('analysis')}
+              className={`py-3 px-6 font-medium text-sm border-b-2 transition-colors ${
+                activeView === 'analysis'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📊 Analysis
+            </button>
+            <button
+              onClick={() => setActiveView('plan')}
+              className={`py-3 px-6 font-medium text-sm border-b-2 transition-colors ${
+                activeView === 'plan'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              🍽️ Diet Plan
+            </button>
+          </nav>
         </div>
-
-        {cycleStats.totalDays === 0 ? (
-          <div className="bg-white rounded-lg p-6 text-center">
-            <div className="text-4xl mb-3">📊</div>
-            <p className="text-gray-600 mb-2">
-              {t('nutrition.noCycleData', 'Loading training cycle data...')}
-            </p>
-            <p className="text-sm text-gray-500">
-              {t('nutrition.cycleDataDesc', 'Your overall nutrition performance will appear here once you start tracking')}
-            </p>
-          </div>
-        ) : (
-          <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {/* Average Rating */}
-            <div className="bg-white rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">
-                {t('nutrition.avgRating', 'Avg Rating')}
-              </div>
-              <div className={`text-2xl font-bold ${
-                cycleStats.averageRating >= 8 ? 'text-green-700' :
-                cycleStats.averageRating >= 7 ? 'text-blue-700' :
-                cycleStats.averageRating >= 6 ? 'text-yellow-700' :
-                'text-red-700'
-              }`}>
-                {cycleStats.averageRating}/10
-              </div>
-            </div>
-
-            {/* Days Tracked */}
-            <div className="bg-white rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">
-                {t('nutrition.tracked', 'Tracked')}
-              </div>
-              <div className="text-2xl font-bold text-purple-700">
-                {cycleStats.daysTracked}/{cycleStats.totalDays}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {cycleStats.adherencePercentage}%
-              </div>
-            </div>
-
-            {/* Excellent Days */}
-            <div className="bg-white rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                <span className="text-green-600">●</span>
-                {t('nutrition.excellent', 'Excellent')}
-              </div>
-              <div className="text-2xl font-bold text-green-700">
-                {cycleStats.excellentDays}
-              </div>
-              <div className="text-xs text-gray-500">
-                {cycleStats.daysTracked > 0 ? Math.round((cycleStats.excellentDays / cycleStats.daysTracked) * 100) : 0}%
-              </div>
-            </div>
-
-            {/* Good Days */}
-            <div className="bg-white rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                <span className="text-blue-600">●</span>
-                {t('nutrition.good', 'Good')}
-              </div>
-              <div className="text-2xl font-bold text-blue-700">
-                {cycleStats.goodDays}
-              </div>
-              <div className="text-xs text-gray-500">
-                {cycleStats.daysTracked > 0 ? Math.round((cycleStats.goodDays / cycleStats.daysTracked) * 100) : 0}%
-              </div>
-            </div>
-
-            {/* Poor/Failed Days */}
-            <div className="bg-white rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                <span className="text-yellow-600">●</span>
-                {t('nutrition.needsWork', 'Needs Work')}
-              </div>
-              <div className="text-2xl font-bold text-yellow-700">
-                {cycleStats.poorDays + cycleStats.failedDays}
-              </div>
-              <div className="text-xs text-gray-500">
-                {cycleStats.daysTracked > 0 ? Math.round(((cycleStats.poorDays + cycleStats.failedDays) / cycleStats.daysTracked) * 100) : 0}%
-              </div>
-            </div>
-          </div>
-
-            {/* Feedback Message */}
-            <div className={`mt-3 p-3 rounded-lg ${
-              cycleStats.onTrack
-                ? 'bg-green-100 border border-green-300'
-                : 'bg-yellow-100 border border-yellow-300'
-            }`}>
-              <p className={`text-sm font-medium ${
-                cycleStats.onTrack ? 'text-green-800' : 'text-yellow-800'
-              }`}>
-                {cycleStats.message}
-              </p>
-            </div>
-          </>
-        )}
       </div>
 
-      {/* Weekly Tracking Section */}
-      <div className="card mb-6">
-        <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">
-              📅 {t('nutrition.thisWeek', 'This Week\'s Progress')}
-            </h2>
-            <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
-              weeklyStats.onTrack
-                ? 'bg-green-100 text-green-800'
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              {weeklyStats.onTrack ? '✅ On Track' : '⚠️ Need Focus'}
+      {activeView === 'analysis' ? (
+        <>
+          {/* Nutrition Goal Section - Compact */}
+          <div className="card mb-6 bg-gradient-to-r from-primary-50 to-blue-50">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h2 className="text-sm font-semibold text-primary-900 mb-1">
+                  🎯 Goal: {nutritionGoals.description}
+                </h2>
+                <p className="text-xs text-primary-700">
+                  {nutritionGoals.weeklyTarget} • {nutritionGoals.calorieStrategy}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Weekly Stats Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="text-sm text-blue-700 mb-1">
-                {t('nutrition.avgRating', 'Avg Rating')}
-              </div>
-              <div className="text-2xl font-bold text-blue-900">
-                {weeklyStats.averageRating}/10
+          {/* Marathon Cycle Overview - Compact */}
+          <div className="card mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-900">
+                🏃 Marathon Cycle - {TRAINING_CYCLE.marathonName}
+              </h2>
+            </div>
+
+            {cycleStats.totalDays === 0 ? (
+              <p className="text-sm text-gray-500">
+                Start tracking to see your cycle progress
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-5 gap-2">
+                  {/* Average Rating */}
+                  <div className="bg-blue-50 rounded-lg p-2 text-center">
+                    <div className="text-xs text-blue-700 mb-1">Avg Rating</div>
+                    <div className="text-xl font-bold text-blue-900">
+                      {cycleStats.averageRating}
+                    </div>
+                  </div>
+
+                  {/* Days Tracked */}
+                  <div className="bg-purple-50 rounded-lg p-2 text-center">
+                    <div className="text-xs text-purple-700 mb-1">Tracked</div>
+                    <div className="text-xl font-bold text-purple-900">
+                      {cycleStats.daysTracked}
+                    </div>
+                    <div className="text-xs text-purple-600">
+                      {cycleStats.adherencePercentage}%
+                    </div>
+                  </div>
+
+                  {/* Excellent Days */}
+                  <div className="bg-green-50 rounded-lg p-2 text-center">
+                    <div className="text-xs text-green-700 mb-1">Excellent</div>
+                    <div className="text-xl font-bold text-green-900">
+                      {cycleStats.excellentDays}
+                    </div>
+                    <div className="text-xs text-green-600">
+                      {cycleStats.daysTracked > 0 ? Math.round((cycleStats.excellentDays / cycleStats.daysTracked) * 100) : 0}%
+                    </div>
+                  </div>
+
+                  {/* Good Days */}
+                  <div className="bg-blue-50 rounded-lg p-2 text-center">
+                    <div className="text-xs text-blue-700 mb-1">Good</div>
+                    <div className="text-xl font-bold text-blue-900">
+                      {cycleStats.goodDays}
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      {cycleStats.daysTracked > 0 ? Math.round((cycleStats.goodDays / cycleStats.daysTracked) * 100) : 0}%
+                    </div>
+                  </div>
+
+                  {/* Poor/Failed Days */}
+                  <div className="bg-yellow-50 rounded-lg p-2 text-center">
+                    <div className="text-xs text-yellow-700 mb-1">Needs Work</div>
+                    <div className="text-xl font-bold text-yellow-900">
+                      {cycleStats.poorDays + cycleStats.failedDays}
+                    </div>
+                    <div className="text-xs text-yellow-600">
+                      {cycleStats.daysTracked > 0 ? Math.round(((cycleStats.poorDays + cycleStats.failedDays) / cycleStats.daysTracked) * 100) : 0}%
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Weekly Tracking Section */}
+          <div className="card mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-900">
+                📅 This Week's Progress
+              </h2>
+              <div className={`px-2 py-1 rounded text-xs font-medium ${
+                weeklyStats.onTrack
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {weeklyStats.onTrack ? '✅ On Track' : '⚠️ Need Focus'}
               </div>
             </div>
 
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="text-sm text-green-700 mb-1">
-                {t('nutrition.daysTracked', 'Days Tracked')}
+            {/* Weekly Stats Summary */}
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              <div className="bg-blue-50 rounded-lg p-2 text-center">
+                <div className="text-xs text-blue-700 mb-1">Avg Rating</div>
+                <div className="text-xl font-bold text-blue-900">
+                  {weeklyStats.averageRating}
+                </div>
               </div>
-              <div className="text-2xl font-bold text-green-900">
-                {weeklyStats.daysTracked}/7
-              </div>
-            </div>
 
-            <div className="bg-purple-50 rounded-lg p-4">
-              <div className="text-sm text-purple-700 mb-1">
-                {t('nutrition.adherence', 'Adherence')}
+              <div className="bg-green-50 rounded-lg p-2 text-center">
+                <div className="text-xs text-green-700 mb-1">Days Tracked</div>
+                <div className="text-xl font-bold text-green-900">
+                  {weeklyStats.daysTracked}/7
+                </div>
               </div>
-              <div className="text-2xl font-bold text-purple-900">
-                {weeklyStats.adherencePercentage}%
-              </div>
-            </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-3xl mb-1">
+              <div className="bg-purple-50 rounded-lg p-2 text-center">
+                <div className="text-xs text-purple-700 mb-1">Adherence</div>
+                <div className="text-xl font-bold text-purple-900">
+                  {weeklyStats.adherencePercentage}%
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-2 text-center">
+                <div className="text-2xl mb-1">
                   {weeklyStats.onTrack ? '🎉' : '💪'}
                 </div>
                 <div className="text-xs text-gray-600">
@@ -384,262 +385,345 @@ function Nutrition() {
                 </div>
               </div>
             </div>
+
+            {/* Daily Tracking Grid */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                Daily Tracking
+              </h3>
+              <div className="grid grid-cols-7 gap-2">
+                {weeklyData.map((day, index) => {
+                  const dayName = new Date(day.date + 'T00:00:00').toLocaleDateString(
+                    language === 'pt_BR' ? 'pt-BR' : 'en-US',
+                    { weekday: 'short' }
+                  );
+                  const rating = day.data?.rating || 0;
+                  const color = getAdherenceColor(rating);
+
+                  return (
+                    <button
+                      key={day.date}
+                      onClick={() => openTrackingModal(day.date)}
+                      className={`p-2 rounded border-2 transition-all hover:shadow-sm ${
+                        rating === 0
+                          ? 'border-gray-200 bg-gray-50'
+                          : color === 'green'
+                          ? 'border-green-500 bg-green-50'
+                          : color === 'blue'
+                          ? 'border-blue-500 bg-blue-50'
+                          : color === 'yellow'
+                          ? 'border-yellow-500 bg-yellow-50'
+                          : 'border-red-500 bg-red-50'
+                      }`}
+                    >
+                      <div className="text-xs font-medium text-gray-700 mb-1">
+                        {dayName}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {new Date(day.date + 'T00:00:00').getDate()}
+                      </div>
+                      {rating > 0 && (
+                        <div className={`text-lg font-bold mt-1 ${
+                          color === 'green' ? 'text-green-700' :
+                          color === 'blue' ? 'text-blue-700' :
+                          color === 'yellow' ? 'text-yellow-700' :
+                          'text-red-700'
+                        }`}>
+                          {rating}
+                        </div>
+                      )}
+                      {rating === 0 && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          -
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Feedback Message */}
-          <div className={`p-4 rounded-lg border-2 ${
-            weeklyStats.onTrack
-              ? 'bg-green-50 border-green-200'
-              : 'bg-yellow-50 border-yellow-200'
-          }`}>
-            <p className={`text-sm font-medium ${
-              weeklyStats.onTrack ? 'text-green-800' : 'text-yellow-800'
-            }`}>
-              {weeklyStats.message}
-            </p>
+          {/* Meal Pattern Analysis */}
+          {mealAnalysis && mealAnalysis.sortedMeals.length > 0 && (
+            <div className="card mb-6">
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">
+                🍽️ Meal Pattern Analysis
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Most Problematic Meal */}
+                {mealAnalysis.mostProblematic && mealAnalysis.mostProblematic.avgRating < 7 && (
+                  <div className="bg-white rounded-lg p-3 border-2 border-red-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">⚠️</span>
+                      <h3 className="text-sm font-semibold text-red-900">
+                        Needs Attention
+                      </h3>
+                    </div>
+                    <div className="mb-2">
+                      <div className="text-lg font-bold text-gray-900">
+                        {mealLabels[mealAnalysis.mostProblematic.meal]}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Avg Rating: <span className="font-semibold text-red-700">{mealAnalysis.mostProblematic.avgRating}/10</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {mealAnalysis.mostProblematic.count} days tracked
+                      </div>
+                    </div>
+                    {mealAnalysis.mostProblematic.issues.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="text-xs font-semibold text-gray-700 mb-1">
+                          Recent Issues:
+                        </div>
+                        <div className="text-xs text-gray-600 space-y-1">
+                          {mealAnalysis.mostProblematic.issues.slice(0, 2).map((issue, idx) => (
+                            <div key={idx} className="bg-red-50 rounded p-1">
+                              <div className="font-medium">{issue.date}: {issue.rating}/10</div>
+                              {issue.notes && <div className="italic">&quot;{issue.notes.substring(0, 50)}...&quot;</div>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Best Performing Meal */}
+                {mealAnalysis.bestPerforming && (
+                  <div className="bg-white rounded-lg p-3 border-2 border-green-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">✅</span>
+                      <h3 className="text-sm font-semibold text-green-900">
+                        Performing Well
+                      </h3>
+                    </div>
+                    <div className="mb-2">
+                      <div className="text-lg font-bold text-gray-900">
+                        {mealLabels[mealAnalysis.bestPerforming.meal]}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Avg Rating: <span className="font-semibold text-green-700">{mealAnalysis.bestPerforming.avgRating}/10</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {mealAnalysis.bestPerforming.count} days tracked
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="text-xs text-green-700">
+                        Great consistency! Keep up the good work with this meal.
+                      </div>
+                    </div>
+                  </div>
+                )}
           </div>
 
-          {/* Daily Tracking Grid */}
-          <div className="mt-6">
-            <h3 className="font-semibold text-gray-900 mb-3">
-              {t('nutrition.dailyTracking', 'Daily Tracking')}
-            </h3>
-            <div className="grid grid-cols-7 gap-2">
-              {weeklyData.map((day, index) => {
-                const dayName = new Date(day.date + 'T00:00:00').toLocaleDateString(
-                  language === 'pt_BR' ? 'pt-BR' : 'en-US',
-                  { weekday: 'short' }
-                );
-                const rating = day.data?.rating || 0;
-                const color = getAdherenceColor(rating);
-
-                return (
-                  <button
-                    key={day.date}
-                    onClick={() => openTrackingModal(day.date)}
-                    className={`p-3 rounded-lg border-2 transition-all hover:shadow-md ${
-                      rating === 0
-                        ? 'border-gray-200 bg-gray-50'
-                        : color === 'green'
-                        ? 'border-green-500 bg-green-50'
-                        : color === 'blue'
-                        ? 'border-blue-500 bg-blue-50'
-                        : color === 'yellow'
-                        ? 'border-yellow-500 bg-yellow-50'
-                        : 'border-red-500 bg-red-50'
-                    }`}
-                  >
-                    <div className="text-xs font-semibold text-gray-700 mb-1">
-                      {dayName}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {new Date(day.date + 'T00:00:00').getDate()}
-                    </div>
-                    {rating > 0 && (
-                      <div className={`text-lg font-bold mt-1 ${
-                        color === 'green' ? 'text-green-700' :
-                        color === 'blue' ? 'text-blue-700' :
-                        color === 'yellow' ? 'text-yellow-700' :
+              {/* All Meals Summary */}
+              <div className="mt-4">
+                <h4 className="text-xs font-semibold text-gray-700 mb-2">
+                  All Meals Overview
+                </h4>
+                <div className="grid grid-cols-4 gap-2">
+                  {mealAnalysis.sortedMeals.map(meal => (
+                    <div key={meal.meal} className="text-center p-2 bg-gray-50 rounded">
+                      <div className="text-xs font-medium text-gray-700 mb-1">
+                        {mealLabels[meal.meal]}
+                      </div>
+                      <div className={`text-lg font-bold ${
+                        parseFloat(meal.avgRating) >= 8 ? 'text-green-700' :
+                        parseFloat(meal.avgRating) >= 6 ? 'text-blue-700' :
+                        parseFloat(meal.avgRating) >= 4 ? 'text-yellow-700' :
                         'text-red-700'
                       }`}>
-                        {rating}
+                        {meal.avgRating}
                       </div>
-                    )}
-                    {rating === 0 && (
-                      <div className="text-xs text-gray-400 mt-1">
-                        {t('nutrition.noData', 'No data')}
+                      <div className="text-xs text-gray-500">
+                        {meal.count} days
                       </div>
-                    )}
-                  </button>
-                );
-              })}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-      </div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Diet Plan View */}
 
-      {/* Day Type Selector */}
-      <div className="card mb-6">
-        <h3 className="font-semibold text-gray-900 mb-4">
-          {t('nutrition.selectDayType', 'Select Day Type')}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => setSelectedDay('training')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              selectedDay === 'training'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-200 hover:border-primary-300'
-            }`}
-          >
-            <div className="text-2xl mb-2">🏃</div>
-            <div className="font-semibold text-gray-900">
-              {t('nutrition.trainingDay', 'Training Day')}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">
-              {t('nutrition.trainingDayDesc', 'Regular workout day')}
-            </div>
-          </button>
-
-          <button
-            onClick={() => setSelectedDay('carb-load')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              selectedDay === 'carb-load'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-200 hover:border-primary-300'
-            }`}
-          >
-            <div className="text-2xl mb-2">📈</div>
-            <div className="font-semibold text-gray-900">
-              {t('nutrition.carbLoadDay', 'Friday (Pre-Long Run)')}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">
-              {t('nutrition.carbLoadDesc', 'Glycogen loading')}
-            </div>
-          </button>
-
-          <button
-            onClick={() => setSelectedDay('rest')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              selectedDay === 'rest'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-200 hover:border-primary-300'
-            }`}
-          >
-            <div className="text-2xl mb-2">😴</div>
-            <div className="font-semibold text-gray-900">
-              {t('nutrition.restDay', 'Sunday (Rest Day)')}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">
-              {t('nutrition.restDayDesc', 'Complete recovery')}
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Energy & Macro Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* Daily Targets */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">
-              {t('nutrition.dailyTargets', 'Daily Targets')}
+          {/* Day Type Selector */}
+          <div className="card mb-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">
+              Select Day Type
             </h3>
-            <button
-              onClick={() => setShowInfoModal(true)}
-              className="text-primary-600 hover:text-primary-700 text-lg"
-              title={t('nutrition.howCalculated', 'How is this calculated?')}
-            >
-              ℹ️
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {/* Total Calories */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg p-4">
-              <div className="text-sm text-primary-700 mb-1">
-                {t('nutrition.totalCalories', 'Total Calories')}
-              </div>
-              <div className="text-3xl font-bold text-primary-900">
-                {nutritionPlan.targets.total} <span className="text-lg">kcal</span>
-              </div>
-              <div className="text-xs text-primary-600 mt-2">
-                {nutritionPlan.energyNeeds.description}
-              </div>
-            </div>
-
-            {/* Macros Breakdown */}
             <div className="grid grid-cols-3 gap-3">
-              {/* Carbs */}
-              <div className="bg-blue-50 rounded-lg p-3">
-                <div className="text-xs text-blue-700 mb-1">
-                  {t('nutrition.carbs', 'Carbs')}
+              <button
+                onClick={() => setSelectedDay('training')}
+                className={`p-3 rounded border-2 transition-all ${
+                  selectedDay === 'training'
+                    ? 'border-primary-600 bg-primary-50'
+                    : 'border-gray-200 hover:border-primary-300'
+                }`}
+              >
+                <div className="text-xl mb-1">🏃</div>
+                <div className="text-sm font-medium text-gray-900">
+                  Training Day
                 </div>
-                <div className="text-xl font-bold text-blue-900">
-                  {nutritionPlan.targets.carbs.grams}g
+                <div className="text-xs text-gray-500 mt-1">
+                  Regular workout
                 </div>
-                <div className="text-xs text-blue-600">
-                  {nutritionPlan.targets.carbs.percent}%
-                </div>
-              </div>
+              </button>
 
-              {/* Protein */}
-              <div className="bg-red-50 rounded-lg p-3">
-                <div className="text-xs text-red-700 mb-1">
-                  {t('nutrition.protein', 'Protein')}
+              <button
+                onClick={() => setSelectedDay('carb-load')}
+                className={`p-3 rounded border-2 transition-all ${
+                  selectedDay === 'carb-load'
+                    ? 'border-primary-600 bg-primary-50'
+                    : 'border-gray-200 hover:border-primary-300'
+                }`}
+              >
+                <div className="text-xl mb-1">📈</div>
+                <div className="text-sm font-medium text-gray-900">
+                  Friday
                 </div>
-                <div className="text-xl font-bold text-red-900">
-                  {nutritionPlan.targets.protein.grams}g
+                <div className="text-xs text-gray-500 mt-1">
+                  Pre-long run
                 </div>
-                <div className="text-xs text-red-600">
-                  {nutritionPlan.targets.protein.percent}%
-                </div>
-              </div>
+              </button>
 
-              {/* Fats */}
-              <div className="bg-yellow-50 rounded-lg p-3">
-                <div className="text-xs text-yellow-700 mb-1">
-                  {t('nutrition.fats', 'Fats')}
+              <button
+                onClick={() => setSelectedDay('rest')}
+                className={`p-3 rounded border-2 transition-all ${
+                  selectedDay === 'rest'
+                    ? 'border-primary-600 bg-primary-50'
+                    : 'border-gray-200 hover:border-primary-300'
+                }`}
+              >
+                <div className="text-xl mb-1">😴</div>
+                <div className="text-sm font-medium text-gray-900">
+                  Sunday
                 </div>
-                <div className="text-xl font-bold text-yellow-900">
-                  {nutritionPlan.targets.fats.grams}g
+                <div className="text-xs text-gray-500 mt-1">
+                  Rest day
                 </div>
-                <div className="text-xs text-yellow-600">
-                  {nutritionPlan.targets.fats.percent}%
-                </div>
-              </div>
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Hydration & Supplements */}
-        <div className="card">
-          <h3 className="font-semibold text-gray-900 mb-4">
-            {t('nutrition.hydrationSupplements', 'Hydration & Supplements')}
-          </h3>
+          {/* Energy & Macro Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Daily Targets */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Daily Targets
+                </h3>
+                <button
+                  onClick={() => setShowInfoModal(true)}
+                  className="text-primary-600 hover:text-primary-700 text-sm"
+                >
+                  ℹ️
+                </button>
+              </div>
 
-          {/* Hydration */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">💧</span>
-              <h4 className="font-medium text-gray-900">
-                {t('nutrition.hydration', 'Hydration')}
-              </h4>
-            </div>
-            <ul className="text-sm text-gray-700 space-y-1 ml-7">
-              <li>
-                {t('nutrition.baseWater', 'Daily base')}: <strong>{nutritionPlan.hydration.baseWater}</strong>
-              </li>
-              <li>
-                {t('nutrition.duringTraining', 'During training')}: <strong>{nutritionPlan.hydration.duringTraining}</strong>
-              </li>
-              <li className="text-xs text-gray-500 italic">
-                {nutritionPlan.hydration.notes}
-              </li>
-            </ul>
-          </div>
-
-          {/* Supplements */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">💊</span>
-              <h4 className="font-medium text-gray-900">
-                {t('nutrition.supplements', 'Supplements')}
-              </h4>
-            </div>
-            <div className="space-y-2">
-              {nutritionPlan.supplements.map((supp, idx) => (
-                <div key={idx} className="text-sm bg-gray-50 rounded p-2">
-                  <div className="font-medium text-gray-900">{supp.name}</div>
-                  <div className="text-gray-600">
-                    {supp.dose} • {supp.timing}
+              <div className="space-y-3">
+                {/* Total Calories */}
+                <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded p-3">
+                  <div className="text-xs text-primary-700 mb-1">
+                    Total Calories
                   </div>
-                  <div className="text-xs text-gray-500 italic">{supp.notes}</div>
+                  <div className="text-2xl font-bold text-primary-900">
+                    {nutritionPlan.targets.total} <span className="text-sm font-normal">kcal</span>
+                  </div>
+                  <div className="text-xs text-primary-600 mt-1">
+                    {nutritionPlan.energyNeeds.description}
+                  </div>
                 </div>
-              ))}
+
+                {/* Macros Breakdown */}
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Carbs */}
+                  <div className="bg-blue-50 rounded p-2 text-center">
+                    <div className="text-xs text-blue-700 mb-1">
+                      Carbs
+                    </div>
+                    <div className="text-lg font-bold text-blue-900">
+                      {nutritionPlan.targets.carbs.grams}g
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      {nutritionPlan.targets.carbs.percent}%
+                    </div>
+                  </div>
+
+                  {/* Protein */}
+                  <div className="bg-red-50 rounded p-2 text-center">
+                    <div className="text-xs text-red-700 mb-1">
+                      Protein
+                    </div>
+                    <div className="text-lg font-bold text-red-900">
+                      {nutritionPlan.targets.protein.grams}g
+                    </div>
+                    <div className="text-xs text-red-600">
+                      {nutritionPlan.targets.protein.percent}%
+                    </div>
+                  </div>
+
+                  {/* Fats */}
+                  <div className="bg-yellow-50 rounded p-2 text-center">
+                    <div className="text-xs text-yellow-700 mb-1">
+                      Fats
+                    </div>
+                    <div className="text-lg font-bold text-yellow-900">
+                      {nutritionPlan.targets.fats.grams}g
+                    </div>
+                    <div className="text-xs text-yellow-600">
+                      {nutritionPlan.targets.fats.percent}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hydration & Supplements */}
+            <div className="card">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                Hydration & Supplements
+              </h3>
+
+              {/* Hydration */}
+              <div className="mb-3 bg-blue-50 rounded p-2">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-sm">💧</span>
+                  <h4 className="text-xs font-medium text-blue-900">
+                    Hydration
+                  </h4>
+                </div>
+                <div className="text-xs text-blue-800 space-y-1">
+                  <div>Daily: <strong>{nutritionPlan.hydration.baseWater}</strong></div>
+                  <div>Training: <strong>{nutritionPlan.hydration.duringTraining}</strong></div>
+                </div>
+              </div>
+
+              {/* Supplements */}
+              <div>
+                <div className="flex items-center gap-1 mb-2">
+                  <span className="text-sm">💊</span>
+                  <h4 className="text-xs font-medium text-gray-900">
+                    Supplements
+                  </h4>
+                </div>
+                <div className="space-y-1">
+                  {nutritionPlan.supplements.map((supp, idx) => (
+                    <div key={idx} className="text-xs bg-gray-50 rounded p-2">
+                      <div className="font-medium text-gray-900">{supp.name}</div>
+                      <div className="text-gray-600">{supp.dose} • {supp.timing}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
       {/* Meal Plan */}
       <div className="space-y-6">
@@ -668,61 +752,55 @@ function Nutrition() {
         <MealCard meal={nutritionPlan.meals.preBed} icon="😴" />
       </div>
 
-      {/* Daily Summary */}
-      <div className="card mt-6 bg-gray-50">
-        <h3 className="font-semibold text-gray-900 mb-4">
-          {t('nutrition.dailySummary', 'Daily Summary')}
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <div className="text-sm text-gray-600">
-              {t('nutrition.totalCalories', 'Total Calories')}
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {nutritionPlan.dailyTotals.calories} kcal
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-600">
-              {t('nutrition.carbs', 'Carbs')}
-            </div>
-            <div className="text-2xl font-bold text-blue-700">
-              {nutritionPlan.dailyTotals.carbs}g
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-600">
-              {t('nutrition.protein', 'Protein')}
-            </div>
-            <div className="text-2xl font-bold text-red-700">
-              {nutritionPlan.dailyTotals.protein}g
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-600">
-              {t('nutrition.fats', 'Fats')}
-            </div>
-            <div className="text-2xl font-bold text-yellow-700">
-              {nutritionPlan.dailyTotals.fats}g
+          {/* Daily Summary */}
+          <div className="card mt-6 bg-gradient-to-r from-gray-50 to-blue-50">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">
+              Daily Summary
+            </h3>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="text-center">
+                <div className="text-xs text-gray-600 mb-1">Calories</div>
+                <div className="text-lg font-bold text-primary-900">
+                  {nutritionPlan.dailyTotals.calories}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-600 mb-1">Carbs</div>
+                <div className="text-lg font-bold text-blue-700">
+                  {nutritionPlan.dailyTotals.carbs}g
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-600 mb-1">Protein</div>
+                <div className="text-lg font-bold text-red-700">
+                  {nutritionPlan.dailyTotals.protein}g
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-600 mb-1">Fats</div>
+                <div className="text-lg font-bold text-yellow-700">
+                  {nutritionPlan.dailyTotals.fats}g
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Tips */}
-      <div className="card mt-6 border-2 border-primary-200 bg-primary-50">
-        <h3 className="font-semibold text-primary-900 mb-3">
-          💡 {t('nutrition.tips', 'Nutrition Tips')}
-        </h3>
-        <ul className="space-y-2">
-          {nutritionPlan.tips.map((tip, idx) => (
-            <li key={idx} className="text-sm text-primary-800 flex items-start">
-              <span className="mr-2">•</span>
-              <span>{tip}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+          {/* Tips */}
+          <div className="card mt-6 bg-primary-50 border-2 border-primary-200">
+            <h3 className="text-sm font-semibold text-primary-900 mb-2">
+              💡 Nutrition Tips
+            </h3>
+            <ul className="space-y-1">
+              {nutritionPlan.tips.map((tip, idx) => (
+                <li key={idx} className="text-xs text-primary-800 flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
 
       {/* Info Modal */}
       {showInfoModal && (
@@ -1007,29 +1085,131 @@ function TrackingModal({ date, trackingForm, setTrackingForm, onSave, onClose, l
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Rating Slider */}
+          {/* Meal-Level Ratings */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              🍽️ Rate Each Meal
+            </h3>
+            <p className="text-xs text-blue-700 mb-4">
+              Rate each meal individually. Your day rating will be calculated automatically.
+            </p>
+
+            <div className="space-y-4">
+              {[
+                { key: 'breakfast', label: 'Breakfast' },
+                { key: 'lunch', label: 'Lunch' },
+                { key: 'dinner', label: 'Dinner' },
+                { key: 'snacks', label: 'Snacks' }
+              ].map(({ key, label }) => {
+                const meal = trackingForm.meals[key];
+                return (
+                  <div key={key} className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-semibold text-gray-900">
+                        {label}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min="0"
+                          max="10"
+                          value={meal.rating}
+                          onChange={(e) => {
+                            const newMeals = {
+                              ...trackingForm.meals,
+                              [key]: { ...meal, rating: parseInt(e.target.value) }
+                            };
+                            setTrackingForm({ ...trackingForm, meals: newMeals });
+                          }}
+                          className="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                        />
+                        <div className={`text-lg font-bold min-w-[2rem] text-center ${
+                          meal.rating >= 8 ? 'text-green-700' :
+                          meal.rating >= 6 ? 'text-blue-700' :
+                          meal.rating >= 4 ? 'text-yellow-700' :
+                          meal.rating > 0 ? 'text-red-700' :
+                          'text-gray-400'
+                        }`}>
+                          {meal.rating > 0 ? meal.rating : '-'}
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      value={meal.notes}
+                      onChange={(e) => {
+                        const newMeals = {
+                          ...trackingForm.meals,
+                          [key]: { ...meal, notes: e.target.value }
+                        };
+                        setTrackingForm({ ...trackingForm, meals: newMeals });
+                      }}
+                      placeholder="Notes (e.g., timing, portions, how you felt)..."
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Overall Day Rating (Auto-calculated or Manual) */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-3">
-              {t('nutrition.rateYourDay', 'Rate Your Day')} (0-10)
+              Overall Day Rating
             </label>
-            <div className="flex items-center gap-4">
-              <input
-                type="range"
-                min="0"
-                max="10"
-                value={trackingForm.rating}
-                onChange={(e) => setTrackingForm({ ...trackingForm, rating: parseInt(e.target.value) })}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
-              />
-              <div className="text-3xl font-bold text-primary-600 min-w-[3rem] text-center">
-                {trackingForm.rating}
-              </div>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
-              <span>0 - {t('nutrition.terrible', 'Terrible')}</span>
-              <span>5 - {t('nutrition.okay', 'Okay')}</span>
-              <span>10 - {t('nutrition.perfect', 'Perfect')}</span>
-            </div>
+            {(() => {
+              const mealRatings = Object.values(trackingForm.meals)
+                .map(m => m.rating)
+                .filter(r => r > 0);
+
+              if (mealRatings.length > 0) {
+                const avgRating = Math.round(mealRatings.reduce((sum, r) => sum + r, 0) / mealRatings.length);
+                return (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-green-700 mb-1">
+                          Auto-calculated from meals
+                        </div>
+                        <div className="text-xs text-green-600">
+                          Based on {mealRatings.length} meal{mealRatings.length > 1 ? 's' : ''} rated
+                        </div>
+                      </div>
+                      <div className="text-4xl font-bold text-green-700">
+                        {avgRating}
+                      </div>
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <div>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        value={trackingForm.rating}
+                        onChange={(e) => setTrackingForm({ ...trackingForm, rating: parseInt(e.target.value) })}
+                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                      />
+                      <div className="text-3xl font-bold text-primary-600 min-w-[3rem] text-center">
+                        {trackingForm.rating}
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-2">
+                      <span>0 - Terrible</span>
+                      <span>5 - Okay</span>
+                      <span>10 - Perfect</span>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500 italic">
+                      Rate individual meals above for more detailed insights
+                    </div>
+                  </div>
+                );
+              }
+            })()}
           </div>
 
           {/* Adherence Level */}

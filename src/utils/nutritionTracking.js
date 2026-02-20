@@ -11,15 +11,34 @@ import { db } from '../services/database';
  * @param {object} data - Tracking data
  */
 export async function saveDailyTracking(date, data) {
+  // Calculate day rating from meal ratings if available
+  let dayRating = data.rating || 0;
+
+  if (data.meals) {
+    const mealRatings = Object.values(data.meals)
+      .map(meal => meal.rating)
+      .filter(rating => rating > 0);
+
+    if (mealRatings.length > 0) {
+      // Average of meal ratings
+      dayRating = Math.round(mealRatings.reduce((sum, r) => sum + r, 0) / mealRatings.length);
+    }
+  }
 
   const entry = {
     date,
-    rating: data.rating || 0, // 0-10 scale
+    rating: dayRating, // 0-10 scale (auto-calculated from meals if available)
     notes: data.notes || '',
     adherence: data.adherence || 'not-set', // 'excellent', 'good', 'poor', 'failed', 'not-set'
     plannedCalories: data.plannedCalories || 0,
     actualCalories: data.actualCalories || 0,
     dayType: data.dayType || 'training',
+    meals: data.meals || {
+      breakfast: { rating: 0, notes: '' },
+      lunch: { rating: 0, notes: '' },
+      dinner: { rating: 0, notes: '' },
+      snacks: { rating: 0, notes: '' }
+    },
     timestamp: new Date().toISOString()
   };
 
@@ -269,6 +288,67 @@ export function getAdherenceColor(rating) {
   return 'gray';
 }
 
+/**
+ * Analyze meal patterns to identify problematic meals
+ * @param {string} startDate - Start date for analysis
+ * @param {string} endDate - End date for analysis
+ */
+export async function analyzeMealPatterns(startDate, endDate) {
+  const entries = await getTrackingByDateRange(startDate, endDate);
+
+  const mealStats = {
+    breakfast: { totalRating: 0, count: 0, avgRating: 0, issues: [] },
+    lunch: { totalRating: 0, count: 0, avgRating: 0, issues: [] },
+    dinner: { totalRating: 0, count: 0, avgRating: 0, issues: [] },
+    snacks: { totalRating: 0, count: 0, avgRating: 0, issues: [] }
+  };
+
+  // Collect all meal ratings and notes
+  entries.forEach(entry => {
+    if (entry.meals) {
+      Object.keys(mealStats).forEach(mealType => {
+        const meal = entry.meals[mealType];
+        if (meal && meal.rating > 0) {
+          mealStats[mealType].totalRating += meal.rating;
+          mealStats[mealType].count++;
+
+          // Collect issues from low-rated meals
+          if (meal.rating < 6 && meal.notes) {
+            mealStats[mealType].issues.push({
+              date: entry.date,
+              rating: meal.rating,
+              notes: meal.notes
+            });
+          }
+        }
+      });
+    }
+  });
+
+  // Calculate averages
+  Object.keys(mealStats).forEach(mealType => {
+    if (mealStats[mealType].count > 0) {
+      mealStats[mealType].avgRating = (mealStats[mealType].totalRating / mealStats[mealType].count).toFixed(1);
+    }
+  });
+
+  // Sort meals by average rating (lowest first = most problematic)
+  const sortedMeals = Object.keys(mealStats)
+    .map(mealType => ({
+      meal: mealType,
+      ...mealStats[mealType]
+    }))
+    .filter(m => m.count > 0)
+    .sort((a, b) => parseFloat(a.avgRating) - parseFloat(b.avgRating));
+
+  return {
+    mealStats,
+    sortedMeals,
+    mostProblematic: sortedMeals[0] || null,
+    bestPerforming: sortedMeals[sortedMeals.length - 1] || null
+  };
+}
+
 export default {
   saveDailyTracking,
   getDailyTracking,
@@ -279,5 +359,8 @@ export default {
   loadNutritionGoals,
   getCurrentWeekStart,
   formatDateDisplay,
-  getAdherenceColor
+  getAdherenceColor,
+  analyzeMealPatterns,
+  getTrackingByDateRange,
+  calculateCycleStats
 };

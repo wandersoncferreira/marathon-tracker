@@ -4,10 +4,11 @@
 
 import { useState, useEffect } from 'react';
 import { intervalsApi } from '../services/intervalsApi';
+import { db } from '../services/database';
 import { getLastNDays, formatDateISO } from '../utils/dateHelpers';
 import { TRAINING_CYCLE } from '../utils/trainingCycle';
 
-export function useActivities(days = 30, autoFetch = true, useFullCycle = false) {
+export function useActivities(days = 30, autoFetch = true, useFullCycle = false, includeCrossTraining = false) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -34,17 +35,44 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
 
     try {
       const range = customRange || dateRange;
-      // Only read from database, never call API
-      const data = await intervalsApi.getActivities(
-        range.startDate,
-        range.endDate
-      );
 
-      // Filter for running activities only and sort by date (newest first)
-      const runningActivities = data
-        .filter(a => a.type === 'Run')
-        .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
-      setActivities(runningActivities);
+      if (includeCrossTraining) {
+        // Fetch both running activities and cross training activities
+        const [runningData, crossTrainingData] = await Promise.all([
+          intervalsApi.getActivities(range.startDate, range.endDate),
+          db.getCrossTraining(range.startDate, range.endDate)
+        ]);
+
+        // Filter running activities
+        const runningActivities = runningData.filter(a => a.type === 'Run');
+
+        // Combine and remove duplicates (in case activities appear in both tables)
+        const activityMap = new Map();
+
+        // Add all activities to map (will automatically deduplicate by id)
+        [...runningActivities, ...crossTrainingData].forEach(activity => {
+          activityMap.set(activity.id, activity);
+        });
+
+        // Convert back to array and sort by date (newest first)
+        const allActivities = Array.from(activityMap.values())
+          .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+
+        setActivities(allActivities);
+      } else {
+        // Only read from database, never call API
+        const data = await intervalsApi.getActivities(
+          range.startDate,
+          range.endDate
+        );
+
+        // Filter for running activities only
+        const filteredActivities = data
+          .filter(a => a.type === 'Run')
+          .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+
+        setActivities(filteredActivities);
+      }
     } catch (err) {
       setError(err.message);
       console.error('Error fetching activities:', err);
@@ -88,22 +116,45 @@ export function useActivities(days = 30, autoFetch = true, useFullCycle = false)
         forceFullSync
       );
 
-      // After sync, reload ALL activities from database for the date range
-      const allActivities = await intervalsApi.getActivities(
-        dateRange.startDate,
-        dateRange.endDate
-      );
+      // After sync, reload activities from database for the date range
+      let filteredActivities;
+      if (includeCrossTraining) {
+        // Fetch both running activities and cross training activities
+        const [runningData, crossTrainingData] = await Promise.all([
+          intervalsApi.getActivities(dateRange.startDate, dateRange.endDate),
+          db.getCrossTraining(dateRange.startDate, dateRange.endDate)
+        ]);
 
-      const runningActivities = allActivities
-        .filter(a => a.type === 'Run')
-        .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
-      setActivities(runningActivities);
+        // Filter running activities
+        const runningActivities = runningData.filter(a => a.type === 'Run');
 
-      console.log(`✅ ${syncType} completed: ${runningActivities.length} running activities in date range`);
+        // Combine and remove duplicates
+        const activityMap = new Map();
+        [...runningActivities, ...crossTrainingData].forEach(activity => {
+          activityMap.set(activity.id, activity);
+        });
+
+        // Convert back to array and sort by date (newest first)
+        filteredActivities = Array.from(activityMap.values())
+          .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+      } else {
+        const allActivities = await intervalsApi.getActivities(
+          dateRange.startDate,
+          dateRange.endDate
+        );
+
+        filteredActivities = allActivities
+          .filter(a => a.type === 'Run')
+          .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+      }
+
+      setActivities(filteredActivities);
+
+      console.log(`✅ ${syncType} completed: ${filteredActivities.length} activities in date range`);
 
       // Return statistics for the caller
       return {
-        activities: runningActivities.length,
+        activities: filteredActivities.length,
         startDate,
         endDate
       };

@@ -511,10 +511,12 @@ class MarathonTrackerDB extends Dexie {
         adjustedEndDate = endDate + 'T23:59:59';
       }
 
-      return await this.crossTraining
+      const results = await this.crossTraining
         .where('start_date_local')
         .between(startDate, adjustedEndDate, true, true)
         .toArray();
+
+      return results;
     } catch (error) {
       console.error('Error getting cross training:', error);
       return [];
@@ -531,6 +533,149 @@ class MarathonTrackerDB extends Dexie {
     } catch (error) {
       console.error('Error getting cross training by type:', error);
       return [];
+    }
+  }
+
+  /**
+   * Remove duplicate cross training activities and merge their data
+   * Combines TSS, power, and other fields from duplicate entries
+   */
+  async deduplicateCrossTraining() {
+    try {
+      const all = await this.crossTraining.toArray();
+      const uniqueMap = new Map();
+
+      // Helper to check if two activities are duplicates (fuzzy matching)
+      const areDuplicates = (a1, a2) => {
+        // Must have same name (case insensitive)
+        const name1 = (a1.name || '').toLowerCase().trim();
+        const name2 = (a2.name || '').toLowerCase().trim();
+        if (name1 !== name2) return false;
+
+        // Parse timestamps
+        const getTimestamp = (dateStr) => {
+          if (!dateStr) return null;
+          const cleanDate = dateStr.replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+          return new Date(cleanDate).getTime();
+        };
+
+        const time1 = getTimestamp(a1.start_date_local);
+        const time2 = getTimestamp(a2.start_date_local);
+
+        // Allow up to 4 hours difference to handle timezone offsets
+        const timeDiff = Math.abs(time1 - time2);
+        const maxTimeDiff = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+        if (timeDiff > maxTimeDiff) return false;
+
+        // Check distance similarity (within 1% or 50 meters, whichever is larger)
+        const dist1 = a1.distance || 0;
+        const dist2 = a2.distance || 0;
+        if (dist1 > 0 && dist2 > 0) {
+          const distDiff = Math.abs(dist1 - dist2);
+          const distThreshold = Math.max(50, Math.max(dist1, dist2) * 0.01);
+          if (distDiff > distThreshold) return false;
+        }
+
+        // Check duration similarity (within 2% or 30 seconds, whichever is larger)
+        const dur1 = a1.moving_time || a1.elapsed_time || 0;
+        const dur2 = a2.moving_time || a2.elapsed_time || 0;
+        if (dur1 > 0 && dur2 > 0) {
+          const durDiff = Math.abs(dur1 - dur2);
+          const durThreshold = Math.max(30, Math.max(dur1, dur2) * 0.02);
+          if (durDiff > durThreshold) return false;
+        }
+
+        // If all checks pass, these are duplicates
+        return true;
+      };
+
+      // Group activities by fuzzy matching to find cross-source duplicates
+      const contentGroups = [];
+      all.forEach(activity => {
+        // Try to find an existing group this activity belongs to
+        let foundGroup = false;
+        for (const group of contentGroups) {
+          if (areDuplicates(activity, group[0])) {
+            group.push(activity);
+            foundGroup = true;
+            break;
+          }
+        }
+
+        // If no matching group found, create a new one
+        if (!foundGroup) {
+          contentGroups.push([activity]);
+        }
+      });
+
+      // Merge activities by content (not just ID)
+      contentGroups.forEach(group => {
+        if (group.length === 0) return;
+
+        // Start with the first activity as base
+        let merged = { ...group[0] };
+
+        // Merge data from all copies
+        group.slice(1).forEach(activity => {
+          // Merge critical fields - prefer non-null, non-zero values
+          if (!merged.icu_training_load && activity.icu_training_load) {
+            merged.icu_training_load = activity.icu_training_load;
+          }
+          if (!merged.average_watts && activity.average_watts) {
+            merged.average_watts = activity.average_watts;
+          }
+          if (!merged.icu_ftp && activity.icu_ftp) {
+            merged.icu_ftp = activity.icu_ftp;
+          }
+          if (!merged.run_ftp && activity.run_ftp) {
+            merged.run_ftp = activity.run_ftp;
+          }
+          if (!merged.average_hr && activity.average_hr) {
+            merged.average_hr = activity.average_hr;
+          }
+          if (!merged.moving_time && activity.moving_time) {
+            merged.moving_time = activity.moving_time;
+          }
+          if (!merged.distance && activity.distance) {
+            merged.distance = activity.distance;
+          }
+          if (!merged.weighted_average_watts && activity.weighted_average_watts) {
+            merged.weighted_average_watts = activity.weighted_average_watts;
+          }
+
+          // For any other fields, prefer the more complete object
+          Object.keys(activity).forEach(key => {
+            if (merged[key] === null || merged[key] === undefined || merged[key] === 0) {
+              if (activity[key] !== null && activity[key] !== undefined && activity[key] !== 0) {
+                merged[key] = activity[key];
+              }
+            }
+          });
+        });
+
+        // Add merged activity to uniqueMap (use first ID as key)
+        uniqueMap.set(merged.id, merged);
+      });
+
+      const deduplicated = Array.from(uniqueMap.values());
+      const duplicatesRemoved = all.length - deduplicated.length;
+
+      // Always rebuild if we have data (even if no "duplicates" found, ensures clean state)
+      if (all.length > 0) {
+        // Clear the entire table
+        await this.crossTraining.clear();
+
+        // Add back unique activities one by one to ensure proper storage
+        for (const activity of deduplicated) {
+          await this.crossTraining.put(activity);
+        }
+
+        return { removed: duplicatesRemoved, remaining: deduplicated.length };
+      }
+
+      return { removed: 0, remaining: 0 };
+    } catch (error) {
+      return { removed: 0, remaining: 0, error: error.message };
     }
   }
 

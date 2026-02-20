@@ -7,6 +7,7 @@ import {
   markRecommendationsUpdated,
   generateStrengthRecommendationsPrompt
 } from '../services/crossTrainingService';
+import { db } from '../services/database';
 import { useTranslation } from '../i18n/LanguageContext';
 
 const MARATHON_CYCLE_START = '2026-01-19';
@@ -28,21 +29,30 @@ export default function CrossTraining() {
   const [cyclingStats, setCyclingStats] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('strength'); // 'strength' or 'cycling'
+  const [activeTab, setActiveTab] = useState('cycling'); // 'cycling' or 'strength'
   const [showInfoModal, setShowInfoModal] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  async function loadData() {
+  async function loadData(forceRefresh = false, skipDedup = false) {
     try {
       setLoading(true);
 
+      // Run automatic duplicate cleanup on initial load
+      if (!forceRefresh && !skipDedup) {
+        try {
+          await db.deduplicateCrossTraining();
+        } catch (err) {
+          // Silent cleanup - errors are handled internally
+        }
+      }
+
       // Load data from marathon cycle start to today
       const [strength, cycling, recs] = await Promise.all([
-        getStrengthStats(MARATHON_CYCLE_START, TODAY),
-        getCyclingStats(MARATHON_CYCLE_START, TODAY),
+        getStrengthStats(MARATHON_CYCLE_START, TODAY, forceRefresh),
+        getCyclingStats(MARATHON_CYCLE_START, TODAY, forceRefresh),
         getStrengthRecommendations(TODAY)
       ]);
 
@@ -50,11 +60,12 @@ export default function CrossTraining() {
       setCyclingStats(cycling);
       setRecommendations(recs);
     } catch (error) {
-      console.error('Error loading cross training data:', error);
+      // Error handling - data loading failed
     } finally {
       setLoading(false);
     }
   }
+
 
   if (loading) {
     return (
@@ -84,16 +95,6 @@ export default function CrossTraining() {
         <div className="border-b border-gray-200">
           <nav className="flex -mb-px">
             <button
-              onClick={() => setActiveTab('strength')}
-              className={`py-4 px-6 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === 'strength'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              💪 {t('crossTraining.strengthTraining')}
-            </button>
-            <button
               onClick={() => setActiveTab('cycling')}
               className={`py-4 px-6 font-medium text-sm border-b-2 transition-colors ${
                 activeTab === 'cycling'
@@ -103,19 +104,29 @@ export default function CrossTraining() {
             >
               🚴 {t('crossTraining.cycling')}
             </button>
+            <button
+              onClick={() => setActiveTab('strength')}
+              className={`py-4 px-6 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'strength'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              💪 {t('crossTraining.strengthTraining')}
+            </button>
           </nav>
         </div>
 
         <div className="p-6">
-          {activeTab === 'strength' ? (
-            <StrengthTrainingTab
-              stats={strengthStats}
-              recommendations={recommendations}
-            />
-          ) : (
+          {activeTab === 'cycling' ? (
             <CyclingTab
               stats={cyclingStats}
               onShowInfo={() => setShowInfoModal(true)}
+            />
+          ) : (
+            <StrengthTrainingTab
+              stats={strengthStats}
+              recommendations={recommendations}
             />
           )}
         </div>

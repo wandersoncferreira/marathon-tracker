@@ -9,7 +9,7 @@ import { useTranslation } from '../i18n/LanguageContext';
 
 function TrainingLog() {
   const { t } = useTranslation();
-  const { activities, loading, error, refetch, sync } = useActivities(90);
+  const { activities, loading, error, refetch, sync } = useActivities(90, true, false, true);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [activityMessageCounts, setActivityMessageCounts] = useState({});
@@ -350,31 +350,84 @@ function TrainingLog() {
                     {formatDate(activity.start_date_local, 'EEE, MMM d, yyyy')}
                   </p>
                 </div>
-                <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded">
+                <span className={`px-2 py-1 text-xs font-medium rounded ${
+                  activity.type === 'Run'
+                    ? 'bg-primary-100 text-primary-700'
+                    : (activity.type === 'Ride' || activity.type === 'VirtualRide')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-purple-100 text-purple-700'
+                }`}>
                   {activity.type}
                 </span>
               </div>
 
               <div className="grid grid-cols-3 gap-4 mt-3">
-                <div>
-                  <p className="text-xs text-gray-600">{t('common.distance')}</p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {((activity.distance || 0) / 1000).toFixed(1)} km
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">{t('common.pace')}</p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {activity.average_speed ?
-                      metersPerSecondToPace(activity.average_speed) : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">{t('common.load')}</p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {activity.icu_training_load || activity.training_load || 0}
-                  </p>
-                </div>
+                {/* Show different metrics based on activity type */}
+                {activity.type === 'Run' ? (
+                  <>
+                    <div>
+                      <p className="text-xs text-gray-600">{t('common.distance')}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {((activity.distance || 0) / 1000).toFixed(1)} km
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">{t('common.pace')}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {activity.average_speed ?
+                          metersPerSecondToPace(activity.average_speed) : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">{t('common.load')}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {activity.icu_training_load || activity.training_load || 0}
+                      </p>
+                    </div>
+                  </>
+                ) : (activity.type === 'Ride' || activity.type === 'VirtualRide') ? (
+                  <>
+                    <div>
+                      <p className="text-xs text-gray-600">{t('common.distance')}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {((activity.distance || 0) / 1000).toFixed(1)} km
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Avg Power</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {activity.average_watts || '-'} W
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">{t('common.load')}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {activity.icu_training_load || activity.training_load || 0}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-xs text-gray-600">Duration</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {Math.floor((activity.moving_time || activity.elapsed_time || 0) / 60)} min
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">{t('common.load')}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {activity.icu_training_load || activity.training_load || '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Type</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {activity.type === 'WeightTraining' ? '💪' : '🏋️'}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-100">

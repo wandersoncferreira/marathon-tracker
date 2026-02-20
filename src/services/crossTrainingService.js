@@ -66,7 +66,6 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
         const details = await intervalsApi.request(`/activity/${activity.id}`);
 
         if (!details) {
-          console.warn(`⚠️ No details found for activity ${activity.id}`);
           detailsSkipped++;
           continue;
         }
@@ -87,26 +86,32 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
           crossTraining.push(details);
         }
       } catch (error) {
-        console.error(`❌ Failed to fetch details for activity ${activity.id}:`, error);
         detailsSkipped++;
       }
     }
 
-    // 3. Store in database incrementally (merge with existing data)
+    // 3. Store in database
     if (crossTraining.length > 0) {
-      // Get existing activities to merge
-      const existing = await db.getCrossTraining(startDate, endDate);
-      const existingIds = new Set(existing.map(a => a.id));
+      if (forceRefresh) {
+        // FORCE REFRESH MODE: Replace/update existing entries with fresh data from API
+        // bulkPut will update existing entries by ID and add new ones
+        await db.storeCrossTraining(crossTraining);
+        return crossTraining;
+      } else {
+        // NORMAL MODE: Merge with existing data (only add new activities)
+        const existing = await db.getCrossTraining(startDate, endDate);
+        const existingIds = new Set(existing.map(a => a.id));
 
-      // Only add new activities that don't already exist
-      const newActivities = crossTraining.filter(a => !existingIds.has(a.id));
+        // Only add new activities that don't already exist
+        const newActivities = crossTraining.filter(a => !existingIds.has(a.id));
 
-      if (newActivities.length > 0) {
-        await db.storeCrossTraining([...existing, ...newActivities]);
+        if (newActivities.length > 0) {
+          await db.storeCrossTraining([...existing, ...newActivities]);
+        }
+
+        // Return merged data
+        return [...existing, ...newActivities];
       }
-
-      // Return merged data
-      return [...existing, ...newActivities];
     }
 
     return crossTraining;
@@ -115,21 +120,9 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
     const cached = await db.getCrossTraining(startDate, endDate);
 
     if (cached && cached.length > 0) {
-      // We have cached data - log info instead of error
-      if (error.code === 'NO_API_KEY') {
-        console.log(`ℹ️ Using ${cached.length} cached cross training activities (API not configured)`);
-      } else {
-        console.log(`ℹ️ API error, using ${cached.length} cached cross training activities`);
-      }
       return cached;
     }
 
-    // No cached data available - this is a real error
-    if (error.code === 'NO_API_KEY') {
-      console.warn('⚠️ API key not configured and no cached cross training data available');
-    } else {
-      console.error('❌ Error fetching cross training and no cached data available:', error.message);
-    }
     return [];
   }
 }
