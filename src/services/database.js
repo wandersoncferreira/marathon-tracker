@@ -618,7 +618,7 @@ class MarathonTrackerDB extends Dexie {
         // Merge data from all copies
         group.slice(1).forEach(activity => {
           // Merge critical fields - prefer non-null, non-zero values
-          // Handle all TSS/training load field variants
+          // Handle all TSS/training load field variants (including Strava's suffer_score)
           if (!merged.icu_training_load && activity.icu_training_load) {
             merged.icu_training_load = activity.icu_training_load;
           }
@@ -630,6 +630,9 @@ class MarathonTrackerDB extends Dexie {
           }
           if (!merged.tss && activity.tss) {
             merged.tss = activity.tss;
+          }
+          if (!merged.suffer_score && activity.suffer_score) {
+            merged.suffer_score = activity.suffer_score;
           }
           // Handle all three power field variants
           if (!merged.icu_average_watts && activity.icu_average_watts) {

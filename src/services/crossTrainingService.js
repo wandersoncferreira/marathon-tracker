@@ -129,6 +129,7 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 
 /**
  * Debug function to inspect API response for a specific activity by date and name
+ * Detects if it's a Strava activity and fetches from appropriate API
  */
 export async function debugSpecificActivity(dateStr, namePattern) {
   try {
@@ -151,7 +152,9 @@ export async function debugSpecificActivity(dateStr, namePattern) {
       console.log('Activity not found with date:', dateStr, 'and name pattern:', namePattern);
       console.log('Available activities:', cached.map(a => ({
         date: a.start_date_local?.split('T')[0],
-        name: a.name
+        name: a.name,
+        id: a.id,
+        source: a.source
       })));
       return;
     }
@@ -160,33 +163,53 @@ export async function debugSpecificActivity(dateStr, namePattern) {
     console.log('ID:', activity.id);
     console.log('Name:', activity.name);
     console.log('Date:', activity.start_date_local);
+    console.log('Source:', activity.source);
     console.log('Current TSS/Load values in DB:', {
       icu_training_load: activity.icu_training_load,
       training_load: activity.training_load,
       load: activity.load,
-      tss: activity.tss
+      tss: activity.tss,
+      suffer_score: activity.suffer_score
     });
 
-    // Fetch fresh data from API
+    // Check if this is a Strava activity
+    const isStravaActivity = activity.source === 'STRAVA' || String(activity.id).match(/^\d+$/);
+
+    if (isStravaActivity) {
+      console.log('\n=== THIS IS A STRAVA ACTIVITY ===');
+      console.log('Strava Activity ID:', activity.id);
+      console.log('\nTo fetch from Strava API, you need to call the Strava MCP tool.');
+      console.log('This activity is synced from Strava to Intervals.icu');
+      console.log('\nFetching from Intervals.icu API (which has synced Strava data)...');
+    }
+
+    // Fetch fresh data from Intervals.icu API (works for both native and Strava-synced activities)
     console.log('\n=== FETCHING FROM INTERVALS.ICU API ===');
     const apiData = await intervalsApi.request(`/activity/${activity.id}`);
 
-    console.log('\n=== ALL TSS/LOAD RELATED FIELDS FROM API ===');
-    const loadFields = {};
+    console.log('\n=== ALL TSS/LOAD/POWER RELATED FIELDS FROM API ===');
+    const relevantFields = {};
     Object.keys(apiData).forEach(key => {
       if (key.toLowerCase().includes('load') ||
           key.toLowerCase().includes('tss') ||
-          key.toLowerCase().includes('stress')) {
-        loadFields[key] = apiData[key];
+          key.toLowerCase().includes('stress') ||
+          key.toLowerCase().includes('power') ||
+          key.toLowerCase().includes('watt') ||
+          key.toLowerCase().includes('suffer')) {
+        relevantFields[key] = apiData[key];
       }
     });
-    console.log(loadFields);
+    console.log(relevantFields);
 
     console.log('\n=== ALL FIELD NAMES (SORTED) ===');
     console.log(Object.keys(apiData).sort().join(', '));
 
-    console.log('\n=== FULL API RESPONSE ===');
-    console.log(JSON.stringify(apiData, null, 2));
+    console.log('\n=== FULL API RESPONSE (First 100 fields) ===');
+    const limitedData = {};
+    Object.keys(apiData).slice(0, 100).forEach(key => {
+      limitedData[key] = apiData[key];
+    });
+    console.log(JSON.stringify(limitedData, null, 2));
 
     return apiData;
   } catch (error) {
@@ -499,7 +522,13 @@ export function calculateRunningEquivalent(cyclingActivity) {
   const runningMinutes = (duration / 60) * timeConversionFactor;
 
   // TSS comparison (running TSS is ~1.15x cycling TSS, also apply ability adjustment)
-  const cyclingTSS = cyclingActivity.icu_training_load || cyclingActivity.training_load || cyclingActivity.load || cyclingActivity.tss || 0;
+  // Check all possible TSS/load field names (Intervals.icu, legacy, and Strava's suffer_score)
+  const cyclingTSS = cyclingActivity.icu_training_load ||
+                     cyclingActivity.training_load ||
+                     cyclingActivity.load ||
+                     cyclingActivity.tss ||
+                     cyclingActivity.suffer_score ||
+                     0;
   const baseTSSMultiplier = 1.15;
   const tssMultiplier = baseTSSMultiplier * abilityLevel.adjustmentFactor;
   const equivalentRunningTSS = cyclingTSS * tssMultiplier;
@@ -701,14 +730,14 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
       duration: Math.floor(activity.moving_time / 60),
       avgPower: activity.icu_average_watts || activity.average_watts || activity.avg_power,
       avgHR: activity.icu_average_hr || activity.average_hr || activity.avg_hr,
-      tss: activity.icu_training_load || activity.training_load || activity.load || activity.tss,
+      tss: activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score,
       runningEquivalent: equivalent
     };
   });
 
   const totalCyclingKm = activities.reduce((sum, a) => sum + (a.distance || 0), 0) / 1000;
   const totalCyclingMinutes = activities.reduce((sum, a) => sum + (a.moving_time || 0), 0) / 60;
-  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.icu_training_load || a.training_load || a.load || a.tss || 0), 0);
+  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.icu_training_load || a.training_load || a.load || a.tss || a.suffer_score || 0), 0);
 
   const totalRunningEquivalentKm = stats.reduce((sum, s) =>
     sum + parseFloat(s.runningEquivalent.runningDistanceKm), 0
@@ -775,7 +804,7 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
     byWeek[weekKey].sessions++;
     byWeek[weekKey].km += (activity.distance || 0) / 1000;
     byWeek[weekKey].runningEquivKm += parseFloat(equivalent.runningDistanceKm);
-    byWeek[weekKey].tss += activity.icu_training_load || activity.training_load || activity.load || activity.tss || 0;
+    byWeek[weekKey].tss += activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score || 0;
   });
 
   return {

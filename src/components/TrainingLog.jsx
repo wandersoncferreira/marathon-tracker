@@ -381,7 +381,7 @@ function TrainingLog() {
                     <div>
                       <p className="text-xs text-gray-600">{t('common.load')}</p>
                       <p className="text-sm font-bold text-gray-900">
-                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || 0}
+                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score || 0}
                       </p>
                     </div>
                   </>
@@ -402,7 +402,7 @@ function TrainingLog() {
                     <div>
                       <p className="text-xs text-gray-600">{t('common.load')}</p>
                       <p className="text-sm font-bold text-gray-900">
-                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || 0}
+                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score || 0}
                       </p>
                     </div>
                   </>
@@ -417,7 +417,7 @@ function TrainingLog() {
                     <div>
                       <p className="text-xs text-gray-600">{t('common.load')}</p>
                       <p className="text-sm font-bold text-gray-900">
-                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || '-'}
+                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score || '-'}
                       </p>
                     </div>
                     <div>
@@ -552,11 +552,11 @@ function ActivityDetail({ activity, onBack }) {
                 </p>
               </div>
             )}
-            {(activity.icu_training_load || activity.training_load || activity.load || activity.tss) && (
+            {(activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score) && (
               <div>
                 <p className="text-xs text-gray-600">{t('common.load') || 'TSS/Load'}</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {activity.icu_training_load || activity.training_load || activity.load || activity.tss}
+                  {activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score}
                 </p>
               </div>
             )}
