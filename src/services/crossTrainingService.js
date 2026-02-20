@@ -133,7 +133,12 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 export async function debugRecentCyclingActivity() {
   try {
     // Get recent cycling activities from database
-    const cached = await db.getCrossTraining();
+    const today = new Date().toISOString().split('T')[0];
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const lastMonthStr = lastMonth.toISOString().split('T')[0];
+
+    const cached = await db.getCrossTraining(lastMonthStr, today);
     const cyclingActivities = cached
       .filter(a => a.type === 'Ride' || a.type === 'VirtualRide')
       .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
