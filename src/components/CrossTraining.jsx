@@ -770,7 +770,11 @@ function CyclingTab({ stats, onShowInfo }) {
                       {activity.avgPower}W
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                      {activity.tss || '-'}
+                      {activity.tss ? (
+                        <span title={activity.isCalculatedTSS ? 'Calculated from power data' : 'From source'}>
+                          {activity.tss}{activity.isCalculatedTSS ? '*' : ''}
+                        </span>
+                      ) : '-'}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="text-blue-700 font-medium whitespace-nowrap">

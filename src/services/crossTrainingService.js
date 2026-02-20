@@ -11,6 +11,31 @@ import { intervalsApi } from './intervalsApi';
 const MARATHON_CYCLE_START = '2026-01-19';
 const RACE_DATE = '2026-05-31';
 
+// Default FTP values for TSS calculation
+const DEFAULT_CYCLING_FTP = 250; // Watts - reasonable for cross-training cyclist
+
+/**
+ * Calculate TSS (Training Stress Score) for cycling activity
+ * Based on power and duration data
+ * @param {number} avgPower - Average power in watts
+ * @param {number} durationSeconds - Duration in seconds
+ * @param {number} ftp - Functional Threshold Power (defaults to 250W)
+ * @returns {number} Calculated TSS
+ */
+function calculateCyclingTSS(avgPower, durationSeconds, ftp = DEFAULT_CYCLING_FTP) {
+  if (!avgPower || avgPower <= 0 || !durationSeconds || durationSeconds <= 0) {
+    return 0;
+  }
+
+  // Use simplified TSS formula for steady-state rides
+  // TSS = (duration_hours × (avg_power/FTP)²) × 100
+  const durationHours = durationSeconds / 3600;
+  const intensityFactor = avgPower / ftp;
+  const tss = durationHours * Math.pow(intensityFactor, 2) * 100;
+
+  return Math.round(tss);
+}
+
 /**
  * Get all cross training activities (cycling + strength)
  * DATABASE FIRST - only fetch from API if needed
@@ -128,6 +153,23 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 }
 
 /**
+ * Debug function to fetch activity from Strava API using MCP tool
+ */
+async function fetchFromStravaAPI(activityId) {
+  try {
+    // We need to use the Strava MCP tool - this needs to be called from the UI
+    // because MCP tools aren't directly accessible from service files
+    console.log('⚠️ Cannot call Strava MCP tool from service file');
+    console.log('To fetch from Strava API, please use the UI button or call:');
+    console.log(`Use Claude Code to call: mcp__Strava__get-activity-details with activityId: ${activityId}`);
+    return null;
+  } catch (error) {
+    console.error('Error fetching from Strava:', error);
+    return null;
+  }
+}
+
+/**
  * Debug function to inspect API response for a specific activity by date and name
  * Detects if it's a Strava activity and fetches from appropriate API
  */
@@ -172,18 +214,25 @@ export async function debugSpecificActivity(dateStr, namePattern) {
       suffer_score: activity.suffer_score
     });
 
-    // Check if this is a Strava activity
-    const isStravaActivity = activity.source === 'STRAVA' || String(activity.id).match(/^\d+$/);
+    // Check if this is a Strava activity (numeric ID)
+    const isStravaActivity = String(activity.id).match(/^\d+$/);
 
     if (isStravaActivity) {
       console.log('\n=== THIS IS A STRAVA ACTIVITY ===');
       console.log('Strava Activity ID:', activity.id);
-      console.log('\nTo fetch from Strava API, you need to call the Strava MCP tool.');
-      console.log('This activity is synced from Strava to Intervals.icu');
-      console.log('\nFetching from Intervals.icu API (which has synced Strava data)...');
+      console.log('\n📝 To fetch from Strava API, I need to use the Strava MCP tool.');
+      console.log('Let me fetch it for you...');
+
+      // Return the activity ID so it can be used with MCP tool
+      return {
+        isStrava: true,
+        stravaId: activity.id,
+        needsStravaFetch: true,
+        cachedData: activity
+      };
     }
 
-    // Fetch fresh data from Intervals.icu API (works for both native and Strava-synced activities)
+    // Fetch fresh data from Intervals.icu API (for non-Strava activities)
     console.log('\n=== FETCHING FROM INTERVALS.ICU API ===');
     const apiData = await intervalsApi.request(`/activity/${activity.id}`);
 
@@ -203,13 +252,6 @@ export async function debugSpecificActivity(dateStr, namePattern) {
 
     console.log('\n=== ALL FIELD NAMES (SORTED) ===');
     console.log(Object.keys(apiData).sort().join(', '));
-
-    console.log('\n=== FULL API RESPONSE (First 100 fields) ===');
-    const limitedData = {};
-    Object.keys(apiData).slice(0, 100).forEach(key => {
-      limitedData[key] = apiData[key];
-    });
-    console.log(JSON.stringify(limitedData, null, 2));
 
     return apiData;
   } catch (error) {
@@ -723,21 +765,46 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
 
   const stats = activities.map(activity => {
     const equivalent = calculateRunningEquivalent(activity);
+
+    // Get power value
+    const avgPower = activity.icu_average_watts || activity.average_watts || activity.avg_power;
+
+    // Get TSS/load value, or calculate it if missing but power data exists
+    let tss = activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score;
+
+    // If no TSS but we have power data, calculate TSS
+    if (!tss && avgPower && avgPower > 0 && activity.moving_time) {
+      tss = calculateCyclingTSS(avgPower, activity.moving_time);
+      // Mark as calculated for clarity
+      activity._calculated_tss = tss;
+    }
+
     return {
       date: activity.start_date_local,
       name: activity.name,
       distance: (activity.distance / 1000).toFixed(2),
       duration: Math.floor(activity.moving_time / 60),
-      avgPower: activity.icu_average_watts || activity.average_watts || activity.avg_power,
+      avgPower: avgPower,
       avgHR: activity.icu_average_hr || activity.average_hr || activity.avg_hr,
-      tss: activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score,
+      tss: tss,
+      isCalculatedTSS: !!activity._calculated_tss,
       runningEquivalent: equivalent
     };
   });
 
   const totalCyclingKm = activities.reduce((sum, a) => sum + (a.distance || 0), 0) / 1000;
   const totalCyclingMinutes = activities.reduce((sum, a) => sum + (a.moving_time || 0), 0) / 60;
-  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.icu_training_load || a.training_load || a.load || a.tss || a.suffer_score || 0), 0);
+  const totalCyclingTSS = activities.reduce((sum, a) => {
+    let tss = a.icu_training_load || a.training_load || a.load || a.tss || a.suffer_score || a._calculated_tss;
+    // Calculate if missing but has power
+    if (!tss) {
+      const avgPower = a.icu_average_watts || a.average_watts || a.avg_power;
+      if (avgPower && avgPower > 0 && a.moving_time) {
+        tss = calculateCyclingTSS(avgPower, a.moving_time);
+      }
+    }
+    return sum + (tss || 0);
+  }, 0);
 
   const totalRunningEquivalentKm = stats.reduce((sum, s) =>
     sum + parseFloat(s.runningEquivalent.runningDistanceKm), 0
@@ -804,7 +871,16 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
     byWeek[weekKey].sessions++;
     byWeek[weekKey].km += (activity.distance || 0) / 1000;
     byWeek[weekKey].runningEquivKm += parseFloat(equivalent.runningDistanceKm);
-    byWeek[weekKey].tss += activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score || 0;
+
+    // Get TSS or calculate it
+    let tss = activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score || activity._calculated_tss;
+    if (!tss) {
+      const avgPower = activity.icu_average_watts || activity.average_watts || activity.avg_power;
+      if (avgPower && avgPower > 0 && activity.moving_time) {
+        tss = calculateCyclingTSS(avgPower, activity.moving_time);
+      }
+    }
+    byWeek[weekKey].tss += tss || 0;
   });
 
   return {
