@@ -70,7 +70,24 @@ export async function exportDatabaseToFiles() {
       data: nutritionTracking
     };
 
-    // Don't export cache or config (those are temporary/sensitive)
+    // Export carb tracking
+    const carbTracking = await db.carbTracking.toArray();
+    exports.tables.carbTracking = {
+      count: carbTracking.length,
+      data: carbTracking
+    };
+
+    // Export config (nutritionGoals and carbGuidelines only)
+    const config = await db.config.toArray();
+    const appConfig = config.filter(item =>
+      item.key === 'nutritionGoals' || item.key === 'carbGuidelines'
+    );
+    exports.tables.config = {
+      count: appConfig.length,
+      data: appConfig
+    };
+
+    // Don't export cache (temporary data)
 
     return exports;
   } catch (error) {
@@ -98,7 +115,9 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       analyses: data.tables.analyses?.count || 0,
       events: data.tables.events?.count || 0,
       crossTraining: data.tables.crossTraining?.count || 0,
-      nutritionTracking: data.tables.nutritionTracking?.count || 0
+      nutritionTracking: data.tables.nutritionTracking?.count || 0,
+      carbTracking: data.tables.carbTracking?.count || 0,
+      config: data.tables.config?.count || 0
     });
 
     // Clear existing data if requested
@@ -111,6 +130,8 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       await db.events.clear();
       await db.crossTraining.clear();
       await db.nutritionTracking.clear();
+      await db.carbTracking.clear();
+      // Don't clear all config, only specific keys will be overwritten
     }
 
     let imported = {
@@ -120,7 +141,9 @@ export async function importDatabaseFromData(data, clearExisting = false) {
       analyses: 0,
       events: 0,
       crossTraining: 0,
-      nutritionTracking: 0
+      nutritionTracking: 0,
+      carbTracking: 0,
+      config: 0
     };
 
     // Import activities
@@ -210,6 +233,32 @@ export async function importDatabaseFromData(data, clearExisting = false) {
         console.log(`✅ Imported ${imported.nutritionTracking} nutrition tracking entries`);
       } catch (error) {
         console.error('❌ Error importing nutrition tracking:', error);
+        throw error;
+      }
+    }
+
+    // Import carb tracking
+    if (data.tables.carbTracking?.data) {
+      try {
+        console.log(`📥 Importing ${data.tables.carbTracking.data.length} carb tracking entries...`);
+        await db.carbTracking.bulkPut(data.tables.carbTracking.data);
+        imported.carbTracking = data.tables.carbTracking.data.length;
+        console.log(`✅ Imported ${imported.carbTracking} carb tracking entries`);
+      } catch (error) {
+        console.error('❌ Error importing carb tracking:', error);
+        throw error;
+      }
+    }
+
+    // Import config (nutritionGoals and carbGuidelines)
+    if (data.tables.config?.data) {
+      try {
+        console.log(`📥 Importing ${data.tables.config.data.length} config entries...`);
+        await db.config.bulkPut(data.tables.config.data);
+        imported.config = data.tables.config.data.length;
+        console.log(`✅ Imported ${imported.config} config entries`);
+      } catch (error) {
+        console.error('❌ Error importing config:', error);
         throw error;
       }
     }
@@ -494,7 +543,7 @@ export async function autoImportIfEmpty() {
       // Store import timestamp
       await db.setConfig('last_db_import_timestamp', fileTimestamp || new Date().toISOString());
 
-      console.log(`✅ Import complete: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses, ${imported.crossTraining} cross training, ${imported.nutritionTracking} nutrition entries`);
+      console.log(`✅ Import complete: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.wellness} wellness, ${imported.analyses} analyses, ${imported.crossTraining} cross training, ${imported.nutritionTracking} nutrition entries, ${imported.carbTracking} carb tracking, ${imported.config} config entries`);
 
       return {
         imported: true,
@@ -502,7 +551,7 @@ export async function autoImportIfEmpty() {
         stats: imported,
         fileTimestamp: fileTimestamp,
         compressed: isCompressed,
-        message: `Loaded database: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.nutritionTracking} nutrition entries`
+        message: `Loaded database: ${imported.activities} activities, ${imported.activityDetails} details, ${imported.nutritionTracking} nutrition entries, ${imported.carbTracking} carb tracking, ${imported.config} config entries`
       };
     } catch (fetchError) {
       console.log('❌ Error fetching database:', fetchError.message);
