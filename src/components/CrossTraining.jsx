@@ -5,10 +5,7 @@ import {
   getStrengthRecommendations,
   checkPhaseChange,
   markRecommendationsUpdated,
-  generateStrengthRecommendationsPrompt,
-  syncMissingPowerData,
-  getCrossTrainingActivities,
-  debugRecentCyclingActivity
+  generateStrengthRecommendationsPrompt
 } from '../services/crossTrainingService';
 import { db } from '../services/database';
 import { useTranslation } from '../i18n/LanguageContext';
@@ -32,16 +29,11 @@ export default function CrossTraining() {
   const [cyclingStats, setCyclingStats] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState('cycling'); // 'cycling' or 'strength'
   const [showInfoModal, setShowInfoModal] = useState(false);
 
   useEffect(() => {
     loadData();
-
-    // Add debug function to window for easy console access
-    window.debugCyclingAPI = debugRecentCyclingActivity;
-    console.log('💡 Debug helper available: Type "window.debugCyclingAPI()" in console to inspect API response');
   }, []);
 
   async function loadData(forceRefresh = false, skipDedup = false) {
@@ -74,48 +66,6 @@ export default function CrossTraining() {
     }
   }
 
-  async function handleSyncPower() {
-    try {
-      setSyncing(true);
-
-      console.log('=== Starting Power Sync ===');
-      console.log('Date range:', MARATHON_CYCLE_START, 'to', TODAY);
-
-      // FIRST: Fetch recent activities to ensure today's data is in the database
-      console.log('Step 1: Fetching recent activities from Intervals.icu...');
-      const lastWeek = new Date();
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      const lastWeekStr = lastWeek.toISOString().split('T')[0];
-
-      await getCrossTrainingActivities(lastWeekStr, TODAY, true); // Force refresh last 7 days
-      console.log('Recent activities fetched');
-
-      // THEN: Sync missing power data
-      console.log('Step 2: Syncing missing power data...');
-      const result = await syncMissingPowerData(MARATHON_CYCLE_START, TODAY);
-      console.log('Sync result:', result);
-
-      // Reload cycling stats to show updated data
-      console.log('Step 3: Reloading cycling stats...');
-      const cycling = await getCyclingStats(MARATHON_CYCLE_START, TODAY, false);
-      setCyclingStats(cycling);
-      console.log('Cycling stats reloaded, activities:', cycling?.activities?.length);
-
-      // Show result message
-      if (result.error) {
-        alert('Error syncing power data: ' + result.error);
-      } else {
-        alert(result.message || `Updated ${result.updated} activities`);
-      }
-    } catch (error) {
-      console.error('handleSyncPower error:', error);
-      alert('Error syncing power data: ' + error.message);
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -131,41 +81,12 @@ export default function CrossTraining() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {t('crossTraining.title')}
-            </h2>
-            <p className="text-gray-600">
-              {t('crossTraining.subtitle')}
-            </p>
-          </div>
-          <div className="ml-4 flex gap-2">
-            <button
-              onClick={handleSyncPower}
-              disabled={loading || syncing}
-              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors whitespace-nowrap"
-              title="Sync missing power data from Intervals.icu"
-            >
-              {syncing ? '⏳ Syncing...' : '🔄 Sync Power'}
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  await debugRecentCyclingActivity();
-                  alert('Check console for full API response');
-                } catch (error) {
-                  alert('Error: ' + error.message);
-                }
-              }}
-              disabled={loading}
-              className="px-3 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors whitespace-nowrap"
-              title="Debug: Inspect API fields for most recent cycling activity"
-            >
-              🔍 Debug
-            </button>
-          </div>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          {t('crossTraining.title')}
+        </h2>
+        <p className="text-gray-600">
+          {t('crossTraining.subtitle')}
+        </p>
       </div>
 
       {/* Tab Navigation */}

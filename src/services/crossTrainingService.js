@@ -431,7 +431,7 @@ export function calculateRunningEquivalent(cyclingActivity) {
   const runningMinutes = (duration / 60) * timeConversionFactor;
 
   // TSS comparison (running TSS is ~1.15x cycling TSS, also apply ability adjustment)
-  const cyclingTSS = cyclingActivity.icu_training_load || cyclingActivity.training_load || 0;
+  const cyclingTSS = cyclingActivity.icu_training_load || cyclingActivity.training_load || cyclingActivity.load || cyclingActivity.tss || 0;
   const baseTSSMultiplier = 1.15;
   const tssMultiplier = baseTSSMultiplier * abilityLevel.adjustmentFactor;
   const equivalentRunningTSS = cyclingTSS * tssMultiplier;
@@ -633,14 +633,14 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
       duration: Math.floor(activity.moving_time / 60),
       avgPower: activity.icu_average_watts || activity.average_watts || activity.avg_power,
       avgHR: activity.icu_average_hr || activity.average_hr || activity.avg_hr,
-      tss: activity.icu_training_load || activity.training_load,
+      tss: activity.icu_training_load || activity.training_load || activity.load || activity.tss,
       runningEquivalent: equivalent
     };
   });
 
   const totalCyclingKm = activities.reduce((sum, a) => sum + (a.distance || 0), 0) / 1000;
   const totalCyclingMinutes = activities.reduce((sum, a) => sum + (a.moving_time || 0), 0) / 60;
-  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.icu_training_load || a.training_load || 0), 0);
+  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.icu_training_load || a.training_load || a.load || a.tss || 0), 0);
 
   const totalRunningEquivalentKm = stats.reduce((sum, s) =>
     sum + parseFloat(s.runningEquivalent.runningDistanceKm), 0
@@ -707,7 +707,7 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
     byWeek[weekKey].sessions++;
     byWeek[weekKey].km += (activity.distance || 0) / 1000;
     byWeek[weekKey].runningEquivKm += parseFloat(equivalent.runningDistanceKm);
-    byWeek[weekKey].tss += activity.icu_training_load || activity.training_load || 0;
+    byWeek[weekKey].tss += activity.icu_training_load || activity.training_load || activity.load || activity.tss || 0;
   });
 
   return {

@@ -618,12 +618,18 @@ class MarathonTrackerDB extends Dexie {
         // Merge data from all copies
         group.slice(1).forEach(activity => {
           // Merge critical fields - prefer non-null, non-zero values
-          // Handle both TSS/training load field variants
+          // Handle all TSS/training load field variants
           if (!merged.icu_training_load && activity.icu_training_load) {
             merged.icu_training_load = activity.icu_training_load;
           }
           if (!merged.training_load && activity.training_load) {
             merged.training_load = activity.training_load;
+          }
+          if (!merged.load && activity.load) {
+            merged.load = activity.load;
+          }
+          if (!merged.tss && activity.tss) {
+            merged.tss = activity.tss;
           }
           // Handle all three power field variants
           if (!merged.icu_average_watts && activity.icu_average_watts) {

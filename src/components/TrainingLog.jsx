@@ -381,7 +381,7 @@ function TrainingLog() {
                     <div>
                       <p className="text-xs text-gray-600">{t('common.load')}</p>
                       <p className="text-sm font-bold text-gray-900">
-                        {activity.icu_training_load || activity.training_load || 0}
+                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || 0}
                       </p>
                     </div>
                   </>
@@ -402,7 +402,7 @@ function TrainingLog() {
                     <div>
                       <p className="text-xs text-gray-600">{t('common.load')}</p>
                       <p className="text-sm font-bold text-gray-900">
-                        {activity.icu_training_load || activity.training_load || 0}
+                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || 0}
                       </p>
                     </div>
                   </>
@@ -417,7 +417,7 @@ function TrainingLog() {
                     <div>
                       <p className="text-xs text-gray-600">{t('common.load')}</p>
                       <p className="text-sm font-bold text-gray-900">
-                        {activity.icu_training_load || activity.training_load || '-'}
+                        {activity.icu_training_load || activity.training_load || activity.load || activity.tss || '-'}
                       </p>
                     </div>
                     <div>
@@ -552,19 +552,11 @@ function ActivityDetail({ activity, onBack }) {
                 </p>
               </div>
             )}
-            {activity.training_load && (
+            {(activity.icu_training_load || activity.training_load || activity.load || activity.tss) && (
               <div>
-                <p className="text-xs text-gray-600">{t('dashboard.trainingLoad')}</p>
+                <p className="text-xs text-gray-600">{t('common.load') || 'TSS/Load'}</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {activity.training_load}
-                </p>
-              </div>
-            )}
-            {activity.icu_training_load && (
-              <div>
-                <p className="text-xs text-gray-600">{t('common.icuLoad') || 'ICU Load'}</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {activity.icu_training_load}
+                  {activity.icu_training_load || activity.training_load || activity.load || activity.tss}
                 </p>
               </div>
             )}
