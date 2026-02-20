@@ -198,7 +198,7 @@ function getCyclistAbilityLevel(cyclingFTP, runningFTP = 360) {
 
 export function calculateRunningEquivalent(cyclingActivity) {
   const distance = cyclingActivity.distance || 0; // meters
-  const avgPower = cyclingActivity.average_watts || 0;
+  const avgPower = cyclingActivity.average_watts || cyclingActivity.avg_power || 0;
   const cyclingFTP = cyclingActivity.icu_ftp || 250; // Cycling FTP
   const runningFTP = cyclingActivity.run_ftp || 360; // Running FTP (default for sub-2h50)
   const duration = cyclingActivity.moving_time || 0; // seconds
@@ -441,8 +441,8 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
       name: activity.name,
       distance: (activity.distance / 1000).toFixed(2),
       duration: Math.floor(activity.moving_time / 60),
-      avgPower: activity.average_watts,
-      avgHR: activity.average_hr,
+      avgPower: activity.average_watts || activity.avg_power,
+      avgHR: activity.average_hr || activity.avg_hr,
       tss: activity.icu_training_load,
       runningEquivalent: equivalent
     };

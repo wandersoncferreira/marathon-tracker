@@ -82,12 +82,24 @@ export default function CrossTraining() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          {t('crossTraining.title')}
-        </h2>
-        <p className="text-gray-600">
-          {t('crossTraining.subtitle')}
-        </p>
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              {t('crossTraining.title')}
+            </h2>
+            <p className="text-gray-600">
+              {t('crossTraining.subtitle')}
+            </p>
+          </div>
+          <button
+            onClick={() => loadData(true, true)}
+            disabled={loading}
+            className="ml-4 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors whitespace-nowrap"
+            title="Refresh data from Intervals.icu"
+          >
+            {loading ? '⏳' : '🔄'} Sync
+          </button>
+        </div>
       </div>
 
       {/* Tab Navigation */}
