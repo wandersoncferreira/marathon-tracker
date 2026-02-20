@@ -624,6 +624,9 @@ class MarathonTrackerDB extends Dexie {
           if (!merged.average_watts && activity.average_watts) {
             merged.average_watts = activity.average_watts;
           }
+          if (!merged.icu_average_watts && activity.icu_average_watts) {
+            merged.icu_average_watts = activity.icu_average_watts;
+          }
           if (!merged.icu_ftp && activity.icu_ftp) {
             merged.icu_ftp = activity.icu_ftp;
           }

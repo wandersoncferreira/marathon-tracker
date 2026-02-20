@@ -396,7 +396,7 @@ function TrainingLog() {
                     <div>
                       <p className="text-xs text-gray-600">Avg Power</p>
                       <p className="text-sm font-bold text-gray-900">
-                        {activity.average_watts || '-'} W
+                        {activity.icu_average_watts || '-'} W
                       </p>
                     </div>
                     <div>
@@ -432,9 +432,9 @@ function TrainingLog() {
 
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <div className="flex items-center justify-between text-xs">
-                  {activity.average_watts && (
+                  {activity.icu_average_watts && (
                     <span className="text-gray-600">
-                      ⚡ {activity.average_watts}W
+                      ⚡ {activity.icu_average_watts}W
                     </span>
                   )}
                   {activity.average_heartrate && (
@@ -528,11 +528,11 @@ function ActivityDetail({ activity, onBack }) {
                 </p>
               </div>
             )}
-            {activity.average_watts && (
+            {activity.icu_average_watts && (
               <div>
                 <p className="text-xs text-gray-600">{t('common.avgPower')}</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {activity.average_watts}W
+                  {activity.icu_average_watts}W
                 </p>
               </div>
             )}
