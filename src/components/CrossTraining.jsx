@@ -80,7 +80,11 @@ export default function CrossTraining() {
       setCyclingStats(cycling);
 
       // Show result message
-      alert(result.message || `Updated ${result.updated} activities`);
+      if (result.error) {
+        alert('Error syncing power data: ' + result.error);
+      } else {
+        alert(result.message || `Updated ${result.updated} activities`);
+      }
     } catch (error) {
       alert('Error syncing power data: ' + error.message);
     } finally {

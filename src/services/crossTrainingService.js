@@ -149,6 +149,8 @@ export async function syncMissingPowerData(startDate, endDate) {
     // Fetch full details only for activities missing power
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     const updatedActivities = [];
+    const notFoundIds = [];
+    let errorCount = 0;
 
     for (let i = 0; i < missingPower.length; i++) {
       const activity = missingPower[i];
@@ -166,7 +168,12 @@ export async function syncMissingPowerData(startDate, endDate) {
           updatedActivities.push(details);
         }
       } catch (error) {
-        console.error(`Error fetching activity ${activity.id}:`, error);
+        // Handle 404 - activity doesn't exist in Intervals.icu
+        if (error.message.includes('404')) {
+          notFoundIds.push(activity.id);
+        } else {
+          errorCount++;
+        }
       }
     }
 
@@ -175,13 +182,28 @@ export async function syncMissingPowerData(startDate, endDate) {
       await db.storeCrossTraining(updatedActivities);
     }
 
+    // Clean up activities that no longer exist (404s)
+    if (notFoundIds.length > 0) {
+      await db.crossTraining.bulkDelete(notFoundIds);
+    }
+
+    // Build result message
+    let message = `Updated ${updatedActivities.length} of ${missingPower.length} activities with power data`;
+    if (notFoundIds.length > 0) {
+      message += `\nRemoved ${notFoundIds.length} activities that no longer exist in Intervals.icu`;
+    }
+    if (errorCount > 0) {
+      message += `\n${errorCount} activities had errors`;
+    }
+
     return {
       updated: updatedActivities.length,
       checked: missingPower.length,
-      message: `Updated ${updatedActivities.length} of ${missingPower.length} activities with power data`
+      notFound: notFoundIds.length,
+      errors: errorCount,
+      message
     };
   } catch (error) {
-    console.error('Error syncing missing power data:', error);
     return {
       updated: 0,
       error: error.message
