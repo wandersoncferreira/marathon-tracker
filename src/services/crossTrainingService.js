@@ -204,7 +204,8 @@ export async function syncMissingPowerData(startDate, endDate) {
 
     // Debug: Check what power data exists (first 5 and most recent)
     cyclingActivities.slice(0, 5).forEach(a => {
-      console.log(`Activity ${a.id}: icu_average_watts=${a.icu_average_watts}, name="${a.name}", date=${a.start_date_local}`);
+      const power = a.icu_average_watts || a.average_watts || a.avg_power;
+      console.log(`Activity ${a.id}: power=${power} (icu:${a.icu_average_watts}, avg:${a.average_watts}, avg_power:${a.avg_power}), name="${a.name}", date=${a.start_date_local}`);
     });
 
     // Check today's activities specifically
@@ -212,13 +213,16 @@ export async function syncMissingPowerData(startDate, endDate) {
     const todayActivities = cyclingActivities.filter(a => a.start_date_local?.startsWith(today));
     console.log(`Today's (${today}) cycling activities: ${todayActivities.length}`);
     todayActivities.forEach(a => {
-      console.log(`  TODAY - ${a.id}: icu_average_watts=${a.icu_average_watts}, name="${a.name}"`);
+      const power = a.icu_average_watts || a.average_watts || a.avg_power;
+      console.log(`  TODAY - ${a.id}: power=${power}, name="${a.name}"`);
     });
 
-    // Find activities missing power data (check for truthy values, not just existence)
+    // Find activities missing power data (check all three field names)
     const missingPower = cyclingActivities.filter(a => {
-      const hasPower = a.icu_average_watts && a.icu_average_watts > 0;
-      return !hasPower;
+      const hasIcuWatts = a.icu_average_watts && a.icu_average_watts > 0;
+      const hasAvgWatts = a.average_watts && a.average_watts > 0;
+      const hasAvgPower = a.avg_power && a.avg_power > 0;
+      return !hasIcuWatts && !hasAvgWatts && !hasAvgPower;
     });
 
     console.log(`Activities missing power data: ${missingPower.length}`);
@@ -248,13 +252,16 @@ export async function syncMissingPowerData(startDate, endDate) {
         // Fetch full activity details from Intervals.icu
         const details = await intervalsApi.request(`/activity/${activity.id}`);
 
+        const power = details?.icu_average_watts || details?.average_watts || details?.avg_power;
         console.log(`Fetched activity ${activity.id}:`, {
           name: details?.name,
+          power: power,
           icu_average_watts: details?.icu_average_watts,
-          icu_normalized_watts: details?.icu_normalized_watts
+          average_watts: details?.average_watts,
+          avg_power: details?.avg_power
         });
 
-        if (details && details.icu_average_watts && details.icu_average_watts > 0) {
+        if (details && power && power > 0) {
           updatedActivities.push(details);
         } else if (details) {
           console.warn(`Activity ${activity.id} still has no power data after fetch`);
@@ -380,7 +387,8 @@ function getCyclistAbilityLevel(cyclingFTP, runningFTP = 360) {
 
 export function calculateRunningEquivalent(cyclingActivity) {
   const distance = cyclingActivity.distance || 0; // meters
-  const avgPower = cyclingActivity.icu_average_watts || 0;
+  // Try all three possible power field names (Intervals.icu uses different names)
+  const avgPower = cyclingActivity.icu_average_watts || cyclingActivity.average_watts || cyclingActivity.avg_power || 0;
   const cyclingFTP = cyclingActivity.icu_ftp || 250; // Cycling FTP
   const runningFTP = cyclingActivity.run_ftp || 360; // Running FTP (default for sub-2h50)
   const duration = cyclingActivity.moving_time || 0; // seconds
@@ -423,7 +431,7 @@ export function calculateRunningEquivalent(cyclingActivity) {
   const runningMinutes = (duration / 60) * timeConversionFactor;
 
   // TSS comparison (running TSS is ~1.15x cycling TSS, also apply ability adjustment)
-  const cyclingTSS = cyclingActivity.icu_training_load || 0;
+  const cyclingTSS = cyclingActivity.icu_training_load || cyclingActivity.training_load || 0;
   const baseTSSMultiplier = 1.15;
   const tssMultiplier = baseTSSMultiplier * abilityLevel.adjustmentFactor;
   const equivalentRunningTSS = cyclingTSS * tssMultiplier;
@@ -623,16 +631,16 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
       name: activity.name,
       distance: (activity.distance / 1000).toFixed(2),
       duration: Math.floor(activity.moving_time / 60),
-      avgPower: activity.icu_average_watts,
-      avgHR: activity.icu_average_hr || activity.average_hr,
-      tss: activity.icu_training_load,
+      avgPower: activity.icu_average_watts || activity.average_watts || activity.avg_power,
+      avgHR: activity.icu_average_hr || activity.average_hr || activity.avg_hr,
+      tss: activity.icu_training_load || activity.training_load,
       runningEquivalent: equivalent
     };
   });
 
   const totalCyclingKm = activities.reduce((sum, a) => sum + (a.distance || 0), 0) / 1000;
   const totalCyclingMinutes = activities.reduce((sum, a) => sum + (a.moving_time || 0), 0) / 60;
-  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.icu_training_load || 0), 0);
+  const totalCyclingTSS = activities.reduce((sum, a) => sum + (a.icu_training_load || a.training_load || 0), 0);
 
   const totalRunningEquivalentKm = stats.reduce((sum, s) =>
     sum + parseFloat(s.runningEquivalent.runningDistanceKm), 0
@@ -699,7 +707,7 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
     byWeek[weekKey].sessions++;
     byWeek[weekKey].km += (activity.distance || 0) / 1000;
     byWeek[weekKey].runningEquivKm += parseFloat(equivalent.runningDistanceKm);
-    byWeek[weekKey].tss += activity.icu_training_load || 0;
+    byWeek[weekKey].tss += activity.icu_training_load || activity.training_load || 0;
   });
 
   return {

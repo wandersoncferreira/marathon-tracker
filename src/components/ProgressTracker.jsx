@@ -405,7 +405,7 @@ function ProgressTracker() {
         distance: activity.distance,
         pace: paceSeconds,
         hr: hr,
-        avgPower: activity.icu_average_watts,
+        avgPower: activity.icu_average_watts || activity.average_watts || activity.avg_power,
       });
     });
 
