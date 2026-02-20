@@ -87,6 +87,17 @@ function TrainingLog() {
     }
   };
 
+  const handleExportDatabase = async () => {
+    try {
+      console.log('💾 Manual database export triggered...');
+      await downloadDatabaseExport();
+      alert('✅ Database exported successfully!\n\nSave the downloaded file to:\npublic/database/marathon-tracker-db.json');
+    } catch (error) {
+      console.error('Error exporting database:', error);
+      alert('❌ Error exporting database: ' + error.message);
+    }
+  };
+
   const performComprehensiveSync = async (startDate, endDate, isForceSync) => {
     let newDataSynced = false;
 
