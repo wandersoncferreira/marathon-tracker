@@ -128,6 +128,74 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 }
 
 /**
+ * Debug function to inspect API response for a specific activity by date and name
+ */
+export async function debugSpecificActivity(dateStr, namePattern) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const lastMonthStr = lastMonth.toISOString().split('T')[0];
+
+    const cached = await db.getCrossTraining(lastMonthStr, today);
+
+    // Find activity by date and name
+    const activity = cached.find(a => {
+      const activityDate = a.start_date_local?.split('T')[0];
+      const matchesDate = dateStr ? activityDate === dateStr : true;
+      const matchesName = namePattern ? a.name?.includes(namePattern) : true;
+      return matchesDate && matchesName;
+    });
+
+    if (!activity) {
+      console.log('Activity not found with date:', dateStr, 'and name pattern:', namePattern);
+      console.log('Available activities:', cached.map(a => ({
+        date: a.start_date_local?.split('T')[0],
+        name: a.name
+      })));
+      return;
+    }
+
+    console.log('=== FOUND ACTIVITY IN DATABASE ===');
+    console.log('ID:', activity.id);
+    console.log('Name:', activity.name);
+    console.log('Date:', activity.start_date_local);
+    console.log('Current TSS/Load values in DB:', {
+      icu_training_load: activity.icu_training_load,
+      training_load: activity.training_load,
+      load: activity.load,
+      tss: activity.tss
+    });
+
+    // Fetch fresh data from API
+    console.log('\n=== FETCHING FROM INTERVALS.ICU API ===');
+    const apiData = await intervalsApi.request(`/activity/${activity.id}`);
+
+    console.log('\n=== ALL TSS/LOAD RELATED FIELDS FROM API ===');
+    const loadFields = {};
+    Object.keys(apiData).forEach(key => {
+      if (key.toLowerCase().includes('load') ||
+          key.toLowerCase().includes('tss') ||
+          key.toLowerCase().includes('stress')) {
+        loadFields[key] = apiData[key];
+      }
+    });
+    console.log(loadFields);
+
+    console.log('\n=== ALL FIELD NAMES (SORTED) ===');
+    console.log(Object.keys(apiData).sort().join(', '));
+
+    console.log('\n=== FULL API RESPONSE ===');
+    console.log(JSON.stringify(apiData, null, 2));
+
+    return apiData;
+  } catch (error) {
+    console.error('Error in debugSpecificActivity:', error);
+    throw error;
+  }
+}
+
+/**
  * Debug function to inspect API response for a recent cycling activity
  */
 export async function debugRecentCyclingActivity() {
