@@ -137,10 +137,24 @@ export async function syncMissingPowerData(startDate, endDate) {
     const cached = await db.getCrossTraining(startDate, endDate);
     const cyclingActivities = cached.filter(a => a.type === 'Ride' || a.type === 'VirtualRide');
 
-    // Find activities missing power data
-    const missingPower = cyclingActivities.filter(a =>
-      !a.average_watts && !a.avg_power
-    );
+    console.log(`Total cycling activities: ${cyclingActivities.length}`);
+
+    // Debug: Check what power data exists
+    cyclingActivities.slice(0, 5).forEach(a => {
+      console.log(`Activity ${a.id}: average_watts=${a.average_watts}, avg_power=${a.avg_power}, name="${a.name}"`);
+    });
+
+    // Find activities missing power data (check for truthy values, not just existence)
+    const missingPower = cyclingActivities.filter(a => {
+      const hasAvgWatts = a.average_watts && a.average_watts > 0;
+      const hasAvgPower = a.avg_power && a.avg_power > 0;
+      return !hasAvgWatts && !hasAvgPower;
+    });
+
+    console.log(`Activities missing power data: ${missingPower.length}`);
+    missingPower.slice(0, 5).forEach(a => {
+      console.log(`  - ${a.id}: "${a.name}" (${a.start_date_local})`);
+    });
 
     if (missingPower.length === 0) {
       return { updated: 0, message: 'All activities already have power data' };
@@ -164,8 +178,18 @@ export async function syncMissingPowerData(startDate, endDate) {
         // Fetch full activity details from Intervals.icu
         const details = await intervalsApi.request(`/activity/${activity.id}`);
 
-        if (details && (details.average_watts || details.avg_power)) {
+        console.log(`Fetched activity ${activity.id}:`, {
+          name: details?.name,
+          average_watts: details?.average_watts,
+          avg_power: details?.avg_power,
+          watts: details?.watts,
+          power: details?.power
+        });
+
+        if (details && ((details.average_watts && details.average_watts > 0) || (details.avg_power && details.avg_power > 0))) {
           updatedActivities.push(details);
+        } else if (details) {
+          console.warn(`Activity ${activity.id} still has no power data after fetch`);
         }
       } catch (error) {
         // Handle 404 - activity doesn't exist in Intervals.icu
@@ -179,22 +203,28 @@ export async function syncMissingPowerData(startDate, endDate) {
 
     // Update only the activities that got new data
     if (updatedActivities.length > 0) {
+      console.log(`Storing ${updatedActivities.length} updated activities in database`);
       await db.storeCrossTraining(updatedActivities);
+      console.log('✅ Activities stored successfully');
     }
 
     // Clean up activities that no longer exist (404s)
     if (notFoundIds.length > 0) {
+      console.log(`Removing ${notFoundIds.length} activities that don't exist: ${notFoundIds.join(', ')}`);
       await db.crossTraining.bulkDelete(notFoundIds);
     }
 
     // Build result message
-    let message = `Updated ${updatedActivities.length} of ${missingPower.length} activities with power data`;
+    let message = `Checked ${missingPower.length} activities\n`;
+    message += `Updated: ${updatedActivities.length} with power data`;
     if (notFoundIds.length > 0) {
-      message += `\nRemoved ${notFoundIds.length} activities that no longer exist in Intervals.icu`;
+      message += `\nRemoved: ${notFoundIds.length} (no longer exist in Intervals.icu)`;
     }
     if (errorCount > 0) {
-      message += `\n${errorCount} activities had errors`;
+      message += `\nErrors: ${errorCount}`;
     }
+
+    console.log('Sync complete:', { updated: updatedActivities.length, notFound: notFoundIds.length, errors: errorCount });
 
     return {
       updated: updatedActivities.length,
