@@ -546,7 +546,9 @@ function Dashboard() {
             <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.latestCoachAnalysis')}</h3>
             <span className="text-xs text-gray-500">
               {(() => {
-                const date = new Date(latestAnalysis.metadata.date);
+                // Force date to be interpreted at noon local time to avoid timezone issues
+                const dateStr = latestAnalysis.metadata.date.split('T')[0];
+                const date = new Date(dateStr + 'T12:00:00');
                 return date.toLocaleDateString(
                   language === 'pt_BR' ? 'pt-BR' : 'en-US',
                   { month: 'short', day: 'numeric', year: 'numeric' }
