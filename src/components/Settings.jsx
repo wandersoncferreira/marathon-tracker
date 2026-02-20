@@ -192,25 +192,6 @@ function Settings() {
 
     setExporting(true);
     try {
-      // Debug: Check what's in the database before export
-      console.log('🔍 Pre-export database check...');
-      const nutritionCount = await db.nutritionTracking.count();
-      const carbCount = await db.carbTracking.count();
-      const configCount = await db.config.count();
-      console.log(`  📊 Nutrition tracking: ${nutritionCount} entries`);
-      console.log(`  🥤 Carb tracking: ${carbCount} entries`);
-      console.log(`  ⚙️ Config: ${configCount} entries`);
-
-      if (nutritionCount > 0) {
-        const recentNutrition = await db.nutritionTracking.orderBy('date').reverse().limit(3).toArray();
-        console.log('  📅 Recent nutrition entries:', recentNutrition.map(n => `${n.date} (rating: ${n.rating})`));
-      }
-
-      if (carbCount > 0) {
-        const recentCarb = await db.carbTracking.orderBy('timestamp').reverse().limit(3).toArray();
-        console.log('  📅 Recent carb entries:', recentCarb.map(c => `Activity ${c.activityId}: ${c.carbGrams}g`));
-      }
-
       await downloadDatabaseExport();
       alert(t('settings.exportSuccess'));
     } catch (error) {

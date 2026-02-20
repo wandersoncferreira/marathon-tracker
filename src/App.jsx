@@ -92,13 +92,9 @@ function App() {
   // Auto-import database and load initial analyses on first mount
   useEffect(() => {
     const initializeApp = async () => {
-      console.log('🚀 App initializing...');
-
       // FIRST: Force migration check for old schema analyses
       try {
-        console.log('🔄 Checking for schema migration...');
         await analysisLoader.migrateOldSchema();
-        console.log('✅ Schema migration check complete');
       } catch (error) {
         console.error('❌ Error during schema migration:', error);
       }
@@ -108,13 +104,8 @@ function App() {
         // Imports if file is newer than last import OR database is empty
         const result = await autoImportIfEmpty();
 
-        if (result.imported) {
-          console.log('✅ Database loaded from file:', result.message);
-          console.log('📊 File timestamp:', result.fileTimestamp);
-        } else if (result.needsManualSync) {
-          console.log('ℹ️ No database file found - configure Intervals.icu API in Settings');
-        } else {
-          console.log('ℹ️ Database status:', result.reason);
+        if (result.needsManualSync) {
+          console.warn('ℹ️ No database file found - configure Intervals.icu API in Settings');
         }
       } catch (error) {
         console.error('❌ Error during app initialization:', error);
@@ -123,7 +114,6 @@ function App() {
       // Load initial coach analyses
       try {
         await loadInitialAnalyses();
-        console.log('✅ Coach analyses loaded');
       } catch (error) {
         console.error('❌ Error loading coach analyses:', error);
       }

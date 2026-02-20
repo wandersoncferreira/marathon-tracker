@@ -106,31 +106,24 @@ function Nutrition() {
   useEffect(() => {
     const initializeTracking = async () => {
       try {
-        console.log('🥗 Initializing nutrition tracking...');
-
         // Load carb guidelines from database
         const guidelines = await getCarbGuidelines();
-        console.log('🥤 Loaded carb guidelines:', guidelines);
         setCarbGuidelines(guidelines);
 
         const goals = await loadNutritionGoals();
-        console.log('📊 Loaded goals:', goals);
         setNutritionGoals(goals);
 
         const weekStart = getCurrentWeekStart();
-        console.log('📅 Current week start:', weekStart);
         setCurrentWeekStart(weekStart);
 
         await loadWeeklyData(weekStart);
 
         // Load cycle-wide stats
-        console.log('📊 Training cycle:', TRAINING_CYCLE);
         if (TRAINING_CYCLE && TRAINING_CYCLE.startDate && TRAINING_CYCLE.raceDate) {
           const cycleData = await calculateCycleStats(
             TRAINING_CYCLE.startDate,
             TRAINING_CYCLE.raceDate
           );
-          console.log('📈 Cycle stats:', cycleData);
           if (cycleData) {
             setCycleStats(cycleData);
           }
@@ -140,13 +133,10 @@ function Nutrition() {
             TRAINING_CYCLE.startDate,
             TRAINING_CYCLE.raceDate
           );
-          console.log('🍽️ Meal analysis:', mealData);
           setMealAnalysis(mealData);
         } else {
           console.warn('⚠️ Training cycle data not available');
         }
-
-        console.log('✅ Nutrition tracking initialized');
       } catch (error) {
         console.error('❌ Error initializing nutrition tracking:', error);
       }
@@ -157,13 +147,10 @@ function Nutrition() {
 
   const loadWeeklyData = async (weekStart) => {
     try {
-      console.log('📊 Loading weekly data for:', weekStart);
       const data = await getWeeklyTracking(weekStart);
-      console.log('📅 Weekly data:', data);
       setWeeklyData(data);
 
       const stats = calculateWeeklyStats(data);
-      console.log('📈 Weekly stats:', stats);
       setWeeklyStats(stats);
     } catch (error) {
       console.error('❌ Error loading weekly data:', error);
@@ -187,8 +174,6 @@ function Nutrition() {
       if (!TRAINING_CYCLE || !TRAINING_CYCLE.startDate || !TRAINING_CYCLE.raceDate) return;
 
       try {
-        console.log('🥤 Loading carb tracking data...');
-
         // Get all activities for the training cycle
         const activities = await intervalsApi.getActivities(
           TRAINING_CYCLE.startDate,
@@ -204,19 +189,17 @@ function Nutrition() {
         const trackingData = await getCarbTrackingForRange(
           TRAINING_CYCLE.startDate,
           TRAINING_CYCLE.raceDate,
-          runningActivities
+          runningActivities,
+          carbGuidelines
         );
-        console.log('📊 Carb tracking data:', trackingData);
         setCarbTrackingData(trackingData);
 
         // Calculate weekly stats
         const weeklyStats = calculateWeeklyCarbStats(trackingData);
-        console.log('📅 Weekly carb stats:', weeklyStats);
         setWeeklyCarbStats(weeklyStats);
 
         // Calculate cycle-wide stats
         const cycleStats = calculateCycleCarbStats(trackingData);
-        console.log('🏃 Cycle carb stats:', cycleStats);
         setCycleCarbStats(cycleStats);
       } catch (error) {
         console.error('❌ Error loading carb tracking data:', error);
@@ -1026,8 +1009,7 @@ function Nutrition() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
                 <strong>💡 How it works:</strong> For runs longer than {carbGuidelines.minDurationMinutes} minutes,
-                you should consume approximately {carbGuidelines.carbsPer30Min}g of carbs every 30 minutes
-                (starting after the first {carbGuidelines.minDurationMinutes} minutes).
+                you should consume approximately {carbGuidelines.carbsPer30Min}g of carbs every 30 minutes throughout the run.
               </p>
             </div>
           </div>
@@ -1431,7 +1413,8 @@ function Nutrition() {
               const trackingData = await getCarbTrackingForRange(
                 TRAINING_CYCLE.startDate,
                 TRAINING_CYCLE.raceDate,
-                runningActivities
+                runningActivities,
+                carbGuidelines
               );
               setCarbTrackingData(trackingData);
 

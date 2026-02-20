@@ -65,11 +65,6 @@ export async function exportDatabaseToFiles() {
 
     // Export nutrition tracking
     const nutritionTracking = await db.nutritionTracking.toArray();
-    console.log(`📊 Exporting ${nutritionTracking.length} nutrition tracking entries`);
-    if (nutritionTracking.length > 0) {
-      const sorted = nutritionTracking.sort((a, b) => b.date.localeCompare(a.date));
-      console.log('Most recent nutrition entry:', sorted[0].date, sorted[0]);
-    }
     exports.tables.nutritionTracking = {
       count: nutritionTracking.length,
       data: nutritionTracking
@@ -77,11 +72,6 @@ export async function exportDatabaseToFiles() {
 
     // Export carb tracking
     const carbTracking = await db.carbTracking.toArray();
-    console.log(`🥤 Exporting ${carbTracking.length} carb tracking entries`);
-    if (carbTracking.length > 0) {
-      const sorted = carbTracking.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      console.log('Most recent carb entry:', sorted[0].activityId, sorted[0]);
-    }
     exports.tables.carbTracking = {
       count: carbTracking.length,
       data: carbTracking
@@ -92,20 +82,12 @@ export async function exportDatabaseToFiles() {
     const appConfig = config.filter(item =>
       item.key === 'nutritionGoals' || item.key === 'carbGuidelines'
     );
-    console.log(`⚙️ Exporting ${appConfig.length} config entries:`, appConfig.map(c => c.key));
     exports.tables.config = {
       count: appConfig.length,
       data: appConfig
     };
 
     // Don't export cache (temporary data)
-
-    console.log('📦 Export summary:', {
-      activities: exports.tables.activities.count,
-      nutritionTracking: exports.tables.nutritionTracking.count,
-      carbTracking: exports.tables.carbTracking.count,
-      config: exports.tables.config.count
-    });
 
     return exports;
   } catch (error) {

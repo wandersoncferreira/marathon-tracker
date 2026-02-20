@@ -542,7 +542,18 @@ function Dashboard() {
       {/* Latest Coach Analysis */}
       {latestAnalysis && (
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('dashboard.latestCoachAnalysis')}</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.latestCoachAnalysis')}</h3>
+            <span className="text-xs text-gray-500">
+              {(() => {
+                const date = new Date(latestAnalysis.metadata.date);
+                return date.toLocaleDateString(
+                  language === 'pt_BR' ? 'pt-BR' : 'en-US',
+                  { month: 'short', day: 'numeric', year: 'numeric' }
+                );
+              })()}
+            </span>
+          </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">

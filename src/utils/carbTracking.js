@@ -81,10 +81,10 @@ export async function saveCarbGuidelines(guidelines) {
 /**
  * Calculate expected carb intake for an activity
  * @param {number} durationMinutes - Activity duration in minutes
- * @param {object} guidelines - Carb guidelines
+ * @param {object} guidelines - Carb guidelines (required)
  */
-export function calculateExpectedCarbs(durationMinutes, guidelines = getCarbGuidelines()) {
-  if (durationMinutes <= guidelines.minDurationMinutes) {
+export function calculateExpectedCarbs(durationMinutes, guidelines) {
+  if (!guidelines || durationMinutes <= guidelines.minDurationMinutes) {
     return 0; // No carbs needed for shorter activities
   }
 
@@ -131,11 +131,15 @@ export function calculateCompliance(actualCarbs, expectedCarbs) {
  * @param {string} startDate - ISO date string (YYYY-MM-DD)
  * @param {string} endDate - ISO date string (YYYY-MM-DD)
  * @param {Array} activities - Array of activities
+ * @param {object} guidelines - Carb guidelines (required)
  */
-export async function getCarbTrackingForRange(startDate, endDate, activities) {
-  const guidelines = getCarbGuidelines();
+export async function getCarbTrackingForRange(startDate, endDate, activities, guidelines) {
+  if (!guidelines) {
+    console.error('getCarbTrackingForRange: guidelines parameter is required');
+    return [];
+  }
 
-  // Filter activities > 90min
+  // Filter activities > minDurationMinutes
   const longActivities = activities.filter(a => {
     const duration = a.moving_time ? a.moving_time / 60 : 0;
     return duration > guidelines.minDurationMinutes;

@@ -505,7 +505,7 @@ function ProgressTracker() {
             </button>
           </div>
           <div style={{ width: '100%', height: '256px' }}>
-            <ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={fitnessData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
@@ -654,7 +654,7 @@ function ProgressTracker() {
               </div>
             )}
             <div style={{ width: '100%', height: '300px', position: 'relative' }}>
-              <ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={selectedPaceGroup && trendLineData.length > 0 ? trendLineData : hrByPaceData}
                   margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
