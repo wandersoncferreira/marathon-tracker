@@ -539,27 +539,27 @@ function CyclingTab({ stats, onShowInfo }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Cycling Totals */}
         <div className="border border-gray-200 rounded-lg p-4">
-          <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
             <span className="mr-2">🚴</span> {t('crossTraining.cyclingTotals')}
           </h4>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">{t('crossTraining.sessions')}:</span>
-              <span className="font-medium">{stats.totals.cycling.sessions}</span>
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">{t('crossTraining.sessions')}</div>
+              <div className="text-lg font-bold text-gray-900">{stats.totals.cycling.sessions}</div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">{t('common.distance')}:</span>
-              <span className="font-medium">{stats.totals.cycling.km} km</span>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">{t('common.distance')}</div>
+              <div className="text-lg font-bold text-gray-900">{stats.totals.cycling.km} km</div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">{t('crossTraining.time')}:</span>
-              <span className="font-medium">
-                {(stats.totals.cycling.minutes / 60).toFixed(1)} {t('crossTraining.hours')}
-              </span>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">{t('crossTraining.time')}</div>
+              <div className="text-lg font-bold text-gray-900">
+                {(stats.totals.cycling.minutes / 60).toFixed(1)} h
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">TSS:</span>
-              <span className="font-medium">{stats.totals.cycling.tss}</span>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">TSS</div>
+              <div className="text-lg font-bold text-gray-900">{stats.totals.cycling.tss}</div>
             </div>
           </div>
         </div>
@@ -579,7 +579,7 @@ function CyclingTab({ stats, onShowInfo }) {
 
           {/* Personalization Badge */}
           {stats.personalizedInfo && (
-            <div className="mb-3 px-2 py-1 bg-indigo-100 border border-indigo-300 rounded text-xs">
+            <div className="mb-2 px-2 py-1 bg-indigo-100 border border-indigo-300 rounded text-xs">
               <span className="font-semibold text-indigo-900">
                 🎯 {t('crossTraining.personalizedFor', 'Personalized for')}:
               </span>
@@ -592,24 +592,28 @@ function CyclingTab({ stats, onShowInfo }) {
             </div>
           )}
 
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-blue-700">{t('common.distance')}:</span>
-              <span className="font-medium text-blue-900">
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <div className="text-xs text-blue-700 mb-1">{t('crossTraining.sessions')}</div>
+              <div className="text-lg font-bold text-blue-900">{stats.totals.cycling.sessions}</div>
+            </div>
+            <div>
+              <div className="text-xs text-blue-700 mb-1">{t('common.distance')}</div>
+              <div className="text-lg font-bold text-blue-900">
                 ~{stats.totals.runningEquivalent.km} km
-              </span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700">{t('crossTraining.time')}:</span>
-              <span className="font-medium text-blue-900">
-                ~{(stats.totals.runningEquivalent.minutes / 60).toFixed(1)} {t('crossTraining.hours')}
-              </span>
+            <div>
+              <div className="text-xs text-blue-700 mb-1">{t('crossTraining.time')}</div>
+              <div className="text-lg font-bold text-blue-900">
+                ~{(stats.totals.runningEquivalent.minutes / 60).toFixed(1)} h
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700">TSS:</span>
-              <span className="font-medium text-blue-900">
+            <div>
+              <div className="text-xs text-blue-700 mb-1">TSS</div>
+              <div className="text-lg font-bold text-blue-900">
                 ~{stats.totals.runningEquivalent.tss}
-              </span>
+              </div>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-blue-200">
@@ -642,15 +646,19 @@ function CyclingTab({ stats, onShowInfo }) {
           const weekDay = String(thisWeekStart.getDate()).padStart(2, '0');
           const thisWeekKey = `${weekYear}-${weekMonth}-${weekDay}`;
 
-          const thisWeekData = stats.byWeek?.[thisWeekKey] || { sessions: 0, km: 0, runningEquivKm: 0, tss: 0 };
+          const thisWeekData = stats.byWeek?.[thisWeekKey] || { sessions: 0, km: 0, runningEquivKm: 0, tss: 0, minutes: 0 };
 
           return (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h5 className="font-semibold text-blue-900 mb-3">{t('crossTraining.thisWeek')} ({thisWeekKey})</h5>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
                   <div className="text-xs text-blue-700 mb-1">{t('crossTraining.sessions')}</div>
                   <div className="text-xl font-bold text-blue-900">{thisWeekData.sessions}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-blue-700 mb-1">Hours</div>
+                  <div className="text-xl font-bold text-blue-900">{(thisWeekData.minutes / 60).toFixed(1)} h</div>
                 </div>
                 <div>
                   <div className="text-xs text-blue-700 mb-1">{t('common.distance')}</div>

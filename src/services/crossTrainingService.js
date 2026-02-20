@@ -637,7 +637,7 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
   const currentWeekStart = new Date(currentYear, currentMonth, currentDay - currentDaysToMonday, 12, 0, 0);
   const currentWeekKey = `${currentWeekStart.getFullYear()}-${String(currentWeekStart.getMonth() + 1).padStart(2, '0')}-${String(currentWeekStart.getDate()).padStart(2, '0')}`;
 
-  byWeek[currentWeekKey] = { sessions: 0, km: 0, runningEquivKm: 0, tss: 0 };
+  byWeek[currentWeekKey] = { sessions: 0, km: 0, runningEquivKm: 0, tss: 0, minutes: 0 };
 
   activities.forEach(activity => {
     // Extract date only (YYYY-MM-DD) to avoid timezone issues
@@ -657,13 +657,14 @@ export async function getCyclingStats(startDate, endDate, forceRefresh = false) 
     const weekKey = `${weekYear}-${weekMonth}-${weekDay}`;
 
     if (!byWeek[weekKey]) {
-      byWeek[weekKey] = { sessions: 0, km: 0, runningEquivKm: 0, tss: 0 };
+      byWeek[weekKey] = { sessions: 0, km: 0, runningEquivKm: 0, tss: 0, minutes: 0 };
     }
 
     const equivalent = calculateRunningEquivalent(activity);
     byWeek[weekKey].sessions++;
     byWeek[weekKey].km += (activity.distance || 0) / 1000;
     byWeek[weekKey].runningEquivKm += parseFloat(equivalent.runningDistanceKm);
+    byWeek[weekKey].minutes += Math.floor((activity.moving_time || 0) / 60);
 
     // Get TSS or calculate it
     let tss = activity.icu_training_load || activity.training_load || activity.load || activity.tss || activity.suffer_score || activity._calculated_tss;
