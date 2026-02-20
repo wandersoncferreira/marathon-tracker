@@ -128,6 +128,68 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 }
 
 /**
+ * Sync only activities that are missing power data
+ * Much more efficient than full refresh
+ */
+export async function syncMissingPowerData(startDate, endDate) {
+  try {
+    // Get all cycling activities from database
+    const cached = await db.getCrossTraining(startDate, endDate);
+    const cyclingActivities = cached.filter(a => a.type === 'Ride' || a.type === 'VirtualRide');
+
+    // Find activities missing power data
+    const missingPower = cyclingActivities.filter(a =>
+      !a.average_watts && !a.avg_power
+    );
+
+    if (missingPower.length === 0) {
+      return { updated: 0, message: 'All activities already have power data' };
+    }
+
+    // Fetch full details only for activities missing power
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const updatedActivities = [];
+
+    for (let i = 0; i < missingPower.length; i++) {
+      const activity = missingPower[i];
+
+      try {
+        // Add 250ms delay between requests to avoid rate limiting
+        if (i > 0) {
+          await delay(250);
+        }
+
+        // Fetch full activity details from Intervals.icu
+        const details = await intervalsApi.request(`/activity/${activity.id}`);
+
+        if (details && (details.average_watts || details.avg_power)) {
+          updatedActivities.push(details);
+        }
+      } catch (error) {
+        console.error(`Error fetching activity ${activity.id}:`, error);
+      }
+    }
+
+    // Update only the activities that got new data
+    if (updatedActivities.length > 0) {
+      await db.storeCrossTraining(updatedActivities);
+    }
+
+    return {
+      updated: updatedActivities.length,
+      checked: missingPower.length,
+      message: `Updated ${updatedActivities.length} of ${missingPower.length} activities with power data`
+    };
+  } catch (error) {
+    console.error('Error syncing missing power data:', error);
+    return {
+      updated: 0,
+      error: error.message
+    };
+  }
+}
+
+/**
  * Get cycling activities only
  */
 export async function getCyclingActivities(startDate, endDate, forceRefresh = false) {

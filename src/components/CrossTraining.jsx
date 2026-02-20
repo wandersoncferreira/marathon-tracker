@@ -5,7 +5,8 @@ import {
   getStrengthRecommendations,
   checkPhaseChange,
   markRecommendationsUpdated,
-  generateStrengthRecommendationsPrompt
+  generateStrengthRecommendationsPrompt,
+  syncMissingPowerData
 } from '../services/crossTrainingService';
 import { db } from '../services/database';
 import { useTranslation } from '../i18n/LanguageContext';
@@ -29,6 +30,7 @@ export default function CrossTraining() {
   const [cyclingStats, setCyclingStats] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState('cycling'); // 'cycling' or 'strength'
   const [showInfoModal, setShowInfoModal] = useState(false);
 
@@ -66,6 +68,26 @@ export default function CrossTraining() {
     }
   }
 
+  async function handleSyncPower() {
+    try {
+      setSyncing(true);
+
+      // Sync only activities missing power data
+      const result = await syncMissingPowerData(MARATHON_CYCLE_START, TODAY);
+
+      // Reload cycling stats to show updated data
+      const cycling = await getCyclingStats(MARATHON_CYCLE_START, TODAY, false);
+      setCyclingStats(cycling);
+
+      // Show result message
+      alert(result.message || `Updated ${result.updated} activities`);
+    } catch (error) {
+      alert('Error syncing power data: ' + error.message);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
 
   if (loading) {
     return (
@@ -92,12 +114,12 @@ export default function CrossTraining() {
             </p>
           </div>
           <button
-            onClick={() => loadData(true, true)}
-            disabled={loading}
+            onClick={handleSyncPower}
+            disabled={loading || syncing}
             className="ml-4 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors whitespace-nowrap"
-            title="Refresh data from Intervals.icu"
+            title="Sync missing power data from Intervals.icu"
           >
-            {loading ? '⏳' : '🔄'} Sync
+            {syncing ? '⏳ Syncing...' : '🔄 Sync Power'}
           </button>
         </div>
       </div>
