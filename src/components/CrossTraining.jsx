@@ -6,7 +6,8 @@ import {
   checkPhaseChange,
   markRecommendationsUpdated,
   generateStrengthRecommendationsPrompt,
-  syncMissingPowerData
+  syncMissingPowerData,
+  getCrossTrainingActivities
 } from '../services/crossTrainingService';
 import { db } from '../services/database';
 import { useTranslation } from '../i18n/LanguageContext';
@@ -72,12 +73,28 @@ export default function CrossTraining() {
     try {
       setSyncing(true);
 
-      // Sync only activities missing power data
+      console.log('=== Starting Power Sync ===');
+      console.log('Date range:', MARATHON_CYCLE_START, 'to', TODAY);
+
+      // FIRST: Fetch recent activities to ensure today's data is in the database
+      console.log('Step 1: Fetching recent activities from Intervals.icu...');
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      const lastWeekStr = lastWeek.toISOString().split('T')[0];
+
+      await getCrossTrainingActivities(lastWeekStr, TODAY, true); // Force refresh last 7 days
+      console.log('Recent activities fetched');
+
+      // THEN: Sync missing power data
+      console.log('Step 2: Syncing missing power data...');
       const result = await syncMissingPowerData(MARATHON_CYCLE_START, TODAY);
+      console.log('Sync result:', result);
 
       // Reload cycling stats to show updated data
+      console.log('Step 3: Reloading cycling stats...');
       const cycling = await getCyclingStats(MARATHON_CYCLE_START, TODAY, false);
       setCyclingStats(cycling);
+      console.log('Cycling stats reloaded, activities:', cycling?.activities?.length);
 
       // Show result message
       if (result.error) {
@@ -86,6 +103,7 @@ export default function CrossTraining() {
         alert(result.message || `Updated ${result.updated} activities`);
       }
     } catch (error) {
+      console.error('handleSyncPower error:', error);
       alert('Error syncing power data: ' + error.message);
     } finally {
       setSyncing(false);

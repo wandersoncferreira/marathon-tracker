@@ -139,9 +139,17 @@ export async function syncMissingPowerData(startDate, endDate) {
 
     console.log(`Total cycling activities: ${cyclingActivities.length}`);
 
-    // Debug: Check what power data exists
+    // Debug: Check what power data exists (first 5 and most recent)
     cyclingActivities.slice(0, 5).forEach(a => {
-      console.log(`Activity ${a.id}: average_watts=${a.average_watts}, avg_power=${a.avg_power}, name="${a.name}"`);
+      console.log(`Activity ${a.id}: average_watts=${a.average_watts}, avg_power=${a.avg_power}, name="${a.name}", date=${a.start_date_local}`);
+    });
+
+    // Check today's activities specifically
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayActivities = cyclingActivities.filter(a => a.start_date_local?.startsWith(today));
+    console.log(`Today's (${today}) cycling activities: ${todayActivities.length}`);
+    todayActivities.forEach(a => {
+      console.log(`  TODAY - ${a.id}: average_watts=${a.average_watts}, avg_power=${a.avg_power}, name="${a.name}"`);
     });
 
     // Find activities missing power data (check for truthy values, not just existence)
