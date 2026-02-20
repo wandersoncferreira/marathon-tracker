@@ -62,6 +62,11 @@ class MarathonTrackerDB extends Dexie {
       nutritionTracking: 'date, rating, adherence, dayType', // Primary key: date (YYYY-MM-DD), indexed by rating, adherence, dayType
     });
 
+    // Version 9 - Add carb tracking table
+    this.version(9).stores({
+      carbTracking: 'activityId, timestamp', // Primary key: activityId, indexed by timestamp
+    });
+
     // Access tables
     this.config = this.table('config');
     this.activities = this.table('activities');
@@ -73,6 +78,7 @@ class MarathonTrackerDB extends Dexie {
     this.events = this.table('events');
     this.crossTraining = this.table('crossTraining');
     this.nutritionTracking = this.table('nutritionTracking');
+    this.carbTracking = this.table('carbTracking');
   }
 
   /**

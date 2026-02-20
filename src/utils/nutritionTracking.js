@@ -143,19 +143,42 @@ export function getNutritionGoals() {
 }
 
 /**
- * Save nutrition goals
+ * Save nutrition goals to database
  * @param {object} goals - Goal configuration
  */
-export function saveNutritionGoals(goals) {
-  localStorage.setItem('nutritionGoals', JSON.stringify(goals));
+export async function saveNutritionGoals(goals) {
+  await db.setConfig('nutritionGoals', goals);
 }
 
 /**
- * Load nutrition goals from storage
+ * Load nutrition goals from database
  */
-export function loadNutritionGoals() {
-  const stored = localStorage.getItem('nutritionGoals');
-  return stored ? JSON.parse(stored) : getNutritionGoals();
+export async function loadNutritionGoals() {
+  try {
+    const stored = await db.getConfig('nutritionGoals');
+    if (stored) {
+      return stored;
+    }
+  } catch (error) {
+    console.error('Error loading nutrition goals from database:', error);
+  }
+
+  // Check localStorage for migration (legacy)
+  const localStored = localStorage.getItem('nutritionGoals');
+  if (localStored) {
+    try {
+      const goals = JSON.parse(localStored);
+      // Migrate to database
+      await db.setConfig('nutritionGoals', goals);
+      localStorage.removeItem('nutritionGoals'); // Clean up
+      return goals;
+    } catch (error) {
+      console.error('Error migrating nutrition goals:', error);
+    }
+  }
+
+  // Return defaults if nothing found
+  return getNutritionGoals();
 }
 
 /**

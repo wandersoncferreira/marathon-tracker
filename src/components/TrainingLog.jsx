@@ -6,6 +6,13 @@ import { intervalsApi } from '../services/intervalsApi';
 import { db } from '../services/database';
 import { downloadDatabaseExport } from '../services/databaseSync';
 import { useTranslation } from '../i18n/LanguageContext';
+import {
+  getCarbGuidelines,
+  calculateExpectedCarbs,
+  calculateCompliance,
+  saveCarbIntake,
+  getCarbIntake
+} from '../utils/carbTracking';
 
 function TrainingLog() {
   const { t } = useTranslation();
@@ -464,9 +471,35 @@ function ActivityDetail({ activity, onBack }) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [carbData, setCarbData] = useState(null);
+  const [carbForm, setCarbForm] = useState({ carbGrams: 0, notes: '' });
+  const [showCarbForm, setShowCarbForm] = useState(false);
+  const [savingCarbs, setSavingCarbs] = useState(false);
+  const [guidelines, setGuidelines] = useState({
+    carbsPer30Min: 22.5,
+    minDurationMinutes: 75,
+    enabled: true
+  });
+
+  // Calculate if this activity needs carb tracking
+  const durationMinutes = activity.moving_time ? Math.round(activity.moving_time / 60) : 0;
+  const needsCarbTracking =
+    guidelines.enabled &&
+    (activity.type === 'Run' || activity.workout_type === 'Run') &&
+    durationMinutes > guidelines.minDurationMinutes;
+  const expectedCarbs = needsCarbTracking ? calculateExpectedCarbs(durationMinutes, guidelines) : 0;
 
   useEffect(() => {
-    async function fetchMessages() {
+    async function fetchData() {
+      // Load guidelines from database
+      try {
+        const loadedGuidelines = await getCarbGuidelines();
+        setGuidelines(loadedGuidelines);
+      } catch (error) {
+        console.error('Error loading carb guidelines:', error);
+      }
+
+      // Load messages
       setLoadingMessages(true);
       try {
         const msgs = await intervalsApi.getActivityMessages(activity.id);
@@ -477,12 +510,47 @@ function ActivityDetail({ activity, onBack }) {
       } finally {
         setLoadingMessages(false);
       }
+
+      // Load carb data (will use updated guidelines)
+      const duration = activity.moving_time ? Math.round(activity.moving_time / 60) : 0;
+      if (duration > guidelines.minDurationMinutes && guidelines.enabled) {
+        try {
+          const data = await getCarbIntake(activity.id);
+          if (data) {
+            setCarbData(data);
+            setCarbForm({ carbGrams: data.carbGrams, notes: data.notes || '' });
+          }
+        } catch (error) {
+          console.error('Error fetching carb data:', error);
+        }
+      }
     }
 
     if (activity?.id) {
-      fetchMessages();
+      fetchData();
     }
   }, [activity?.id]);
+
+  const handleSaveCarbs = async () => {
+    if (!needsCarbTracking) return;
+
+    setSavingCarbs(true);
+    try {
+      const saved = await saveCarbIntake(
+        activity.id,
+        parseInt(carbForm.carbGrams) || 0,
+        carbForm.notes
+      );
+      setCarbData(saved);
+      setShowCarbForm(false);
+      alert('✅ Carb intake saved successfully!');
+    } catch (error) {
+      console.error('Error saving carb intake:', error);
+      alert('❌ Error saving carb intake: ' + error.message);
+    } finally {
+      setSavingCarbs(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -562,6 +630,141 @@ function ActivityDetail({ activity, onBack }) {
             )}
           </div>
         </div>
+
+        {/* Carb Supplementation Tracking */}
+        {needsCarbTracking && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <span>🥤</span>
+                <span>Carb Supplementation</span>
+              </h3>
+              {!showCarbForm && (
+                <button
+                  onClick={() => setShowCarbForm(true)}
+                  className="px-3 py-1 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                >
+                  {carbData ? '✏️ Edit' : '+ Add'}
+                </button>
+              )}
+            </div>
+
+            {showCarbForm ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Carbs Consumed (grams)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="500"
+                    value={carbForm.carbGrams}
+                    onChange={(e) => setCarbForm({ ...carbForm, carbGrams: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 45"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Expected: {expectedCarbs}g ({Math.floor(durationMinutes / 30)} gels × {guidelines.carbsPer30Min}g)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    value={carbForm.notes}
+                    onChange={(e) => setCarbForm({ ...carbForm, notes: e.target.value })}
+                    rows="2"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="e.g., Took 2 gels instead of 3, felt good"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveCarbs}
+                    disabled={savingCarbs}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50"
+                  >
+                    {savingCarbs ? '💾 Saving...' : '💾 Save'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCarbForm(false);
+                      if (carbData) {
+                        setCarbForm({ carbGrams: carbData.carbGrams, notes: carbData.notes || '' });
+                      }
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : carbData ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <p className="text-xs text-gray-600">Expected</p>
+                    <p className="text-lg font-bold text-gray-900">{expectedCarbs}g</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Actual</p>
+                    <p className="text-lg font-bold text-gray-900">{carbData.carbGrams}g</p>
+                  </div>
+                </div>
+
+                {(() => {
+                  const compliance = calculateCompliance(carbData.carbGrams, expectedCarbs);
+                  if (compliance) {
+                    return (
+                      <div className={`px-3 py-2 rounded-md ${
+                        compliance.level === 'excellent' ? 'bg-green-100 border border-green-300' :
+                        compliance.level === 'good' ? 'bg-blue-100 border border-blue-300' :
+                        compliance.level === 'fair' ? 'bg-yellow-100 border border-yellow-300' :
+                        'bg-red-100 border border-red-300'
+                      }`}>
+                        <p className={`text-sm font-semibold ${
+                          compliance.level === 'excellent' ? 'text-green-800' :
+                          compliance.level === 'good' ? 'text-blue-800' :
+                          compliance.level === 'fair' ? 'text-yellow-800' :
+                          'text-red-800'
+                        }`}>
+                          {compliance.level === 'excellent' ? '🌟 Excellent!' :
+                           compliance.level === 'good' ? '👍 Good!' :
+                           compliance.level === 'fair' ? '😐 Fair' :
+                           '⚠️ Needs Improvement'}
+                          {' '}({compliance.percentage}%)
+                        </p>
+                        <p className="text-xs text-gray-700 mt-1">
+                          {compliance.difference >= 0
+                            ? `+${compliance.difference}g over target`
+                            : `${Math.abs(compliance.difference)}g under target`}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {carbData.notes && (
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <p className="text-xs text-gray-600 mb-1">Notes:</p>
+                    <p className="text-sm text-gray-800">{carbData.notes}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ No carb data tracked yet. Duration: {durationMinutes}min - Expected: {expectedCarbs}g
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {(activity.description || activity.notes) && (
           <div className="mt-4 pt-4 border-t border-gray-200">

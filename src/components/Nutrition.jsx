@@ -13,7 +13,21 @@ import {
   calculateCycleStats,
   analyzeMealPatterns
 } from '../utils/nutritionTracking';
+import {
+  getCarbGuidelines,
+  saveCarbGuidelines,
+  getCarbTrackingForRange,
+  calculateWeeklyCarbStats,
+  calculateCycleCarbStats,
+  calculateExpectedCarbs,
+  calculateCompliance,
+  saveCarbIntake,
+  getCarbIntake
+} from '../utils/carbTracking';
 import { TRAINING_CYCLE } from '../utils/trainingCycle';
+import { intervalsApi } from '../services/intervalsApi';
+import { metersPerSecondToPace, formatDuration } from '../utils/trainingCalculations';
+import { formatDate } from '../utils/dateHelpers';
 
 function Nutrition() {
   const { t, language } = useTranslation();
@@ -74,7 +88,19 @@ function Nutrition() {
     }
   });
   const [mealAnalysis, setMealAnalysis] = useState(null);
-  const [activeView, setActiveView] = useState('analysis'); // 'analysis' or 'plan'
+  const [activeView, setActiveView] = useState('analysis'); // 'analysis', 'plan', or 'supplementation'
+
+  // Carb tracking state
+  const [carbGuidelines, setCarbGuidelines] = useState({
+    carbsPer30Min: 22.5,
+    minDurationMinutes: 75,
+    enabled: true
+  });
+  const [carbTrackingData, setCarbTrackingData] = useState([]);
+  const [weeklyCarbStats, setWeeklyCarbStats] = useState({});
+  const [cycleCarbStats, setCycleCarbStats] = useState(null);
+  const [expandedWeeks, setExpandedWeeks] = useState({});
+  const [selectedCarbActivity, setSelectedCarbActivity] = useState(null);
 
   // Load nutrition goals and weekly data
   useEffect(() => {
@@ -82,7 +108,12 @@ function Nutrition() {
       try {
         console.log('🥗 Initializing nutrition tracking...');
 
-        const goals = loadNutritionGoals();
+        // Load carb guidelines from database
+        const guidelines = await getCarbGuidelines();
+        console.log('🥤 Loaded carb guidelines:', guidelines);
+        setCarbGuidelines(guidelines);
+
+        const goals = await loadNutritionGoals();
         console.log('📊 Loaded goals:', goals);
         setNutritionGoals(goals);
 
@@ -146,6 +177,99 @@ function Nutrition() {
         onTrack: false,
         message: 'Error loading data. Please try refreshing.'
       });
+    }
+  };
+
+  // Load carb tracking data when supplementation tab is viewed
+  useEffect(() => {
+    const loadCarbTrackingData = async () => {
+      if (activeView !== 'supplementation') return;
+      if (!TRAINING_CYCLE || !TRAINING_CYCLE.startDate || !TRAINING_CYCLE.raceDate) return;
+
+      try {
+        console.log('🥤 Loading carb tracking data...');
+
+        // Get all activities for the training cycle
+        const activities = await intervalsApi.getActivities(
+          TRAINING_CYCLE.startDate,
+          TRAINING_CYCLE.raceDate
+        );
+
+        // Filter for running activities only
+        const runningActivities = activities.filter(a =>
+          a.type === 'Run' || a.workout_type === 'Run'
+        );
+
+        // Get carb tracking data for the date range
+        const trackingData = await getCarbTrackingForRange(
+          TRAINING_CYCLE.startDate,
+          TRAINING_CYCLE.raceDate,
+          runningActivities
+        );
+        console.log('📊 Carb tracking data:', trackingData);
+        setCarbTrackingData(trackingData);
+
+        // Calculate weekly stats
+        const weeklyStats = calculateWeeklyCarbStats(trackingData);
+        console.log('📅 Weekly carb stats:', weeklyStats);
+        setWeeklyCarbStats(weeklyStats);
+
+        // Calculate cycle-wide stats
+        const cycleStats = calculateCycleCarbStats(trackingData);
+        console.log('🏃 Cycle carb stats:', cycleStats);
+        setCycleCarbStats(cycleStats);
+      } catch (error) {
+        console.error('❌ Error loading carb tracking data:', error);
+      }
+    };
+
+    loadCarbTrackingData();
+  }, [activeView]);
+
+  // Group carb tracking data by week
+  const groupCarbDataByWeek = (trackingData) => {
+    const byWeek = {};
+
+    trackingData.forEach(entry => {
+      // Get week start (Monday)
+      const date = new Date(entry.date.split('T')[0] + 'T12:00:00');
+      const dayOfWeek = date.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - daysToMonday);
+
+      const weekKey = weekStart.toISOString().split('T')[0];
+
+      if (!byWeek[weekKey]) {
+        byWeek[weekKey] = [];
+      }
+
+      byWeek[weekKey].push(entry);
+    });
+
+    return byWeek;
+  };
+
+  const toggleWeek = (weekKey) => {
+    setExpandedWeeks(prev => ({
+      ...prev,
+      [weekKey]: !prev[weekKey]
+    }));
+  };
+
+  const handleActivityClick = async (activityId) => {
+    try {
+      const activities = await intervalsApi.getActivities(
+        TRAINING_CYCLE.startDate,
+        TRAINING_CYCLE.raceDate
+      );
+      const activity = activities.find(a => a.id === activityId);
+      if (activity) {
+        setSelectedCarbActivity(activity);
+      }
+    } catch (error) {
+      console.error('Error loading activity:', error);
     }
   };
 
@@ -247,12 +371,23 @@ function Nutrition() {
             >
               🍽️ Diet Plan
             </button>
+            <button
+              onClick={() => setActiveView('supplementation')}
+              className={`py-3 px-6 font-medium text-sm border-b-2 transition-colors ${
+                activeView === 'supplementation'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              💊 Intra-run Supplementation
+            </button>
           </nav>
         </div>
       </div>
 
       {activeView === 'analysis' ? (
         <>
+          {/* ANALYSIS VIEW */}
           {/* Nutrition Goal Section - Compact */}
           <div className="card mb-6 bg-gradient-to-r from-primary-50 to-blue-50">
             <div className="flex items-center justify-between">
@@ -548,9 +683,9 @@ function Nutrition() {
             </div>
           )}
         </>
-      ) : (
+      ) : activeView === 'plan' ? (
         <>
-          {/* Diet Plan View */}
+          {/* DIET PLAN VIEW */}
 
           {/* Day Type Selector */}
           <div className="card mb-6">
@@ -800,6 +935,460 @@ function Nutrition() {
             </ul>
           </div>
         </>
+      ) : (
+        <>
+          {/* SUPPLEMENTATION VIEW */}
+
+          {/* Carb Guidelines Configuration */}
+          <div className="card mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">
+              ⚙️ Carb Guidelines Configuration
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Carbs per 30 minutes (grams)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={carbGuidelines.carbsPer30Min}
+                  onChange={async (e) => {
+                    const newGuidelines = {
+                      ...carbGuidelines,
+                      carbsPer30Min: parseFloat(e.target.value) || 0
+                    };
+                    setCarbGuidelines(newGuidelines);
+                    await saveCarbGuidelines(newGuidelines);
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Recommended: 20-25g per 30min
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Minimum Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="300"
+                  step="15"
+                  value={carbGuidelines.minDurationMinutes}
+                  onChange={async (e) => {
+                    const newGuidelines = {
+                      ...carbGuidelines,
+                      minDurationMinutes: parseInt(e.target.value) || 0
+                    };
+                    setCarbGuidelines(newGuidelines);
+                    await saveCarbGuidelines(newGuidelines);
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Track carbs for runs longer than this
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Tracking Enabled
+                </label>
+                <button
+                  onClick={async () => {
+                    const newGuidelines = {
+                      ...carbGuidelines,
+                      enabled: !carbGuidelines.enabled
+                    };
+                    setCarbGuidelines(newGuidelines);
+                    await saveCarbGuidelines(newGuidelines);
+                  }}
+                  className={`w-full px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    carbGuidelines.enabled
+                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                  }`}
+                >
+                  {carbGuidelines.enabled ? '✅ Enabled' : '❌ Disabled'}
+                </button>
+                <p className="text-xs text-gray-500 mt-1">
+                  {carbGuidelines.enabled ? 'Carb tracking is active' : 'Carb tracking is disabled'}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>💡 How it works:</strong> For runs longer than {carbGuidelines.minDurationMinutes} minutes,
+                you should consume approximately {carbGuidelines.carbsPer30Min}g of carbs every 30 minutes
+                (starting after the first {carbGuidelines.minDurationMinutes} minutes).
+              </p>
+            </div>
+          </div>
+
+          {/* Marathon Cycle Carb Adherence */}
+          {cycleCarbStats && (
+            <div className="card mb-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                🏃 Marathon Cycle - Carb Adherence
+              </h2>
+
+              {cycleCarbStats.totalActivities === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No runs longer than {carbGuidelines.minDurationMinutes} minutes found in this training cycle yet.
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                    <div className="bg-purple-50 rounded-lg p-3 text-center">
+                      <div className="text-xs text-purple-700 mb-1">Runs &gt;{carbGuidelines.minDurationMinutes}min</div>
+                      <div className="text-2xl font-bold text-purple-900">
+                        {cycleCarbStats.totalActivities}
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 rounded-lg p-3 text-center">
+                      <div className="text-xs text-blue-700 mb-1">Tracked</div>
+                      <div className="text-2xl font-bold text-blue-900">
+                        {cycleCarbStats.trackedActivities}
+                      </div>
+                      <div className="text-xs text-blue-600">
+                        {cycleCarbStats.trackingPercentage}%
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                      <div className="text-xs text-green-700 mb-1">Compliant</div>
+                      <div className="text-2xl font-bold text-green-900">
+                        {cycleCarbStats.compliantActivities}
+                      </div>
+                      <div className="text-xs text-green-600">
+                        {cycleCarbStats.compliancePercentage}%
+                      </div>
+                    </div>
+
+                    <div className="bg-yellow-50 rounded-lg p-3 text-center">
+                      <div className="text-xs text-yellow-700 mb-1">Expected</div>
+                      <div className="text-2xl font-bold text-yellow-900">
+                        {cycleCarbStats.totalExpected}g
+                      </div>
+                    </div>
+
+                    <div className="bg-orange-50 rounded-lg p-3 text-center">
+                      <div className="text-xs text-orange-700 mb-1">Actual</div>
+                      <div className="text-2xl font-bold text-orange-900">
+                        {cycleCarbStats.totalActual}g
+                      </div>
+                      <div className="text-xs text-orange-600">
+                        {cycleCarbStats.overallCompliance}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {cycleCarbStats.message && (
+                    <div className={`p-3 rounded-lg ${
+                      cycleCarbStats.compliancePercentage >= 80
+                        ? 'bg-green-50 border border-green-200'
+                        : cycleCarbStats.compliancePercentage >= 60
+                        ? 'bg-blue-50 border border-blue-200'
+                        : 'bg-yellow-50 border border-yellow-200'
+                    }`}>
+                      <p className={`text-sm font-medium ${
+                        cycleCarbStats.compliancePercentage >= 80
+                          ? 'text-green-800'
+                          : cycleCarbStats.compliancePercentage >= 60
+                          ? 'text-blue-800'
+                          : 'text-yellow-800'
+                      }`}>
+                        {cycleCarbStats.message}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Activities Requiring Tracking - Grouped by Week */}
+          {carbTrackingData && carbTrackingData.length > 0 && (() => {
+            const groupedByWeek = groupCarbDataByWeek(carbTrackingData);
+            const weekKeys = Object.keys(groupedByWeek).sort((a, b) => b.localeCompare(a));
+
+            return (
+              <div className="card mb-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">
+                  🏃 Runs Requiring Carb Tracking
+                </h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  Runs longer than {carbGuidelines.minDurationMinutes} minutes grouped by week. Click on runs to view details and track carb intake.
+                </p>
+
+                <div className="space-y-3">
+                  {weekKeys.map((weekKey) => {
+                    const weekActivities = groupedByWeek[weekKey];
+                    const weekDate = new Date(weekKey + 'T12:00:00');
+                    const weekLabel = weekDate.toLocaleDateString(
+                      language === 'pt_BR' ? 'pt-BR' : 'en-US',
+                      { month: 'short', day: 'numeric' }
+                    );
+
+                    const trackedCount = weekActivities.filter(a => a.tracked).length;
+                    const compliantCount = weekActivities.filter(a => a.compliance && a.compliance.percentage >= 70).length;
+                    const isExpanded = expandedWeeks[weekKey];
+
+                    return (
+                      <div key={weekKey} className="border border-gray-200 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => toggleWeek(weekKey)}
+                          className="w-full bg-gray-50 hover:bg-gray-100 transition-colors p-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">
+                                {isExpanded ? '▼' : '▶'}
+                              </span>
+                              <div className="text-left">
+                                <div className="text-sm font-semibold text-gray-900">
+                                  Week of {weekLabel}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  {weekActivities.length} run{weekActivities.length !== 1 ? 's' : ''} • {trackedCount} tracked • {compliantCount} compliant
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {trackedCount === weekActivities.length ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                                  ✅ All Tracked
+                                </span>
+                              ) : trackedCount > 0 ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                                  ⚠️ Partial
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded">
+                                  ❌ None
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="p-3 space-y-2 bg-white">
+                            {weekActivities
+                              .sort((a, b) => new Date(b.date) - new Date(a.date))
+                              .map((activity) => {
+                                const date = new Date(activity.date);
+                                const dateLabel = date.toLocaleDateString(
+                                  language === 'pt_BR' ? 'pt-BR' : 'en-US',
+                                  { weekday: 'short', month: 'short', day: 'numeric' }
+                                );
+
+                                return (
+                                  <div
+                                    key={activity.activityId}
+                                    onClick={() => handleActivityClick(activity.activityId)}
+                                    className={`p-3 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${
+                                      activity.tracked
+                                        ? activity.compliance.level === 'excellent'
+                                          ? 'bg-green-50 border-green-200 hover:border-green-300'
+                                          : activity.compliance.level === 'good'
+                                          ? 'bg-blue-50 border-blue-200 hover:border-blue-300'
+                                          : activity.compliance.level === 'fair'
+                                          ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-300'
+                                          : 'bg-red-50 border-red-200 hover:border-red-300'
+                                        : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex-1">
+                                        <div className="text-sm font-semibold text-gray-900">
+                                          {activity.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          {dateLabel}
+                                        </div>
+                                      </div>
+
+                                      {activity.tracked && (
+                                        <div className={`px-2 py-1 text-xs font-medium rounded ${
+                                          activity.compliance.level === 'excellent' ? 'bg-green-100 text-green-800' :
+                                          activity.compliance.level === 'good' ? 'bg-blue-100 text-blue-800' :
+                                          activity.compliance.level === 'fair' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-red-100 text-red-800'
+                                        }`}>
+                                          {activity.compliance.percentage}%
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-3">
+                                      <div>
+                                        <p className="text-xs text-gray-600">Duration</p>
+                                        <p className="text-sm font-bold text-gray-900">
+                                          {activity.duration} min
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600">Expected</p>
+                                        <p className="text-sm font-bold text-gray-900">
+                                          {activity.expected}g
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600">Actual</p>
+                                        <p className={`text-sm font-bold ${
+                                          activity.tracked
+                                            ? activity.compliance.level === 'excellent' ? 'text-green-700' :
+                                              activity.compliance.level === 'good' ? 'text-blue-700' :
+                                              activity.compliance.level === 'fair' ? 'text-yellow-700' :
+                                              'text-red-700'
+                                            : 'text-gray-400'
+                                        }`}>
+                                          {activity.tracked ? `${activity.actual}g` : '-'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-xs text-gray-500 mt-4 text-center">
+                  Total: {carbTrackingData.length} run{carbTrackingData.length !== 1 ? 's' : ''} longer than {carbGuidelines.minDurationMinutes} minutes
+                </p>
+              </div>
+            );
+          })()}
+
+          {/* Weekly Carb Adherence */}
+          {Object.keys(weeklyCarbStats).length > 0 && (
+            <div className="card mb-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                📅 Weekly Carb Adherence
+              </h2>
+
+              <div className="space-y-3">
+                {Object.keys(weeklyCarbStats)
+                  .sort((a, b) => b.localeCompare(a))
+                  .slice(0, 8)
+                  .map((weekKey) => {
+                    const week = weeklyCarbStats[weekKey];
+                    const weekDate = new Date(weekKey + 'T12:00:00');
+                    const weekLabel = weekDate.toLocaleDateString(
+                      language === 'pt_BR' ? 'pt-BR' : 'en-US',
+                      { month: 'short', day: 'numeric' }
+                    );
+
+                    return (
+                      <div key={weekKey} className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm font-semibold text-gray-900">
+                            Week of {weekLabel}
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            week.compliancePercentage >= 80
+                              ? 'bg-green-100 text-green-800'
+                              : week.compliancePercentage >= 60
+                              ? 'bg-blue-100 text-blue-800'
+                              : week.compliancePercentage >= 40
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {week.compliancePercentage}% Compliant
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-5 gap-2">
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600">Runs &gt;{carbGuidelines.minDurationMinutes}min</div>
+                            <div className="text-lg font-bold text-gray-900">
+                              {week.totalActivities}
+                            </div>
+                          </div>
+
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600">Tracked</div>
+                            <div className="text-lg font-bold text-blue-700">
+                              {week.trackedActivities}
+                            </div>
+                          </div>
+
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600">Compliant</div>
+                            <div className="text-lg font-bold text-green-700">
+                              {week.compliantActivities}
+                            </div>
+                          </div>
+
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600">Expected</div>
+                            <div className="text-sm font-bold text-gray-900">
+                              {week.totalExpected}g
+                            </div>
+                          </div>
+
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600">Actual</div>
+                            <div className="text-sm font-bold text-gray-900">
+                              {week.totalActual}g
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Info Box */}
+          <div className="card bg-blue-50 border-2 border-blue-200">
+            <h3 className="text-sm font-semibold text-blue-900 mb-2">
+              ℹ️ About Carb Supplementation
+            </h3>
+            <div className="text-sm text-blue-800 space-y-2">
+              <p>
+                Carbohydrate supplementation during long runs helps maintain blood glucose levels and
+                delay fatigue. The app tracks runs longer than {carbGuidelines.minDurationMinutes} minutes
+                and calculates expected carb intake based on your guidelines ({carbGuidelines.carbsPer30Min}g every 30min).
+              </p>
+              <p>
+                <strong>How it works:</strong> For a 93-minute run, you'd take gels at 30, 60, and 90 minutes
+                (3 gels × {carbGuidelines.carbsPer30Min}g = {Math.round(3 * carbGuidelines.carbsPer30Min)}g expected).
+              </p>
+              <p>
+                <strong>Compliance Levels:</strong>
+              </p>
+              <ul className="text-xs space-y-1 ml-4">
+                <li>• <strong>Excellent (≥90%):</strong> Within 10% of target</li>
+                <li>• <strong>Good (≥70%):</strong> Within 30% of target</li>
+                <li>• <strong>Fair (≥50%):</strong> Within 50% of target</li>
+                <li>• <strong>Poor (&lt;50%):</strong> Needs improvement</li>
+              </ul>
+              <p className="text-xs mt-2 font-semibold">
+                💡 To track carb intake: Go to Training Log → Click on a run &gt;{carbGuidelines.minDurationMinutes}min → Fill in the carb tracking form
+              </p>
+              <p className="text-xs text-blue-700 italic mt-2">
+                Note: Not all runs &gt;{carbGuidelines.minDurationMinutes}min require carb supplementation (e.g., easy runs).
+                Only track when you actually take gels/carbs during the run.
+              </p>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Info Modal */}
@@ -819,6 +1408,40 @@ function Nutrition() {
           onSave={saveTracking}
           onClose={() => setShowTrackingModal(false)}
           language={language}
+        />
+      )}
+
+      {/* Activity Detail Modal for Carb Tracking */}
+      {selectedCarbActivity && (
+        <CarbActivityDetailModal
+          activity={selectedCarbActivity}
+          onClose={() => setSelectedCarbActivity(null)}
+          language={language}
+          guidelines={carbGuidelines}
+          onSaved={async () => {
+            // Reload carb tracking data after saving
+            if (TRAINING_CYCLE && TRAINING_CYCLE.startDate && TRAINING_CYCLE.raceDate) {
+              const activities = await intervalsApi.getActivities(
+                TRAINING_CYCLE.startDate,
+                TRAINING_CYCLE.raceDate
+              );
+              const runningActivities = activities.filter(a =>
+                a.type === 'Run' || a.workout_type === 'Run'
+              );
+              const trackingData = await getCarbTrackingForRange(
+                TRAINING_CYCLE.startDate,
+                TRAINING_CYCLE.raceDate,
+                runningActivities
+              );
+              setCarbTrackingData(trackingData);
+
+              const weeklyStats = calculateWeeklyCarbStats(trackingData);
+              setWeeklyCarbStats(weeklyStats);
+
+              const cycleStats = calculateCycleCarbStats(trackingData);
+              setCycleCarbStats(cycleStats);
+            }
+          }}
         />
       )}
     </div>
@@ -1285,6 +1908,271 @@ function TrackingModal({ date, trackingForm, setTrackingForm, onSave, onClose, l
               className="px-6 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
             >
               {t('nutrition.cancel', 'Cancel')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Activity Detail Modal for Carb Tracking
+ */
+function CarbActivityDetailModal({ activity, onClose, language, guidelines, onSaved }) {
+  const { t } = useTranslation();
+  const [carbData, setCarbData] = useState(null);
+  const [carbForm, setCarbForm] = useState({ carbGrams: 0, notes: '' });
+  const [showCarbForm, setShowCarbForm] = useState(false);
+  const [savingCarbs, setSavingCarbs] = useState(false);
+
+  const durationMinutes = activity.moving_time ? Math.round(activity.moving_time / 60) : 0;
+  const expectedCarbs = calculateExpectedCarbs(durationMinutes, guidelines);
+
+  useEffect(() => {
+    async function fetchCarbData() {
+      try {
+        const data = await getCarbIntake(activity.id);
+        if (data) {
+          setCarbData(data);
+          setCarbForm({ carbGrams: data.carbGrams, notes: data.notes || '' });
+        }
+      } catch (error) {
+        console.error('Error fetching carb data:', error);
+      }
+    }
+
+    if (activity?.id) {
+      fetchCarbData();
+    }
+  }, [activity?.id]);
+
+  const handleSaveCarbs = async () => {
+    setSavingCarbs(true);
+    try {
+      const saved = await saveCarbIntake(
+        activity.id,
+        parseInt(carbForm.carbGrams) || 0,
+        carbForm.notes
+      );
+      setCarbData(saved);
+      setShowCarbForm(false);
+      if (onSaved) {
+        await onSaved();
+      }
+      alert('✅ Carb intake saved successfully!');
+    } catch (error) {
+      console.error('Error saving carb intake:', error);
+      alert('❌ Error saving carb intake: ' + error.message);
+    } finally {
+      setSavingCarbs(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              {activity.name || 'Run'}
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {formatDate(activity.start_date_local, 'EEEE, MMMM d, yyyy')}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Activity Metrics */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600">{t('common.distance')}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {((activity.distance || 0) / 1000).toFixed(2)} km
+              </p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600">{t('common.duration')}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatDuration(activity.moving_time || activity.elapsed_time)}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {activity.average_speed && (
+              <div>
+                <p className="text-xs text-gray-600">{t('common.avgPace')}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {metersPerSecondToPace(activity.average_speed)}
+                </p>
+              </div>
+            )}
+            {activity.average_heartrate && (
+              <div>
+                <p className="text-xs text-gray-600">{t('common.avgHR')}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {activity.average_heartrate} bpm
+                </p>
+              </div>
+            )}
+            {(activity.icu_training_load || activity.training_load || activity.load) && (
+              <div>
+                <p className="text-xs text-gray-600">{t('common.load')}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {activity.icu_training_load || activity.training_load || activity.load}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Carb Supplementation Tracking */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <span>🥤</span>
+                <span>Carb Supplementation</span>
+              </h3>
+              {!showCarbForm && (
+                <button
+                  onClick={() => setShowCarbForm(true)}
+                  className="px-3 py-1 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                >
+                  {carbData ? '✏️ Edit' : '+ Add'}
+                </button>
+              )}
+            </div>
+
+            {showCarbForm ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Carbs Consumed (grams)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="500"
+                    value={carbForm.carbGrams}
+                    onChange={(e) => setCarbForm({ ...carbForm, carbGrams: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 45"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Expected: {expectedCarbs}g ({Math.floor(durationMinutes / 30)} gels × {guidelines.carbsPer30Min}g)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    value={carbForm.notes}
+                    onChange={(e) => setCarbForm({ ...carbForm, notes: e.target.value })}
+                    rows="2"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="e.g., Took 2 gels instead of 3, felt good"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveCarbs}
+                    disabled={savingCarbs}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50"
+                  >
+                    {savingCarbs ? '💾 Saving...' : '💾 Save'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCarbForm(false);
+                      if (carbData) {
+                        setCarbForm({ carbGrams: carbData.carbGrams, notes: carbData.notes || '' });
+                      }
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : carbData ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <p className="text-xs text-gray-600">Expected</p>
+                    <p className="text-lg font-bold text-gray-900">{expectedCarbs}g</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Actual</p>
+                    <p className="text-lg font-bold text-gray-900">{carbData.carbGrams}g</p>
+                  </div>
+                </div>
+
+                {(() => {
+                  const compliance = calculateCompliance(carbData.carbGrams, expectedCarbs);
+                  if (compliance) {
+                    return (
+                      <div className={`px-3 py-2 rounded-md ${
+                        compliance.level === 'excellent' ? 'bg-green-100 border border-green-300' :
+                        compliance.level === 'good' ? 'bg-blue-100 border border-blue-300' :
+                        compliance.level === 'fair' ? 'bg-yellow-100 border border-yellow-300' :
+                        'bg-red-100 border border-red-300'
+                      }`}>
+                        <p className={`text-sm font-semibold ${
+                          compliance.level === 'excellent' ? 'text-green-800' :
+                          compliance.level === 'good' ? 'text-blue-800' :
+                          compliance.level === 'fair' ? 'text-yellow-800' :
+                          'text-red-800'
+                        }`}>
+                          {compliance.level === 'excellent' ? '🌟 Excellent!' :
+                           compliance.level === 'good' ? '👍 Good!' :
+                           compliance.level === 'fair' ? '😐 Fair' :
+                           '⚠️ Needs Improvement'}
+                          {' '}({compliance.percentage}%)
+                        </p>
+                        <p className="text-xs text-gray-700 mt-1">
+                          {compliance.difference >= 0
+                            ? `+${compliance.difference}g over target`
+                            : `${Math.abs(compliance.difference)}g under target`}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {carbData.notes && (
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <p className="text-xs text-gray-600 mb-1">Notes:</p>
+                    <p className="text-sm text-gray-800">{carbData.notes}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ No carb data tracked yet. Duration: {durationMinutes}min - Expected: {expectedCarbs}g
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Close Button */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={onClose}
+              className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+            >
+              Close
             </button>
           </div>
         </div>
