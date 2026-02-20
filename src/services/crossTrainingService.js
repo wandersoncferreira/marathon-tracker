@@ -153,177 +153,6 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 }
 
 /**
- * Debug function to fetch activity from Strava API using MCP tool
- */
-async function fetchFromStravaAPI(activityId) {
-  try {
-    // We need to use the Strava MCP tool - this needs to be called from the UI
-    // because MCP tools aren't directly accessible from service files
-    console.log('⚠️ Cannot call Strava MCP tool from service file');
-    console.log('To fetch from Strava API, please use the UI button or call:');
-    console.log(`Use Claude Code to call: mcp__Strava__get-activity-details with activityId: ${activityId}`);
-    return null;
-  } catch (error) {
-    console.error('Error fetching from Strava:', error);
-    return null;
-  }
-}
-
-/**
- * Debug function to inspect API response for a specific activity by date and name
- * Detects if it's a Strava activity and fetches from appropriate API
- */
-export async function debugSpecificActivity(dateStr, namePattern) {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    const lastMonthStr = lastMonth.toISOString().split('T')[0];
-
-    const cached = await db.getCrossTraining(lastMonthStr, today);
-
-    // Find activity by date and name
-    const activity = cached.find(a => {
-      const activityDate = a.start_date_local?.split('T')[0];
-      const matchesDate = dateStr ? activityDate === dateStr : true;
-      const matchesName = namePattern ? a.name?.includes(namePattern) : true;
-      return matchesDate && matchesName;
-    });
-
-    if (!activity) {
-      console.log('Activity not found with date:', dateStr, 'and name pattern:', namePattern);
-      console.log('Available activities:', cached.map(a => ({
-        date: a.start_date_local?.split('T')[0],
-        name: a.name,
-        id: a.id,
-        source: a.source
-      })));
-      return;
-    }
-
-    console.log('=== FOUND ACTIVITY IN DATABASE ===');
-    console.log('ID:', activity.id);
-    console.log('Name:', activity.name);
-    console.log('Date:', activity.start_date_local);
-    console.log('Source:', activity.source);
-    console.log('Current TSS/Load values in DB:', {
-      icu_training_load: activity.icu_training_load,
-      training_load: activity.training_load,
-      load: activity.load,
-      tss: activity.tss,
-      suffer_score: activity.suffer_score
-    });
-
-    // Check if this is a Strava activity (numeric ID)
-    const isStravaActivity = String(activity.id).match(/^\d+$/);
-
-    if (isStravaActivity) {
-      console.log('\n=== THIS IS A STRAVA ACTIVITY ===');
-      console.log('Strava Activity ID:', activity.id);
-      console.log('\n📝 To fetch from Strava API, I need to use the Strava MCP tool.');
-      console.log('Let me fetch it for you...');
-
-      // Return the activity ID so it can be used with MCP tool
-      return {
-        isStrava: true,
-        stravaId: activity.id,
-        needsStravaFetch: true,
-        cachedData: activity
-      };
-    }
-
-    // Fetch fresh data from Intervals.icu API (for non-Strava activities)
-    console.log('\n=== FETCHING FROM INTERVALS.ICU API ===');
-    const apiData = await intervalsApi.request(`/activity/${activity.id}`);
-
-    console.log('\n=== ALL TSS/LOAD/POWER RELATED FIELDS FROM API ===');
-    const relevantFields = {};
-    Object.keys(apiData).forEach(key => {
-      if (key.toLowerCase().includes('load') ||
-          key.toLowerCase().includes('tss') ||
-          key.toLowerCase().includes('stress') ||
-          key.toLowerCase().includes('power') ||
-          key.toLowerCase().includes('watt') ||
-          key.toLowerCase().includes('suffer')) {
-        relevantFields[key] = apiData[key];
-      }
-    });
-    console.log(relevantFields);
-
-    console.log('\n=== ALL FIELD NAMES (SORTED) ===');
-    console.log(Object.keys(apiData).sort().join(', '));
-
-    return apiData;
-  } catch (error) {
-    console.error('Error in debugSpecificActivity:', error);
-    throw error;
-  }
-}
-
-/**
- * Debug function to inspect API response for a recent cycling activity
- */
-export async function debugRecentCyclingActivity() {
-  try {
-    // Get recent cycling activities from database
-    const today = new Date().toISOString().split('T')[0];
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    const lastMonthStr = lastMonth.toISOString().split('T')[0];
-
-    const cached = await db.getCrossTraining(lastMonthStr, today);
-    const cyclingActivities = cached
-      .filter(a => a.type === 'Ride' || a.type === 'VirtualRide')
-      .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
-
-    if (cyclingActivities.length === 0) {
-      console.log('No cycling activities found in database');
-      return;
-    }
-
-    const mostRecent = cyclingActivities[0];
-    console.log('Most recent cycling activity in database:', {
-      id: mostRecent.id,
-      name: mostRecent.name,
-      date: mostRecent.start_date_local
-    });
-
-    // Fetch fresh data from API
-    console.log('Fetching fresh data from Intervals.icu API...');
-    const apiData = await intervalsApi.request(`/activity/${mostRecent.id}`);
-
-    console.log('=== FULL API RESPONSE ===');
-    console.log(JSON.stringify(apiData, null, 2));
-
-    console.log('=== ALL FIELD NAMES ===');
-    console.log(Object.keys(apiData).sort().join(', '));
-
-    console.log('=== POWER-RELATED FIELDS ===');
-    const powerFields = {};
-    Object.keys(apiData).forEach(key => {
-      if (key.toLowerCase().includes('power') || key.toLowerCase().includes('watt')) {
-        powerFields[key] = apiData[key];
-      }
-    });
-    console.log(powerFields);
-
-    console.log('=== OTHER INTERESTING FIELDS ===');
-    const interestingFields = ['average_watts', 'avg_watts', 'avg_power', 'watts', 'power',
-                                'normalized_power', 'np', 'weighted_average_watts', 'average_hr'];
-    interestingFields.forEach(field => {
-      if (apiData[field] !== undefined) {
-        console.log(`${field}: ${apiData[field]}`);
-      }
-    });
-
-    return apiData;
-  } catch (error) {
-    console.error('Error in debugRecentCyclingActivity:', error);
-    throw error;
-  }
-}
-
-/**
  * Sync only activities that are missing power data
  * Much more efficient than full refresh
  */
@@ -333,34 +162,12 @@ export async function syncMissingPowerData(startDate, endDate) {
     const cached = await db.getCrossTraining(startDate, endDate);
     const cyclingActivities = cached.filter(a => a.type === 'Ride' || a.type === 'VirtualRide');
 
-    console.log(`Total cycling activities: ${cyclingActivities.length}`);
-
-    // Debug: Check what power data exists (first 5 and most recent)
-    cyclingActivities.slice(0, 5).forEach(a => {
-      const power = a.icu_average_watts || a.average_watts || a.avg_power;
-      console.log(`Activity ${a.id}: power=${power} (icu:${a.icu_average_watts}, avg:${a.average_watts}, avg_power:${a.avg_power}), name="${a.name}", date=${a.start_date_local}`);
-    });
-
-    // Check today's activities specifically
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const todayActivities = cyclingActivities.filter(a => a.start_date_local?.startsWith(today));
-    console.log(`Today's (${today}) cycling activities: ${todayActivities.length}`);
-    todayActivities.forEach(a => {
-      const power = a.icu_average_watts || a.average_watts || a.avg_power;
-      console.log(`  TODAY - ${a.id}: power=${power}, name="${a.name}"`);
-    });
-
     // Find activities missing power data (check all three field names)
     const missingPower = cyclingActivities.filter(a => {
       const hasIcuWatts = a.icu_average_watts && a.icu_average_watts > 0;
       const hasAvgWatts = a.average_watts && a.average_watts > 0;
       const hasAvgPower = a.avg_power && a.avg_power > 0;
       return !hasIcuWatts && !hasAvgWatts && !hasAvgPower;
-    });
-
-    console.log(`Activities missing power data: ${missingPower.length}`);
-    missingPower.slice(0, 5).forEach(a => {
-      console.log(`  - ${a.id}: "${a.name}" (${a.start_date_local})`);
     });
 
     if (missingPower.length === 0) {
@@ -386,18 +193,9 @@ export async function syncMissingPowerData(startDate, endDate) {
         const details = await intervalsApi.request(`/activity/${activity.id}`);
 
         const power = details?.icu_average_watts || details?.average_watts || details?.avg_power;
-        console.log(`Fetched activity ${activity.id}:`, {
-          name: details?.name,
-          power: power,
-          icu_average_watts: details?.icu_average_watts,
-          average_watts: details?.average_watts,
-          avg_power: details?.avg_power
-        });
 
         if (details && power && power > 0) {
           updatedActivities.push(details);
-        } else if (details) {
-          console.warn(`Activity ${activity.id} still has no power data after fetch`);
         }
       } catch (error) {
         // Handle 404 - activity doesn't exist in Intervals.icu
@@ -411,14 +209,11 @@ export async function syncMissingPowerData(startDate, endDate) {
 
     // Update only the activities that got new data
     if (updatedActivities.length > 0) {
-      console.log(`Storing ${updatedActivities.length} updated activities in database`);
       await db.storeCrossTraining(updatedActivities);
-      console.log('✅ Activities stored successfully');
     }
 
     // Clean up activities that no longer exist (404s)
     if (notFoundIds.length > 0) {
-      console.log(`Removing ${notFoundIds.length} activities that don't exist: ${notFoundIds.join(', ')}`);
       await db.crossTraining.bulkDelete(notFoundIds);
     }
 
@@ -431,8 +226,6 @@ export async function syncMissingPowerData(startDate, endDate) {
     if (errorCount > 0) {
       message += `\nErrors: ${errorCount}`;
     }
-
-    console.log('Sync complete:', { updated: updatedActivities.length, notFound: notFoundIds.length, errors: errorCount });
 
     return {
       updated: updatedActivities.length,

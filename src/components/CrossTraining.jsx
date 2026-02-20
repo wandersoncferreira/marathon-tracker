@@ -5,8 +5,7 @@ import {
   getStrengthRecommendations,
   checkPhaseChange,
   markRecommendationsUpdated,
-  generateStrengthRecommendationsPrompt,
-  debugSpecificActivity
+  generateStrengthRecommendationsPrompt
 } from '../services/crossTrainingService';
 import { db } from '../services/database';
 import { useTranslation } from '../i18n/LanguageContext';
@@ -35,10 +34,6 @@ export default function CrossTraining() {
 
   useEffect(() => {
     loadData();
-
-    // Make debug function available in console
-    window.debugActivity = debugSpecificActivity;
-    console.log('💡 Debug helper: window.debugActivity("2026-02-02", "Greater London")');
   }, []);
 
   async function loadData(forceRefresh = false, skipDedup = false) {
