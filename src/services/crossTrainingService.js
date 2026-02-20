@@ -128,6 +128,64 @@ export async function getCrossTrainingActivities(startDate, endDate, forceRefres
 }
 
 /**
+ * Debug function to inspect API response for a recent cycling activity
+ */
+export async function debugRecentCyclingActivity() {
+  try {
+    // Get recent cycling activities from database
+    const cached = await db.getCrossTraining();
+    const cyclingActivities = cached
+      .filter(a => a.type === 'Ride' || a.type === 'VirtualRide')
+      .sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+
+    if (cyclingActivities.length === 0) {
+      console.log('No cycling activities found in database');
+      return;
+    }
+
+    const mostRecent = cyclingActivities[0];
+    console.log('Most recent cycling activity in database:', {
+      id: mostRecent.id,
+      name: mostRecent.name,
+      date: mostRecent.start_date_local
+    });
+
+    // Fetch fresh data from API
+    console.log('Fetching fresh data from Intervals.icu API...');
+    const apiData = await intervalsApi.request(`/activity/${mostRecent.id}`);
+
+    console.log('=== FULL API RESPONSE ===');
+    console.log(JSON.stringify(apiData, null, 2));
+
+    console.log('=== ALL FIELD NAMES ===');
+    console.log(Object.keys(apiData).sort().join(', '));
+
+    console.log('=== POWER-RELATED FIELDS ===');
+    const powerFields = {};
+    Object.keys(apiData).forEach(key => {
+      if (key.toLowerCase().includes('power') || key.toLowerCase().includes('watt')) {
+        powerFields[key] = apiData[key];
+      }
+    });
+    console.log(powerFields);
+
+    console.log('=== OTHER INTERESTING FIELDS ===');
+    const interestingFields = ['average_watts', 'avg_watts', 'avg_power', 'watts', 'power',
+                                'normalized_power', 'np', 'weighted_average_watts', 'average_hr'];
+    interestingFields.forEach(field => {
+      if (apiData[field] !== undefined) {
+        console.log(`${field}: ${apiData[field]}`);
+      }
+    });
+
+    return apiData;
+  } catch (error) {
+    console.error('Error in debugRecentCyclingActivity:', error);
+    throw error;
+  }
+}
+
+/**
  * Sync only activities that are missing power data
  * Much more efficient than full refresh
  */

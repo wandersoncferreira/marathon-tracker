@@ -7,7 +7,8 @@ import {
   markRecommendationsUpdated,
   generateStrengthRecommendationsPrompt,
   syncMissingPowerData,
-  getCrossTrainingActivities
+  getCrossTrainingActivities,
+  debugRecentCyclingActivity
 } from '../services/crossTrainingService';
 import { db } from '../services/database';
 import { useTranslation } from '../i18n/LanguageContext';
@@ -37,6 +38,10 @@ export default function CrossTraining() {
 
   useEffect(() => {
     loadData();
+
+    // Add debug function to window for easy console access
+    window.debugCyclingAPI = debugRecentCyclingActivity;
+    console.log('💡 Debug helper available: Type "window.debugCyclingAPI()" in console to inspect API response');
   }, []);
 
   async function loadData(forceRefresh = false, skipDedup = false) {
@@ -135,14 +140,31 @@ export default function CrossTraining() {
               {t('crossTraining.subtitle')}
             </p>
           </div>
-          <button
-            onClick={handleSyncPower}
-            disabled={loading || syncing}
-            className="ml-4 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors whitespace-nowrap"
-            title="Sync missing power data from Intervals.icu"
-          >
-            {syncing ? '⏳ Syncing...' : '🔄 Sync Power'}
-          </button>
+          <div className="ml-4 flex gap-2">
+            <button
+              onClick={handleSyncPower}
+              disabled={loading || syncing}
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors whitespace-nowrap"
+              title="Sync missing power data from Intervals.icu"
+            >
+              {syncing ? '⏳ Syncing...' : '🔄 Sync Power'}
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await debugRecentCyclingActivity();
+                  alert('Check console for full API response');
+                } catch (error) {
+                  alert('Error: ' + error.message);
+                }
+              }}
+              disabled={loading}
+              className="px-3 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors whitespace-nowrap"
+              title="Debug: Inspect API fields for most recent cycling activity"
+            >
+              🔍 Debug
+            </button>
+          </div>
         </div>
       </div>
 
