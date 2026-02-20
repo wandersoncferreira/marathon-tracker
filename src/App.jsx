@@ -175,8 +175,8 @@ function App() {
     { id: 'nutrition', label: t('nav.nutrition'), icon: '🥗' },
     { id: 'crosstraining', label: 'Cross Training', icon: '🚴' },
     { id: 'analysis', label: t('nav.coachAnalysis'), icon: '🏃' },
-    { id: 'log', label: t('nav.trainingLog'), icon: '📝' },
     { id: 'progress', label: t('nav.progress'), icon: '📈' },
+    { id: 'log', label: t('nav.trainingLog'), icon: '📝' },
   ];
 
   return (
